@@ -38,6 +38,7 @@ for(rds_i in rds_vec){
       ## Prep name
       filename_i <- datetime_i %>% 
         as.character() %>% 
+        paste0("mb_", .) %>%
         str_replace_all("[:punct:]", "_") %>%
         str_replace_all(" ", "_") %>%
         paste0(paste0("_buffer", BUFFER_M, "m")) %>%

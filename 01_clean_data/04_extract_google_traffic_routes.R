@@ -40,6 +40,7 @@ for(datetime_i in unique(tt_sf$datetime)){
     ## Prep name
     filename_i <- datetime_i %>% 
       as.character() %>% 
+      paste0("gg_", .) %>%
       str_replace_all("[:punct:]", "_") %>%
       str_replace_all(" ", "_") %>%
       paste0(paste0("_buffer", BUFFER_M, "m")) %>%

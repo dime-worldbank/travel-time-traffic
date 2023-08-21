@@ -154,5 +154,26 @@ calc_traffic_length <- function(polygon_sf, traffic_sf, add_by_class = F){
 }
 
 # Code -------------------------------------------------------------------------
-
+if(F){
+  
+  # Clean data -----------------------------------------------------------------
+  git_clean_dir <- file.path(git_dir, "01_clean_data")
+  
+  source(file.path(git_clean_dir, "01_move_data_for_nairobi.R"))
+  source(file.path(git_clean_dir, "01_prep_city_files.R"))
+  
+  source(file.path(git_clean_dir, "02_append_travel_time_google.R"))
+  source(file.path(git_clean_dir, "02_append_travel_time_mapbox.R"))
+  
+  #source(file.path(git_clean_dir, "03_make_typical_routes.R"))
+  
+  source(file.path(git_clean_dir, "04_extract_google_traffic_city.R"))
+  source(file.path(git_clean_dir, "04_extract_google_traffic_routes.R"))
+  source(file.path(git_clean_dir, "04_extract_mapbox_traffic_city.R"))
+  source(file.path(git_clean_dir, "04_extract_mapbox_traffic_routes.R"))
+  
+  source(file.path(git_clean_dir, "05_clean_route_data.R"))
+  source(file.path(git_clean_dir, "05_clean_city_data.R"))
+  
+}
 
