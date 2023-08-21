@@ -18,9 +18,13 @@ tt_od_df <- tt_od_df %>%
 ## Cleanup 
 tt_sf <- tt_sf %>%
   dplyr::mutate(speed_kmh = (distance/1000) / (duration/60/60),
-                uid = 1:n()) %>%
+                uid = 1:n(),
+                time = time %>%
+                  with_tz(tzone = "Africa/Nairobi") %>%
+                  floor_date(unit = "30 minutes")) %>%
   dplyr::rename(distance_m = distance,
-                duration_s = duration)
+                duration_s = duration,
+                datetime = time)
 
 ## Merge in road name
 tt_sf <- tt_sf %>%
@@ -34,6 +38,5 @@ saveRDS(tt_sf, file.path(tt_dir, "mapbox_tt.Rds"))
 tt_df <- tt_sf
 tt_df$geometry <- NULL
 
-saveRDS(tt_df, file.path(tt_dir,
-                         "mapbox_data_tt.Rds"))
+saveRDS(tt_df, file.path(tt_dir, "mapbox_tt_data.Rds"))
 

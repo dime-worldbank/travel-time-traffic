@@ -25,12 +25,17 @@ tt_od_df <- tt_od_df %>%
 # Prep Variables ---------------------------------------------------------------
 ## Cleanup
 tt_sf <- tt_sf %>%
-  mutate(time = time %>% as.character %>% ymd_hms(tz = "UTC") %>% with_tz(tzone = "Africa/Nairobi"),
+  mutate(time = time %>% 
+           as.character %>% 
+           ymd_hms(tz = "UTC") %>% 
+           with_tz(tzone = "Africa/Nairobi") %>% 
+           floor_date(unit = "30 minutes"),
          speed_kmh = (distance_m/1000) / (duration_s/60/60),
          speed_in_traffic_kmh = (distance_m/1000) / (duration_in_traffic_s/60/60),
          uid = 1:n()) %>%
   dplyr::select(-c(alternative_id)) %>%
-  dplyr::rename(segment_id = locations_segment_id)
+  dplyr::rename(segment_id = locations_segment_id,
+                datetime   = time)
 
 ## Merge in road name
 tt_sf <- tt_sf %>%
