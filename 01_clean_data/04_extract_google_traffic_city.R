@@ -10,8 +10,7 @@ for(unit in c("gadm1", "gadm2", "gadm3")){
   if(unit == "gadm3") unit_sf <- readRDS(file.path(gadm_dir, "RawData", "gadm41_KEN_3_pk.rds"))
   
   # Loop through traffic -------------------------------------------------------
-  tiff_vec <- file.path(traffic_dir, 
-                        "google_individual_rasters_nairobi") %>%
+  tiff_vec <- file.path(traffic_gg_raw_dir) %>%
     list.files(pattern = "*.tiff")
   
   for(tiff_i in tiff_vec){
@@ -37,7 +36,7 @@ for(unit in c("gadm1", "gadm2", "gadm3")){
     if(!file.exists(OUT_PATH)){
       print(OUT_PATH)
       
-      traffic_r <- raster(file.path(traffic_dir, "google_individual_rasters_nairobi", tiff_i))
+      traffic_r <- raster(file.path(traffic_gg_raw_dir, tiff_i))
       
       traffic_df <- extract_gt_to_poly(traffic_r, unit_sf)
       

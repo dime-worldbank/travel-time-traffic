@@ -19,15 +19,15 @@ nbo_gl_tt_out <- file.path(tt_dir, "google_daily_data_nairobi")
 
 # Copy -------------------------------------------------------------------------
 #### Traffic
-for(file_i in list.files(nbo_mb_traffic_in, pattern = "*.Rds")){
-  file.copy(from = file.path(nbo_mb_traffic_in, file_i),
-            to = file.path(nbo_mb_traffic_out, file_i))
-}
-
-for(file_i in list.files(nbo_gl_traffic_in, pattern = "*.tiff")){
-  file.copy(from = file.path(nbo_gl_traffic_in, file_i),
-            to = file.path(nbo_gl_traffic_out, file_i))
-}
+# for(file_i in list.files(nbo_mb_traffic_in, pattern = "*.Rds")){
+#   file.copy(from = file.path(nbo_mb_traffic_in, file_i),
+#             to = file.path(nbo_mb_traffic_out, file_i))
+# }
+# 
+# for(file_i in list.files(nbo_gl_traffic_in, pattern = "*.tiff")){
+#   file.copy(from = file.path(nbo_gl_traffic_in, file_i),
+#             to = file.path(nbo_gl_traffic_out, file_i))
+# }
 
 #### Travel Time
 for(file_i in list.files(nbo_mb_tt_in, pattern = "*.Rds")){

@@ -7,8 +7,7 @@ BUFFER_M <- 10
 tt_sf <- readRDS(file.path(tt_dir, "google_tt.Rds"))
 
 ## Traffic
-tiff_vec <- file.path(traffic_dir, 
-                      "google_individual_rasters_nairobi") %>%
+tiff_vec <- file.path(traffic_gg_raw_dir) %>%
   list.files(pattern = "*.tiff") 
 
 tiff_datetime <- tiff_vec %>%
@@ -27,7 +26,7 @@ rt_typ_mapbox_sf      <- readRDS(file.path(tt_dir, "mapbox_typical_route.Rds"))
 rt_typ_mapbox_buff_sf <- st_buffer(rt_typ_mapbox_sf, dist = BUFFER_M)
 
 # Extract  data ----------------------------------------------------------------
-# datetime_i <- unique(tt_sf$datetime)[22000] # For testing
+datetime_i <- unique(tt_sf$datetime)[22000] # For testing
 
 #### Loop through datetimes
 for(datetime_i in unique(tt_sf$datetime)){
@@ -53,7 +52,7 @@ for(datetime_i in unique(tt_sf$datetime)){
       print(OUT_PATH)
       
       ## Road traffic raster
-      traffic_r <- raster(file.path(traffic_dir, "google_individual_rasters_nairobi", traffic_file))
+      traffic_r <- raster(file.path(traffic_gg_raw_dir, traffic_file))
       
       ## Prep route
       tt_sf_i      <- tt_sf[tt_sf$datetime %in% datetime_i,]
