@@ -6,6 +6,8 @@ if(Sys.info()[["user"]] == "robmarty"){
   db_dir <- "~/Dropbox/World Bank/IEs/Travel Time and Traffic Analysis"
   git_dir <- "~/Documents/Github/travel-time-traffic"
   sm_db_dir <- "~/Dropbox/World Bank/IEs/CrashMap-Nairobi"
+  figures_dir <- "~/Dropbox/Apps/Overleaf/Travel Time and Traffic/figures"
+  tables_dir <- "~/Dropbox/Apps/Overleaf/Travel Time and Traffic/tables"
 }
 
 #### Paths from root
@@ -45,6 +47,8 @@ library(ggplot2)
 library(purrr)
 library(geodata)
 library(lubridate)
+library(ggmap)
+library(ggpubr)
 
 source(file.path(git_dir, "functions", "functions.R"))
 

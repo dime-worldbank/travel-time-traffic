@@ -22,7 +22,7 @@ rt_typ_mapbox_buff_sf$route_area_m2_mptyp <- rt_typ_mapbox_buff_sf %>% st_area()
 
 # Extract  data ----------------------------------------------------------------
 rds_i <- rds_vec[1]
-for(rds_i in rds_vec){
+for(rds_i in rev(rds_vec)){
   
   mp_sf <- readRDS(rds_i)
   if(length(mp_sf) > 1){

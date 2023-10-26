@@ -64,8 +64,8 @@ saveRDS(tt_sf, file.path(tt_dir, "google_tt.Rds"))
 #                               "google_route_geoms.Rds"))
 
 #### Just Data (Drop geometry)
-tt_df <- tt_sf
-tt_df$geometry <- NULL
+tt_df <- tt_sf %>%
+  st_drop_geometry()
 
 # var_label(tt_df$summary) <- "Road Name"
 # var_label(tt_df$distance_m) <- "Distance (Meters)"
@@ -86,3 +86,5 @@ tt_df$geometry <- NULL
 saveRDS(tt_df, file.path(tt_dir,
                          "google_tt_data.Rds"))
 
+saveRDS(tt_sf, file.path(tt_dir,
+                         "google_tt_data_geom.Rds"))
