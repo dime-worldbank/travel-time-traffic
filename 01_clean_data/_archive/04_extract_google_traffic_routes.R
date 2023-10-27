@@ -29,7 +29,7 @@ rt_typ_mapbox_buff_sf <- st_buffer(rt_typ_mapbox_sf, dist = BUFFER_M)
 datetime_i <- unique(tt_sf$datetime)[22000] # For testing
 
 #### Loop through datetimes
-for(datetime_i in unique(tt_sf$datetime)){
+for(datetime_i in rev(unique(tt_sf$datetime))){
   
   traffic_file <- tiff_vec[tiff_datetime %in% datetime_i]
   

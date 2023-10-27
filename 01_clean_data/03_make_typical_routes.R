@@ -17,9 +17,9 @@ for(type in c("google", "mapbox")){
   
   mode_df <- tt_df %>%
     group_by(segment_id) %>%
-    mutate(distance_mode = getmode(distance_m)) %>%
+    dplyr::mutate(distance_mode = getmode(distance_m)) %>%
     ungroup() %>%
-    filter(distance_mode == distance_m) %>%
+    dplyr::filter(distance_mode == distance_m) %>%
     group_by(segment_id) %>%
     slice_head(n = 1) %>%
     ungroup()

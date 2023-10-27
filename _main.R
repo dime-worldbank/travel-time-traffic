@@ -1,5 +1,15 @@
 # Travel Time and Traffic: Main Script
 
+POLYGONS_ALL <- c("google_typical_route_10m", 
+                  "mapbox_typical_route_10m",
+                  "gadm1",
+                  "gadm2",
+                  #"gadm3",
+                  "ntsa_crashes_50m",
+                  "ntsa_crashes_100m")
+
+POLYGONS_ALL <- "ntsa_crashes_100m"
+
 # Filepaths --------------------------------------------------------------------
 #### Root
 if(Sys.info()[["user"]] == "robmarty"){
@@ -18,9 +28,12 @@ traffic_tt_dir   <- file.path(data_dir, "Traffic-Travel Time-Merged")
 gadm_dir         <- file.path(data_dir, "GADM")
 city_traffic_dir <- file.path(data_dir, "City-Level Traffic")
 analysis_data_dir <- file.path(data_dir, "analysis-data")
+extracted_data_dir <- file.path(data_dir, "extracted-data")
 
 traffic_gg_raw_dir <- file.path(sm_db_dir, "Data", "Google Mapbox Traffic", "FinalData", "google_individual_rasters")
 traffic_mb_raw_dir <- file.path(sm_db_dir, "Data", "Google Mapbox Traffic", "FinalData", "mapbox_daily_data")
+waze_bq_dir <- file.path(sm_db_dir, "Data", "Waze - BigQuery", "FinalData")
+tomtom_raw_dir <- file.path(sm_db_dir, "Data", "TomTom", "RawData")
 
 git_clean_dir <- file.path(git_dir, "01_clean_data")
 
@@ -49,6 +62,8 @@ library(geodata)
 library(lubridate)
 library(ggmap)
 library(ggpubr)
+library(jsonlite)
+library(data.table)
 
 source(file.path(git_dir, "functions", "functions.R"))
 
