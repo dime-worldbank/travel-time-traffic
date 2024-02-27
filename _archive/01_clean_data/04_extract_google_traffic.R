@@ -1,7 +1,6 @@
-# Extract Waze: Routes
+# Extract Mapbox Traffic
 
 # Load data --------------------------------------------------------------------
-jams_sf <- readRDS(file.path(waze_bq_dir, "waze_jams.Rds"))
 
 ## Typical Routes
 rt_typ_google_sf      <- readRDS(file.path(tt_dir, "google_typical_route.Rds"))
@@ -15,16 +14,21 @@ rtc_sf      <- readRDS(file.path(data_dir, "Police Crashes", "RawData", "crashes
 rtc_50m_sf  <- st_buffer(rtc_sf, dist = 50)
 rtc_100m_sf <- st_buffer(rtc_sf, dist = 100)
 
-# Cleanup jams -----------------------------------------------------------------
-jams_sf <- jams_sf %>%
-  dplyr::mutate(ts = ts %>%
-                  with_tz(tzone = "Africa/Nairobi"))
+# Setup parallel cores ---------------------------------------------------------
+myCluster <- makeCluster(4, type = "FORK") 
 
-jams_sf$year <- jams_sf$ts %>% year()
+registerDoParallel(myCluster)
 
-for(year in 2019:2022){
+# Extract data -----------------------------------------------------------------
+tiff_vec <- file.path(traffic_gg_raw_dir) %>%
+  list.files(pattern = "*.tiff") 
+
+#for(file_i in rev(tiff_vec)){
+foreach(file_i=tiff_vec, .combine='c', .inorder=FALSE) %dopar% {
   
-  jams_yr_sf <- jams_sf[jams_sf$year %in% year,]
+  r <- rast(file.path(traffic_gg_raw_dir, file_i))
+  
+  file_i_str <- file_i %>% str_replace_all(".tiff|gt_nairobi_utc", "")
   
   for(polygon in POLYGONS_ALL){
     
@@ -60,48 +64,50 @@ for(year in 2019:2022){
     
     if(polygon == "gadm2"){
       roi_sf <- readRDS(file.path(gadm_dir, "RawData", "gadm41_KEN_2_pk.rds")) %>%
-        dplyr::select(GID_2)
+        dplyr::select(GID_2) 
       id_var <- "GID_2"
     }
     
     if(polygon == "gadm3"){
       roi_sf <- readRDS(file.path(gadm_dir, "RawData", "gadm41_KEN_3_pk.rds")) %>%
-        dplyr::select(GID_3)
+        dplyr::select(GID_3) 
       id_var <- "GID_3"
     } 
     
-    for(poly_i in 1:nrow(roi_sf)){
+    OUT_DIR <- file.path(extracted_data_dir,
+                         polygon,
+                         "google_traffic_levels")
+    dir.create(file.path(extracted_data_dir, polygon))
+    dir.create(file.path(extracted_data_dir, polygon, "google_traffic_levels"))
+    
+    FILE_NAME <- paste("google_traffic_levels", polygon, file_i_str, sep = "_") %>% paste0(".Rds")
+    
+    OUT_PATH <- file.path(OUT_DIR, FILE_NAME)
+    
+    if(!file.exists(OUT_PATH)){
+      print(file_i)
       
-      roi_sf_i <- roi_sf[poly_i,]
+      datetime_i <- file_i %>%
+        str_replace_all("gt_nairobi_utc", "") %>%
+        str_replace_all(".tiff", "") %>%
+        as.numeric() %>%
+        as_datetime(tz = "UTC") %>%
+        round_date(unit = "30 minutes") %>%
+        with_tz(tzone = "Africa/Nairobi")
       
-      OUT_DIR <- file.path(extracted_data_dir,
-                           polygon,
-                           "waze")
-      dir.create(file.path(extracted_data_dir, polygon))
-      dir.create(file.path(extracted_data_dir, polygon, "waze"))
+      roi_sf$uid <- roi_sf[[id_var]]
+      if(id_var != "uid") roi_sf[[id_var]] <- NULL
       
-      FILE_NAME <- paste("waze", polygon, year, roi_sf_i[[id_var]], sep = "_") %>% paste0(".Rds")
+      google_df <- extract_gt_to_poly(r, roi_sf)
       
-      OUT_PATH <- file.path(OUT_DIR, FILE_NAME)
+      google_df$datetime <- datetime_i
       
-      if(!file.exists(OUT_PATH)){
-        
-        jams_i_sf <- st_intersection(jams_yr_sf, roi_sf_i)
-        
-        jams_i_df <- jams_i_sf %>%
-          st_drop_geometry() %>%
-          group_by(ts) %>%
-          dplyr::summarise(delay_sum_s = sum(delay)) %>%
-          ungroup()
-        
-        jams_i_df$uid <- roi_sf_i[[id_var]]
-        
-        saveRDS(jams_i_df, OUT_PATH)
-        
-      }
-    } 
-  }
+      saveRDS(google_df, OUT_PATH)
+      
+    }
+  } 
 }
+
 
 
 

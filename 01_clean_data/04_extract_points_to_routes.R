@@ -5,49 +5,46 @@ rtc_sf      <- readRDS(file.path(data_dir, "Police Crashes", "RawData", "crashes
 rtc_50m_sf  <- st_buffer(rtc_sf, dist = 50)
 rtc_100m_sf <- st_buffer(rtc_sf, dist = 100)
 
-type <- "google"
-for(type in c("google", "mapbox")){
+#### Load route 
+route_sf <- readRDS(file.path(tt_dir, "google_typical_route.Rds")) %>%
+  dplyr::select(segment_id)
+
+for(polygon in c("ntsa_crashes_50m",
+                 "ntsa_crashes_100m")){
   
-  #### Load route 
-  route_sf <- readRDS(file.path(tt_dir, paste0(type, "_typical_route.Rds"))) %>%
-    dplyr::select(segment_id)
-  
-  for(polygon in c("ntsa_crashes_50m",
-                   "ntsa_crashes_100m")){
-    
-    #### Load
-    if(polygon %in% "ntsa_crashes_50m"){
-      roi_sf <- rtc_50m_sf %>%
-        dplyr::select(crash_id)
-      id_var <- "crash_id"
-    }
-    
-    if(polygon %in% "ntsa_crashes_100m"){
-      roi_sf <- rtc_100m_sf %>%
-        dplyr::select(crash_id)
-      id_var <- "crash_id"
-    }
-    
-    #### Intersect Points and Route
-    roi_route_df <- map_df(1:nrow(roi_sf), function(i){
-      print(i)
-      
-      roi_i_sf <- roi_sf[i,]
-      roi_i_route_df <- st_intersection(roi_i_sf, route_sf) 
-      roi_i_route_df$road_length_m <- roi_i_route_df %>% st_length() %>% as.numeric()
-      
-      roi_i_route_df <- roi_i_route_df %>%
-        st_drop_geometry()
-      
-      return(roi_i_route_df)
-    })
-    
-    saveRDS(roi_route_df,
-            file.path(data_dir, "points-intersect-routes", 
-                      paste0(polygon, "_", type,"_route",".Rds")))
-    
+  #### Load
+  if(polygon %in% "ntsa_crashes_50m"){
+    roi_sf <- rtc_50m_sf %>%
+      dplyr::select(crash_id)
+    id_var <- "crash_id"
   }
+  
+  if(polygon %in% "ntsa_crashes_100m"){
+    roi_sf <- rtc_100m_sf %>%
+      dplyr::select(crash_id)
+    id_var <- "crash_id"
+  }
+  
+  #### Intersect Points and Route
+  roi_route_df <- map_df(1:nrow(roi_sf), function(i){
+    print(i)
+    
+    roi_i_sf <- roi_sf[i,]
+    roi_i_route_df <- st_intersection(roi_i_sf, route_sf) 
+    roi_i_route_df$road_length_m <- roi_i_route_df %>% st_length() %>% as.numeric()
+    
+    roi_i_route_df <- roi_i_route_df %>%
+      st_drop_geometry()
+    
+    return(roi_i_route_df)
+  })
+  
+  saveRDS(roi_route_df,
+          file.path(data_dir, "points-intersect-routes", 
+                    paste0(polygon, "_", "google_route",".Rds")))
+  
 }
+
 
 
 

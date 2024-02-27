@@ -46,9 +46,42 @@ tt_sf <- tt_sf %>%
 #### Full Data
 saveRDS(tt_sf, file.path(tt_dir, "google_tt.Rds"))
 
+#### Just Routes
+# tt_noroute <- tt_sf
+# tt_noroute$geometry <- NULL
+# 
+# tt_routeonly <- tt_sf %>%
+#   dplyr::select(uid, geometry)
+# 
+# tt_noroute <- tt_noroute %>% 
+#   dplyr::distinct(origin, destination, .keep_all = T) %>%
+#   left_join(tt_routeonly, by = "uid") %>%
+#   st_sf() %>%
+#   dplyr::select(summary, distance_m, origin, destination, locations_segment_id,
+#                 uid, geometry)
+# 
+# saveRDS(tt_noroute, file.path(tt_dir,
+#                               "google_route_geoms.Rds"))
+
 #### Just Data (Drop geometry)
 tt_df <- tt_sf %>%
   st_drop_geometry()
+
+# var_label(tt_df$summary) <- "Road Name"
+# var_label(tt_df$distance_m) <- "Distance (Meters)"
+# var_label(tt_df$distance_text) <- "Distance (Text)"
+# var_label(tt_df$duration_s) <- "Typical Duration traffic (Seconds)"
+# var_label(tt_df$duration_text) <- "Typical Duration traffic (Text)"
+# var_label(tt_df$duration_in_traffic_s) <- "Duration in traffic (Seconds)"
+# var_label(tt_df$duration_in_traffic_text) <- "Duration in traffic (Text)"
+# var_label(tt_df$time) <- "Date Time"
+# var_label(tt_df$origin) <- "Origin Coordinates"
+# var_label(tt_df$destination) <- "Dest Coordinates"
+# var_label(tt_df$locations_segment_id) <- "Segment ID"
+# var_label(tt_df$road_name) <- "Main Road of Route"
+# 
+# var_label(tt_df$speed_kmh) <- "Average Speed (Km/hr)"
+# var_label(tt_df$speed_in_traffic_kmh) <- "Average Speed in Traffic (Km/hr)"
 
 saveRDS(tt_df, file.path(tt_dir,
                          "google_tt_data.Rds"))

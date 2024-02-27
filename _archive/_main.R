@@ -9,7 +9,7 @@ POLYGONS_ALL <- c("google_typical_route_10m",
                   "ntsa_crashes_100m")
 
 #                   "ntsa_crashes_100m"
-# POLYGONS_ALL <- "ntsa_crashes_100m"
+POLYGONS_ALL <- "google_typical_route_10m"
 
 # Filepaths --------------------------------------------------------------------
 #### Root
@@ -38,7 +38,6 @@ waze_bq_dir <- file.path(sm_db_dir, "Data", "Waze - BigQuery", "FinalData")
 tomtom_raw_dir <- file.path(sm_db_dir, "Data", "TomTom", "RawData")
 
 git_clean_dir <- file.path(git_dir, "01_clean_data")
-git_analysis_dir <- file.path(git_dir, "02_analysis")
 
 # API Keys ---------------------------------------------------------------------
 if(Sys.info()[["user"]] == "robmarty"){
@@ -125,13 +124,6 @@ if(F){
   source(file.path(git_clean_dir, "04_extract_waze.R"))
   
   source(file.path(git_clean_dir, "05_clean_data.R"))
-  
-  # Analysis -------------------------------------------------------------------
-  source(file.path(git_analysis_dir, "maps_levels_and_speed.R"))
-  source(file.path(git_analysis_dir, "1_route_cor_figure.R"))
-  source(file.path(git_analysis_dir, "reg_levels_explain_speed.R"))
-  source(file.path(git_analysis_dir, "reg_explain_diff_route.R"))
-  
-  
+
 }
 
