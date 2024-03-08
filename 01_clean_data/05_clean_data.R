@@ -1,5 +1,29 @@
 # Clean Data
 
+# Create constant time period --------------------------------------------------
+## Load data
+tl_df <- file.path(extracted_data_dir, "google_typical_route_10m", "google_traffic_levels") %>%
+  list.files(full.names = T,
+             pattern = "*.Rds") %>%
+  map_df(readRDS) %>%
+  mutate(count_all = count_0 + count_1 + count_2 + count_3 + count_4) %>%
+  dplyr::filter(count_1 > 0)
+
+tt_df <- readRDS(file.path(tt_dir, "google_tt_data.Rds")) 
+tt_df <- tt_df %>%
+  dplyr::filter(!is.na(speed_in_traffic_kmh),
+                !is.na(datetime))
+
+## Datetime
+tl_datetime <- tl_df %>%
+  pull(datetime)
+
+tt_datetime <- tt_df %>%
+  pull(datetime)
+
+start_datetime <- max(min(tl_datetime), min(tt_datetime))
+end_datetime   <- min(max(tl_datetime), max(tt_datetime))
+
 # Load data --------------------------------------------------------------------
 for(polygon_i in POLYGONS_ALL){
   
@@ -166,6 +190,34 @@ for(polygon_i in POLYGONS_ALL){
   #### Merge
   google_tl_df <- google_tl_df %>% 
     left_join(roi_df, by = "uid")
+  
+  # Filter data ----------------------------------------------------------------
+  ## Only keep at the hour
+  google_tl_df <- google_tl_df %>%
+    dplyr::mutate(datetime_min = datetime %>% minute()) %>%
+    dplyr::filter(datetime_min %in% 0) %>%
+    dplyr::select(-datetime_min)
+  
+  ## Constant timeframe
+  google_tl_df <- google_tl_df[(google_tl_df$datetime >= start_datetime) & 
+                                 (google_tl_df$datetime <= end_datetime),]
+  
+  # Add modal route variable ---------------------------------------------------
+  if(polygon_i == "google_typical_route_10m"){
+    
+    google_tl_df <- google_tl_df %>%
+      dplyr::filter(!is.na(gg_distance_m)) %>%
+      group_by(uid) %>%
+      mutate(gg_distance_m_mode = Mode(gg_distance_m)) %>%
+      ungroup() %>%
+      mutate(gg_diff_mode = abs(gg_distance_m - gg_distance_m_mode) > 100)
+    
+    google_tl_df$gg_speed_in_traffic_kmh_mean_modal <- 
+      google_tl_df$gg_speed_in_traffic_kmh_mean
+    
+    google_tl_df$gg_speed_in_traffic_kmh_mean_modal[google_tl_df$gg_diff_mode %in% T] <- NA
+    
+  }
   
   # Export ---------------------------------------------------------------------
   saveRDS(google_tl_df, file.path(analysis_data_dir, 

@@ -44,7 +44,6 @@ tt_sf <- tt_sf %>%
 # Export -----------------------------------------------------------------------
 
 #### Full Data
-saveRDS(tt_sf, file.path(tt_dir, "google_tt.Rds"))
 
 #### Just Data (Drop geometry)
 tt_df <- tt_sf %>%

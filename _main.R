@@ -3,13 +3,10 @@
 POLYGONS_ALL <- c("google_typical_route_10m", 
                   #"mapbox_typical_route_10m",
                   "gadm1",
-                  "gadm2",
+                  #"gadm2",
                   #"gadm3",
                   "ntsa_crashes_50m",
                   "ntsa_crashes_100m")
-
-#                   "ntsa_crashes_100m"
-# POLYGONS_ALL <- "ntsa_crashes_100m"
 
 # Filepaths --------------------------------------------------------------------
 #### Root
@@ -127,11 +124,16 @@ if(F){
   source(file.path(git_clean_dir, "05_clean_data.R"))
   
   # Analysis -------------------------------------------------------------------
+  source(file.path(git_analysis_dir, "amount_route_deviates_overall.R"))
+  source(file.path(git_analysis_dir, "amount_route_deviates_veh_level.R"))
+  source(file.path(git_analysis_dir, "congestion_analysis.R"))
+  source(file.path(git_analysis_dir, "correlation_between_vars.R"))
+  source(file.path(git_analysis_dir, "crash_analysis.R"))
+  source(file.path(git_analysis_dir, "deviation_example.png"))
   source(file.path(git_analysis_dir, "maps_levels_and_speed.R"))
-  source(file.path(git_analysis_dir, "1_route_cor_figure.R"))
-  source(file.path(git_analysis_dir, "reg_levels_explain_speed.R"))
+  source(file.path(git_analysis_dir, "percent_time_route_deviates.R"))
   source(file.path(git_analysis_dir, "reg_explain_diff_route.R"))
-  
+  source(file.path(git_analysis_dir, "reg_levels_explain_speed.R"))
   
 }
 

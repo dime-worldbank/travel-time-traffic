@@ -8,6 +8,15 @@
 # Load data --------------------------------------------------------------------
 df <- readRDS(file.path(analysis_data_dir, "ntsa_crashes_100m_wide.Rds"))
 
+# df <- df %>%
+#   dplyr::filter(!is.na(gg_duration_in_traffic_s_mean),
+#                 !is.na(gg_tl_prop_234))
+
+
+df$crash_datetime %>% min()
+df$crash_datetime %>% max()
+df$uid %>% unique() %>% length()
+
 # Clean data -------------------------------------------------------------------
 df <- df %>%
   dplyr::select(uid,
@@ -92,6 +101,10 @@ uid_traffic <- df_sub %>%
 uid_both <- intersect(uid_speed, uid_traffic)
 
 df_sub$both_sample <- df_sub$uid %in% uid_both
+
+length(uid_speed)
+length(uid_traffic)
+length(uid_both)
 
 # Analysis: Hourly -------------------------------------------------------------
 run_reg_hourly <- function(name_i, df_sub){

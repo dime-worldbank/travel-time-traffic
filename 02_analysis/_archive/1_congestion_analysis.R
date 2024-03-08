@@ -1,7 +1,7 @@
 # Congestion in Nairobi 
 
 # Load data --------------------------------------------------------------------
-df <- readRDS(file.path(analysis_data_dir, "google_typical_route_10m_wide_clean.Rds"))
+df <- readRDS(file.path(analysis_data_dir, "google_typical_route_10m_wide.Rds"))
 
 # Cleanup ----------------------------------------------------------------------
 df <- df %>%

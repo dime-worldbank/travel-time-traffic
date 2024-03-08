@@ -5,20 +5,21 @@ rename_var <- function(df, var){
   
   df <- df %>%
     dplyr::mutate(tmp_var = case_when(
-      tmp_var == "gg_speed_in_traffic_kmh"  ~ "[Google TT]: Average Speed",
-      tmp_var == "gg_speed_in_traffic_kmh_mean"  ~ "[Google TT]: Average Speed, Avg",
-      tmp_var == "gg_speed_in_traffic_kmh_wmean"  ~ "[Google TT]: Average Speed, W. Avg",
+      tmp_var == "gg_speed_in_traffic_kmh"  ~ "Average Speed",
+      tmp_var == "gg_speed_in_traffic_kmh_mean"  ~ "Average Speed",
+      tmp_var == "gg_speed_in_traffic_kmh_wmean"  ~ "Average Speed",
       
-      tmp_var == "gg_duration_in_traffic_s" ~ "[Google TT]: Duration",
-      tmp_var == "gg_duration_in_traffic_s_mean" ~ "[Google TT]: Duration, Avg",
-      tmp_var == "gg_duration_in_traffic_s_wmean" ~ "[Google TT]: Duration, W Avg",
+      tmp_var == "gg_duration_in_traffic_s" ~ "Duration",
+      tmp_var == "gg_duration_in_traffic_s_mean" ~ "Duration, Avg",
+      tmp_var == "gg_duration_in_traffic_s_wmean" ~ "Duration, W Avg",
       
-      tmp_var == "gg_duration_in_traffic_min" ~ "[Google TT]: Duration",
-      tmp_var == "gg_duration_in_traffic_min_mean" ~ "[Google TT]: Duration, Avg",
-      tmp_var == "gg_duration_in_traffic_min_wmean" ~ "[Google TT]: Duration, W Avg",
+      tmp_var == "gg_duration_in_traffic_min" ~ "Duration",
+      tmp_var == "gg_duration_in_traffic_min_mean" ~ "Duration",
+      tmp_var == "gg_duration_in_traffic_min_wmean" ~ "Duration",
       
-      tmp_var == "gg_distance_m_mean" ~ "[Google TT]: Distance",
-      tmp_var == "gg_distance_km_mean" ~ "[Google TT]: Distance",
+      tmp_var == "gg_distance_km" ~ "Distance (km)",
+      tmp_var == "gg_distance_m_mean" ~ "Distance",
+      tmp_var == "gg_distance_km_mean" ~ "Distance",
       
       tmp_var == "mb_speed_in_traffic_kmh"  ~ "[Mapbox TT]: Average Speed",
       tmp_var == "mb_speed_in_traffic_kmh_mean"  ~ "[Mapbox TT]: Average Speed, Avg",
@@ -32,9 +33,9 @@ rename_var <- function(df, var){
       tmp_var == "mb_duration_in_traffic_min_mean" ~ "[Mapbox TT]: Duration, Avg",
       tmp_var == "mb_duration_in_traffic_min_wmean" ~ "[Mapbox TT]: Duration, W Avg",
       
-      tmp_var == "gg_tl_prop_234" ~ "[Google Traffic]: Prop 2,3,4",
-      tmp_var == "gg_tl_prop_34"  ~ "[Google Traffic]: Prop 3,4",
-      tmp_var == "gg_tl_prop_4"   ~ "[Google Traffic]: Prop 4",
+      tmp_var == "gg_tl_prop_234" ~ "Traffic, Prop 2,3,4",
+      tmp_var == "gg_tl_prop_34"  ~ "Traffic, Prop 3,4",
+      tmp_var == "gg_tl_prop_4"   ~ "Traffic, Prop 4",
       tmp_var == "mb_tl_prop_234" ~ "[Mapbox Traffic]: Prop 2,3,4",
       tmp_var == "mb_tl_prop_34"  ~ "[Mapbox Traffic]: Prop 3,4",
       tmp_var == "mb_tl_prop_4"   ~ "[Mapbox Traffic]: Prop 4",
