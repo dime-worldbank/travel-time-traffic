@@ -45,7 +45,8 @@ for(polygon_i in POLYGONS_ALL){
                   gg_tl_prop_4   = (                    count_4) / count_all_max) %>%
     
     dplyr::rename(gg_tl_count_all_max = count_all_max) %>%
-    dplyr::select(-c(count_0, count_1, count_2, count_3, count_4, count_all)) %>%
+    #dplyr::select(-c(count_0, count_1, count_2, count_3, count_4, count_all)) %>%
+    dplyr::select(-c(count_0, count_all)) %>%
     
     # No google traffic data beyond this date; all zeros
     dplyr::filter(datetime < ymd("2023-08-17"))
@@ -223,7 +224,7 @@ for(polygon_i in POLYGONS_ALL){
   saveRDS(google_tl_df, file.path(analysis_data_dir, 
                                   paste0(polygon_i, "_wide.Rds")))
   
-  rm(data_wide_df)
+  rm(google_tl_df)
   gc()
 }
 

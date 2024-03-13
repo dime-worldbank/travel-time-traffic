@@ -6,11 +6,10 @@
 
 # Load data --------------------------------------------------------------------
 route_df <- readRDS(file.path(analysis_data_dir, "google_typical_route_10m_wide.Rds"))
-gadm_df <- readRDS(file.path(analysis_data_dir, "gadm2_wide.Rds"))
-gadm_sf  <- readRDS(file.path(gadm_dir, "RawData", "gadm41_KEN_2_pk.rds"))
+gadm2_df <- readRDS(file.path(analysis_data_dir, "gadm2_wide.Rds"))
+gadm2_sf  <- readRDS(file.path(gadm_dir, "RawData", "gadm41_KEN_2_pk.rds"))
 
 gadm1_df <- readRDS(file.path(analysis_data_dir, "gadm1_wide.Rds"))
-
 
 # Cleanup ----------------------------------------------------------------------
 route_df <- route_df %>%
@@ -20,12 +19,36 @@ route_df <- route_df %>%
                            "Weekend",
                            "Weekday"))
 
-gadm_df <- gadm_df %>%
+gadm1_df <- gadm1_df %>%
   mutate(dow = datetime %>% lubridate::wday(label = T),
          hour = datetime %>% hour(),
          day_type = ifelse(dow %in% c("Sat", "Sun"),
                            "Weekend",
                            "Weekday"))
+
+gadm2_df <- gadm2_df %>%
+  mutate(dow = datetime %>% lubridate::wday(label = T),
+         hour = datetime %>% hour(),
+         day_type = ifelse(dow %in% c("Sat", "Sun"),
+                           "Weekend",
+                           "Weekday"))
+
+# nbo_df <- gadm_df %>%
+#   group_by(datetime) %>%
+#   dplyr::summarise(count_all_max = sum(gg_tl_count_all_max),
+#                    count_1 = sum(count_1),
+#                    count_2 = sum(count_2),
+#                    count_3 = sum(count_3),
+#                    count_4 = sum(count_4)) %>%
+#   ungroup() %>%
+#   dplyr::mutate(gg_tl_prop_234 = (count_2 + count_3 + count_4) / count_all_max,
+#                 gg_tl_prop_34  = (          count_3 + count_4) / count_all_max,
+#                 gg_tl_prop_4   = (                    count_4) / count_all_max)
+# 
+# nbo_df %>%
+#   ggplot() +
+#   geom_col(aes(x = datetime,
+#                y = gg_tl_prop_234))
 
 # Time of Day ------------------------------------------------------------------
 route_df %>%
@@ -71,44 +94,11 @@ route_df %>%
 ggsave(filename = file.path(figures_dir, "cong_timeofday.png"),
        height = 2.5, width = 8)
 
-# Over time --------------------------------------------------------------------
-# TODO: Compare against individual roads.
-# gadm1_df %>%
-#   ggplot() +
-#   geom_line(aes(x = datetime,
-#                 y = gg_tl_prop_234))
-# 
-# a <- tt_sf[!is.na(tt_sf$segment_id),]
-# a <- a[a$segment_id %in% 3:4,]
-# a <- a[!is.na(a$speed_in_traffic_kmh),]
-# a$datetime %>% summary()
-# 
-# leaflet() %>%
-#   addTiles() %>%
-#   addPolylines(data = a[a$segment_id %in% 3,][40801,])
-# 
-# route_df$road_name[route_df$uid %in% 3:4]
-# 
-# route_df %>%
-#   filter(!is.na(gg_tl_prop_234),
-#          !is.na(gg_speed_in_traffic_kmh)) %>%
-#   mutate(week = datetime %>% floor_date(unit = "month")) %>%
-#   
-#   group_by(uid, week, day_type) %>%
-#   dplyr::summarise_if(is.numeric, mean, na.rm = T) %>%
-#   ungroup() %>%
-#   filter(uid %in% 3:4) %>%
-#   
-#   ggplot() +
-#   geom_line(aes(x = week,
-#                 y = gg_distance_km,
-#                 color = day_type)) +
-#   facet_wrap(~uid)
-
-# TODO: Add third row of traffic for all of Nairobi
+# Over time: all routes --------------------------------------------------------------------
 route_df %>% 
   filter(!is.na(gg_tl_prop_234),
-         !is.na(gg_speed_in_traffic_kmh)) %>%
+         !is.na(gg_speed_in_traffic_kmh),
+         gg_tl_prop_234 > 0) %>%
   filter(uid %in% 1:13) %>% # constant sample
   mutate(week = datetime %>% floor_date(unit = "week")) %>%
   
@@ -155,6 +145,57 @@ route_df %>%
 
 ggsave(filename = file.path(figures_dir, "indicators_over_time.png"),
        height = 3.5, width = 9.5)
+
+# Over time: constant routes --------------------------------------------------------------------
+route_df %>% 
+  filter(!is.na(gg_tl_prop_234),
+         !is.na(gg_speed_in_traffic_kmh)) %>%
+  filter(uid %in% c(1,2,5:13)) %>% # constant sample
+  mutate(week = datetime %>% floor_date(unit = "week")) %>%
+  
+  group_by(week, day_type) %>%
+  dplyr::summarise_if(is.numeric, mean, na.rm = T) %>%
+  ungroup() %>%
+  pivot_longer(cols = -c(week, day_type, uid)) %>%
+  filter(name %in% c("gg_tl_prop_234",
+                     "gg_tl_prop_34",
+                     "gg_tl_prop_4",
+                     "gg_speed_in_traffic_kmh",
+                     "gg_duration_in_traffic_min",
+                     "gg_distance_km")) %>%
+  
+  group_by(name, day_type) %>%
+  dplyr::mutate(value = zoo::rollmean(value, k = 4, fill = NA, na.rm=T)) %>%
+  ungroup() %>%
+  
+  #rename_var("name") %>%
+  dplyr::mutate(name = case_when(
+    name == "gg_tl_prop_234" ~ "Traffic, Prop. 2-4",
+    name == "gg_tl_prop_34" ~ "Traffic, Prop. 3-4",
+    name == "gg_tl_prop_4" ~ "Traffic, Prop. 4",
+    name == "gg_speed_in_traffic_kmh" ~ "Average Speed (km/)",
+    name == "gg_duration_in_traffic_min" ~ "Average Duartion (mins)",
+    name == "gg_distance_km" ~ "Average Distance (km)"
+  )) %>%
+  
+  ggplot(aes(x = week,
+             y = value,
+             color = day_type)) +
+  geom_line() +
+  facet_wrap(~name,
+             scales = "free_y") +
+  labs(color = NULL,
+       x = NULL,
+       y = NULL) +
+  scale_color_manual(values = c("dodgerblue",
+                                "darkorange")) +
+  theme_classic2() +
+  theme(strip.background = element_blank(),
+        strip.text = element_text(face = "bold"),
+        axis.text = element_text(size = 7, color = "black")) 
+
+# ggsave(filename = file.path(figures_dir, "indicators_over_time.png"),
+#        height = 3.5, width = 9.5)
 
 # Map --------------------------------------------------------------------------
 # TODO: Do hexagon instead?

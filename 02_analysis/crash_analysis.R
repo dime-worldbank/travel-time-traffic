@@ -1,17 +1,7 @@
 # Crash Analysis
 
-## Three groups
-# Google Traffic
-# Google Speed
-# No! Cases where have speed but not traffic --> Constant sample, of both!
-
 # Load data --------------------------------------------------------------------
 df <- readRDS(file.path(analysis_data_dir, "ntsa_crashes_100m_wide.Rds"))
-
-# df <- df %>%
-#   dplyr::filter(!is.na(gg_duration_in_traffic_s_mean),
-#                 !is.na(gg_tl_prop_234))
-
 
 df$crash_datetime %>% min()
 df$crash_datetime %>% max()
@@ -34,8 +24,7 @@ df <- df %>%
   # Remove 30 minute period
   dplyr::mutate(datetime_minute = datetime %>% minute()) %>%
   dplyr::filter(datetime_minute %in% 0) %>%
-  dplyr::select(-datetime_minute) #%>%
-#pivot_longer(cols = -c(uid, datetime, crash_datetime))
+  dplyr::select(-datetime_minute) 
 
 # Cleanup ----------------------------------------------------------------------
 df <- df %>%
@@ -185,41 +174,36 @@ make_hourly_fig <- function(df){
     facet_wrap(~data_var, scales = "free_y") 
 }
 
-## 
+## Factor
+lm_hr_coef_df <- lm_hr_coef_df %>%
+  dplyr::mutate(data_var = data_var %>%
+                  factor(levels = c("Traffic, Prop 2,3,4\nN = 127",
+                                    "Traffic, Prop 3,4\nN = 127",
+                                    "Traffic, Prop 4\nN = 127",
+                                    "Traffic, Prop 2,3,4\nN = 15",
+                                    "Traffic, Prop 3,4\nN = 15",
+                                    "Traffic, Prop 4\nN = 15",
+                                    "Distance\nN = 15",
+                                    "Duration, Avg\nN = 15",
+                                    "Average Speed\nN = 15")))
+
+## Main
 lm_hr_coef_df %>%
-  dplyr::filter(type %in% "Value - Typical Value",
-                sample == "Full") %>%
+  dplyr::filter(type %in% "Value - Typical Value") %>%
+  distinct() %>%
   make_hourly_fig()
 
-ggsave(filename = file.path(figures_dir, "lm_crash_value_minus_typical_full.png"),
-       height = 3.5, width = 8)
+ggsave(filename = file.path(figures_dir, "lm_crash_value_minus_typical.png"),
+       height = 5, width = 8)
 
-## 
+## Main
 lm_hr_coef_df %>%
-  dplyr::filter(type %in% "Value - Typical Value",
-                sample == "Sub") %>%
+  dplyr::filter(type %in% "Value") %>%
+  distinct() %>%
   make_hourly_fig()
 
-ggsave(filename = file.path(figures_dir, "lm_crash_value_minus_typical_sub.png"),
-       height = 3.5, width = 8)
-
-## 
-lm_hr_coef_df %>%
-  dplyr::filter(type %in% "Value",
-                sample == "Full") %>%
-  make_hourly_fig()
-
-ggsave(filename = file.path(figures_dir, "lm_crash_value_full.png"),
-       height = 3.5, width = 8)
-
-## 
-lm_hr_coef_df %>%
-  dplyr::filter(type %in% "Value",
-                sample == "Sub") %>%
-  make_hourly_fig()
-
-ggsave(filename = file.path(figures_dir, "lm_crash_value_sub.png"),
-       height = 3.5, width = 8)
+ggsave(filename = file.path(figures_dir, "lm_crash_value.png"),
+       height = 5, width = 8)
 
 # Individual Crashes -----------------------------------------------------------
 df_sub_both <- df_sub %>%

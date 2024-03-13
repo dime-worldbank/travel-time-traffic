@@ -15,7 +15,7 @@ rtc_50m_sf  <- st_buffer(rtc_sf, dist = 50)
 rtc_100m_sf <- st_buffer(rtc_sf, dist = 100)
 
 # Setup parallel cores ---------------------------------------------------------
-myCluster <- makeCluster(4, type = "FORK") 
+myCluster <- makeCluster(2, type = "FORK") 
 
 registerDoParallel(myCluster)
 
@@ -24,7 +24,7 @@ tiff_vec <- file.path(traffic_gg_raw_dir) %>%
   list.files(pattern = "*.tiff") 
 
 #for(file_i in rev(tiff_vec)){
-foreach(file_i=rev(tiff_vec), .combine='c', .inorder=FALSE) %dopar% {
+foreach(file_i=tiff_vec, .combine='c', .inorder=FALSE) %dopar% {
   
   r <- rast(file.path(traffic_gg_raw_dir, file_i))
   

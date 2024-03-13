@@ -8,6 +8,8 @@ POLYGONS_ALL <- c("google_typical_route_10m",
                   "ntsa_crashes_50m",
                   "ntsa_crashes_100m")
 
+POLYGONS_ALL <- "gadm1"
+
 # Filepaths --------------------------------------------------------------------
 #### Root
 if(Sys.info()[["user"]] == "robmarty"){

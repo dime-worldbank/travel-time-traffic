@@ -28,6 +28,7 @@ p_trends <- route_df %>%
        title = "C. Trends in indicators") +
   theme_classic2() +
   theme(strip.text = element_text(face = "bold"),
+        axis.text = element_text(size = 8),
         strip.background = element_blank()) 
 
 # ggsave(filename = file.path(figures_dir, "deviation_example_day.png"),
@@ -82,7 +83,7 @@ roads_2_sf <- roads_sf[str_detect(roads_sf$fclass, "secondary|tertiary"),] %>%
 
 # Map --------------------------------------------------------------------------
 route_df <- bind_rows(
-  data.frame(type = "Modal Route",
+  data.frame(type = "Typical Route",
              distance_km             = round(tt_modal_sf$distance_m / 1000,1),
              duration_in_traffic_min = round(tt_modal_sf$duration_in_traffic_s / 60,1),
              speed_in_traffic_kmh    = round(tt_modal_sf$speed_in_traffic_kmh,1)),
@@ -122,13 +123,13 @@ p_map <- ggplot() +
           color = "black",
           linewidth = 0.1) +
   geom_sf(data = tt_modal_sf,
-          aes(color = "Modal Route"),
+          aes(color = "Typical Route"),
           linewidth = 1) +
   geom_sf(data = tt_ex_sf_i,
           aes(color = "Route"),
           linewidth = 1) +
   labs(color = NULL,
-       title = "A. Modal vs used route") +
+       title = "A. Typical vs used route") +
   scale_color_manual(values = c("darkorange",
                                 "dodgerblue")) +
   theme_void() +

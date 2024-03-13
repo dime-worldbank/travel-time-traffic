@@ -144,14 +144,18 @@ p3 <- cor_over_time_pairs_df %>%
 
 # Arrange/export ---------------------------------------------------------------
 
-p12 <- ggarrange(p1, p2, nrow = 1, common.legend = T, legend = "bottom")
-p <- ggarrange(p12, p3, nrow = 1, widths = c(0.65, 0.35))
+# p12 <- ggarrange(p1, p2, nrow = 1, common.legend = T, legend = "bottom")
+# p <- ggarrange(p12, p3, nrow = 1, widths = c(0.65, 0.35))
+# 
+# ggsave(p, 
+#        filename = file.path(figures_dir, "cor_across_vars.png"),
+#        height = 4.5, width = 12)
 
-ggsave(p, 
+p12 <- ggarrange(p1, p2, nrow = 1, common.legend = T, legend = "right")
+
+ggsave(p12, 
        filename = file.path(figures_dir, "cor_across_vars.png"),
-       height = 4.5, width = 12)
-
-
+       height = 4.5, width = 10)
 
 
 
