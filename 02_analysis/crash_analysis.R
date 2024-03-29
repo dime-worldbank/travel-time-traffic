@@ -1,7 +1,7 @@
 # Crash Analysis
 
 # Load data --------------------------------------------------------------------
-df <- readRDS(file.path(analysis_data_dir, "ntsa_crashes_100m_wide.Rds"))
+df <- readRDS(file.path(analysis_data_dir, "ntsa_crashes_100m_wide_fulldata.Rds"))
 
 df$crash_datetime %>% min()
 df$crash_datetime %>% max()
@@ -95,6 +95,11 @@ length(uid_speed)
 length(uid_traffic)
 length(uid_both)
 
+df_sub %>%
+  dplyr::filter(uid %in% uid_speed) %>%
+  pull(datetime) %>%
+  summary()
+
 # Analysis: Hourly -------------------------------------------------------------
 run_reg_hourly <- function(name_i, df_sub){
   print(name_i)
@@ -185,12 +190,15 @@ lm_hr_coef_df <- lm_hr_coef_df %>%
                                     "Traffic, Prop 4\nN = 15",
                                     "Distance\nN = 15",
                                     "Duration, Avg\nN = 15",
-                                    "Average Speed\nN = 15")))
+                                    "Average Speed\nN = 15",
+                                    "Distance\nN = 69",
+                                    "Duration, Avg\nN = 69",
+                                    "Average Speed\nN = 69")))
 
 ## Main
 lm_hr_coef_df %>%
-  dplyr::filter(type %in% "Value - Typical Value") %>%
-  distinct() %>%
+  dplyr::filter(type %in% "Value - Typical Value",
+                data_var %>% str_detect("127|15")) %>%
   make_hourly_fig()
 
 ggsave(filename = file.path(figures_dir, "lm_crash_value_minus_typical.png"),
@@ -198,137 +206,156 @@ ggsave(filename = file.path(figures_dir, "lm_crash_value_minus_typical.png"),
 
 ## Main
 lm_hr_coef_df %>%
-  dplyr::filter(type %in% "Value") %>%
+  dplyr::filter(type %in% "Value",
+                data_var %>% str_detect("127|15")) %>%
   distinct() %>%
   make_hourly_fig()
 
 ggsave(filename = file.path(figures_dir, "lm_crash_value.png"),
        height = 5, width = 8)
 
+## Full travel time data
+lm_hr_coef_df %>%
+  dplyr::filter(type %in% "Value - Typical Value",
+                data_var %>% str_detect("69")) %>%
+  make_hourly_fig() 
+
+ggsave(filename = file.path(figures_dir, "lm_crash_value_m_typical_tt_full.png"),
+       height = 2.5, width = 8)
+
+
+lm_hr_coef_df %>%
+  dplyr::filter(type %in% "Value",
+                data_var %>% str_detect("69")) %>%
+  make_hourly_fig() 
+
+ggsave(filename = file.path(figures_dir, "lm_crash_value_tt_full.png"),
+       height = 2.5, width = 8)
+
 # Individual Crashes -----------------------------------------------------------
-df_sub_both <- df_sub %>%
-  dplyr::filter(both_sample %in% T) %>%
-  dplyr::mutate(uid = uid %>% factor() %>% as.numeric()) 
-
-p1 <- df_sub_both %>%
-  dplyr::filter(name == "gg_tl_prop_234",
-                abs(hours_since_crash_num) <= 5) %>%
-  ggplot() +
-  geom_vline(xintercept = 0, color = "red") +
-  geom_col(aes(x = hours_since_crash_num,
-               y = value_minus_typical)) +
-  labs(x = "Hours Since Crash",
-       y = "Value - Typical Value",
-       title = "[Google Traffic]: Prop 2,3,4") +
-  facet_wrap(~uid, nrow = 3) +
-  theme_classic2() +
-  theme(strip.background = element_blank(),
-        axis.text = element_text(size = 8),
-        plot.title = element_text(face = "bold", size = 10)) 
-
-p2 <- df_sub_both %>%
-  dplyr::filter(name == "gg_duration_in_traffic_s_mean",
-                abs(hours_since_crash_num) <= 5) %>%
-  ggplot() +
-  geom_vline(xintercept = 0, color = "red") +
-  geom_col(aes(x = hours_since_crash_num,
-               y = value_minus_typical)) +
-  labs(x = "Hours Since Crash",
-       y = "Value - Typical Value",
-       title = "[Google TT]: Average Speed") +
-  facet_wrap(~uid, nrow = 3) +
-  theme_classic2() +
-  theme(strip.background = element_blank(),
-        axis.text = element_text(size = 8),
-        plot.title = element_text(face = "bold", size = 10)) 
-
-p <- ggarrange(p1, p2, ncol = 1)
-
-ggsave(p,
-       filename = file.path(figures_dir, "lm_crash_value_m_typical_examples_sub.png"),
-       height = 6, width = 8)
-
-# df_sub %>%
-#   dplyr::filter(both_sample %in% T,
-#                 name == "gg_speed_in_traffic_kmh_mean",
+# df_sub_both <- df_sub %>%
+#   dplyr::filter(both_sample %in% T) %>%
+#   dplyr::mutate(uid = uid %>% factor() %>% as.numeric()) 
+# 
+# p1 <- df_sub_both %>%
+#   dplyr::filter(name == "gg_tl_prop_234",
 #                 abs(hours_since_crash_num) <= 5) %>%
-#   
 #   ggplot() +
-#   geom_line(aes(x = hours_since_crash_num,
-#                 y = value_minus_typical)) +
-#   geom_vline(xintercept = 0) +
-#   facet_wrap(~uid)
-
-
-# Analysis: One Coef -----------------------------------------------------------
-lm_one_coef_df <- map_df(unique(df_sub$name), function(name_i){
-  
-  print(name_i)
-  
-  ## Subset to variable
-  df_sum_i <- df_sub[df_sub$name %in% name_i,]
-  df_sum_i <- df_sum_i %>%
-    dplyr::filter(hours_since_crash_num >= -3,
-                  hours_since_crash_num <= 2)
-  
-  df_sum_i$value <- df_sum_i$value %>% scale() %>% as.numeric()
-  df_sum_i$value_minus_typical <- df_sum_i$value_minus_typical %>% scale() %>% as.numeric()
-  
-  ## Regressions + grab coefficients
-  lm_v_df <- feols(value ~ post_crash | uid, df_sum_i) %>%
-    confint() %>%
-    as.data.frame() %>%
-    rownames_to_column(var = "variable") %>%
-    dplyr::filter(variable %>% str_detect("post_crash")) %>%
-    clean_names() %>%
-    dplyr::mutate(b = (x2_5_percent + x97_5_percent) / 2) %>%
-    dplyr::mutate(type = "Value")
-  
-  lm_vmt_df <- feols(value_minus_typical ~ post_crash | uid, df_sum_i) %>%
-    confint() %>%
-    as.data.frame() %>%
-    rownames_to_column(var = "variable") %>%
-    dplyr::filter(variable %>% str_detect("post_crash")) %>%
-    clean_names() %>%
-    dplyr::mutate(b = (x2_5_percent + x97_5_percent) / 2) %>%
-    dplyr::mutate(type = "Value - Typical Value") 
-  
-  lm_df <- bind_rows(lm_v_df,
-                     lm_vmt_df)
-  
-  ## Add variables
-  lm_df$data_var <- name_i
-  lm_df$n_locations <- df_sum_i$uid %>% unique() %>% length()
-  
-  return(lm_df)
-})
-
-lm_one_coef_df <- lm_one_coef_df %>%
-  dplyr::mutate(sig = ifelse(
-    ((x2_5_percent > 0) & (x97_5_percent > 0)) | 
-      ((x2_5_percent < 0) & (x97_5_percent < 0)),
-    T,F
-  )) %>%
-  rename_var("data_var") %>%
-  dplyr::mutate(data_var = paste0(data_var, " N = ", n_locations))
-
-p <- lm_one_coef_df %>%
-  dplyr::filter(type %in% "Value - Typical Value") %>%
-  ggplot(aes(y = data_var,
-             x = b,
-             xmin = x2_5_percent,
-             xmax = x97_5_percent,
-             color = sig)) +
-  geom_point(position = position_dodge(width = 0.9)) +
-  geom_linerange(position = position_dodge(width = 0.9)) +
-  geom_vline(xintercept = 0, color = "gray70") +
-  scale_color_manual(values = c("black", "red")) +
-  theme_minimal() +
-  labs(x = "Post Crash",
-       y = "Coef (+/- 95% CI)",
-       color = "p < 0.05") 
-
-# ggsave(p, 
-#        filename = file.path(figures_dir, "lm_value_m_typical_post.png"),
-#        height = 7, width = 7)
-
+#   geom_vline(xintercept = 0, color = "red") +
+#   geom_col(aes(x = hours_since_crash_num,
+#                y = value_minus_typical)) +
+#   labs(x = "Hours Since Crash",
+#        y = "Value - Typical Value",
+#        title = "[Google Traffic]: Prop 2,3,4") +
+#   facet_wrap(~uid, nrow = 3) +
+#   theme_classic2() +
+#   theme(strip.background = element_blank(),
+#         axis.text = element_text(size = 8),
+#         plot.title = element_text(face = "bold", size = 10)) 
+# 
+# p2 <- df_sub_both %>%
+#   dplyr::filter(name == "gg_duration_in_traffic_s_mean",
+#                 abs(hours_since_crash_num) <= 5) %>%
+#   ggplot() +
+#   geom_vline(xintercept = 0, color = "red") +
+#   geom_col(aes(x = hours_since_crash_num,
+#                y = value_minus_typical)) +
+#   labs(x = "Hours Since Crash",
+#        y = "Value - Typical Value",
+#        title = "[Google TT]: Average Speed") +
+#   facet_wrap(~uid, nrow = 3) +
+#   theme_classic2() +
+#   theme(strip.background = element_blank(),
+#         axis.text = element_text(size = 8),
+#         plot.title = element_text(face = "bold", size = 10)) 
+# 
+# p <- ggarrange(p1, p2, ncol = 1)
+# 
+# ggsave(p,
+#        filename = file.path(figures_dir, "lm_crash_value_m_typical_examples_sub.png"),
+#        height = 6, width = 8)
+# 
+# # df_sub %>%
+# #   dplyr::filter(both_sample %in% T,
+# #                 name == "gg_speed_in_traffic_kmh_mean",
+# #                 abs(hours_since_crash_num) <= 5) %>%
+# #   
+# #   ggplot() +
+# #   geom_line(aes(x = hours_since_crash_num,
+# #                 y = value_minus_typical)) +
+# #   geom_vline(xintercept = 0) +
+# #   facet_wrap(~uid)
+# 
+# 
+# # Analysis: One Coef -----------------------------------------------------------
+# lm_one_coef_df <- map_df(unique(df_sub$name), function(name_i){
+#   
+#   print(name_i)
+#   
+#   ## Subset to variable
+#   df_sum_i <- df_sub[df_sub$name %in% name_i,]
+#   df_sum_i <- df_sum_i %>%
+#     dplyr::filter(hours_since_crash_num >= -3,
+#                   hours_since_crash_num <= 2)
+#   
+#   df_sum_i$value <- df_sum_i$value %>% scale() %>% as.numeric()
+#   df_sum_i$value_minus_typical <- df_sum_i$value_minus_typical %>% scale() %>% as.numeric()
+#   
+#   ## Regressions + grab coefficients
+#   lm_v_df <- feols(value ~ post_crash | uid, df_sum_i) %>%
+#     confint() %>%
+#     as.data.frame() %>%
+#     rownames_to_column(var = "variable") %>%
+#     dplyr::filter(variable %>% str_detect("post_crash")) %>%
+#     clean_names() %>%
+#     dplyr::mutate(b = (x2_5_percent + x97_5_percent) / 2) %>%
+#     dplyr::mutate(type = "Value")
+#   
+#   lm_vmt_df <- feols(value_minus_typical ~ post_crash | uid, df_sum_i) %>%
+#     confint() %>%
+#     as.data.frame() %>%
+#     rownames_to_column(var = "variable") %>%
+#     dplyr::filter(variable %>% str_detect("post_crash")) %>%
+#     clean_names() %>%
+#     dplyr::mutate(b = (x2_5_percent + x97_5_percent) / 2) %>%
+#     dplyr::mutate(type = "Value - Typical Value") 
+#   
+#   lm_df <- bind_rows(lm_v_df,
+#                      lm_vmt_df)
+#   
+#   ## Add variables
+#   lm_df$data_var <- name_i
+#   lm_df$n_locations <- df_sum_i$uid %>% unique() %>% length()
+#   
+#   return(lm_df)
+# })
+# 
+# lm_one_coef_df <- lm_one_coef_df %>%
+#   dplyr::mutate(sig = ifelse(
+#     ((x2_5_percent > 0) & (x97_5_percent > 0)) | 
+#       ((x2_5_percent < 0) & (x97_5_percent < 0)),
+#     T,F
+#   )) %>%
+#   rename_var("data_var") %>%
+#   dplyr::mutate(data_var = paste0(data_var, " N = ", n_locations))
+# 
+# p <- lm_one_coef_df %>%
+#   dplyr::filter(type %in% "Value - Typical Value") %>%
+#   ggplot(aes(y = data_var,
+#              x = b,
+#              xmin = x2_5_percent,
+#              xmax = x97_5_percent,
+#              color = sig)) +
+#   geom_point(position = position_dodge(width = 0.9)) +
+#   geom_linerange(position = position_dodge(width = 0.9)) +
+#   geom_vline(xintercept = 0, color = "gray70") +
+#   scale_color_manual(values = c("black", "red")) +
+#   theme_minimal() +
+#   labs(x = "Post Crash",
+#        y = "Coef (+/- 95% CI)",
+#        color = "p < 0.05") 
+# 
+# # ggsave(p, 
+# #        filename = file.path(figures_dir, "lm_value_m_typical_post.png"),
+# #        height = 7, width = 7)
+# 

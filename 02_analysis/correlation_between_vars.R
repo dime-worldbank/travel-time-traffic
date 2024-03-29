@@ -12,8 +12,10 @@ df <- readRDS(file.path(analysis_data_dir, "google_typical_route_10m_wide.Rds"))
 
 # Correlation Dataframes -------------------------------------------------------
 cor_all_df <- df %>%
-  dplyr::select(c(gg_duration_in_traffic_s,
-                  gg_speed_in_traffic_kmh,
+  dplyr::select(c(#gg_duration_in_traffic_s,
+                  #gg_speed_in_traffic_kmh,
+                  gg_duration_pc_diff,
+                  gg_speed_pc_diff,
                   gg_tl_prop_234,
                   gg_tl_prop_34,
                   gg_tl_prop_4)) %>%
@@ -27,8 +29,10 @@ cor_all_df <- df %>%
 cor_over_time_pairs_df <- map_df(unique(df$uid), function(uid_i){
   
   cor_df <- df[df$uid %in% uid_i,] %>%
-    dplyr::select(c(gg_duration_in_traffic_s,
-                    gg_speed_in_traffic_kmh,
+    dplyr::select(c(#gg_duration_in_traffic_s,
+                    #gg_speed_in_traffic_kmh,
+                    gg_duration_pc_diff,
+                    gg_speed_pc_diff,
                     gg_tl_prop_234,
                     gg_tl_prop_34,
                     gg_tl_prop_4)) %>%
@@ -55,8 +59,10 @@ cor_over_unit_df <- df %>%
   dplyr::summarise_all(mean, na.rm = T) %>%
   ungroup() %>%
   
-  dplyr::select(c(gg_duration_in_traffic_s,
-                  gg_speed_in_traffic_kmh,
+  dplyr::select(c(#gg_duration_in_traffic_s,
+                  #gg_speed_in_traffic_kmh,
+                  gg_duration_pc_diff,
+                  gg_speed_pc_diff,
                   gg_tl_prop_234,
                   gg_tl_prop_34,
                   gg_tl_prop_4)) %>%

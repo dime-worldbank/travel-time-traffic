@@ -5,7 +5,13 @@ rename_var <- function(df, var){
   
   df <- df %>%
     dplyr::mutate(tmp_var = case_when(
-      tmp_var == "gg_speed_in_traffic_kmh"  ~ "Average Speed",
+      tmp_var == "gg_duration_diff" ~ "Duration, Diff. than Typical",
+      tmp_var == "gg_speed_diff" ~ "Speed, Diff. than Typical",
+      
+      tmp_var == "gg_duration_pc_diff" ~ "Duration, Diff. than Typical",
+      tmp_var == "gg_speed_pc_diff" ~ "Speed, Diff. than Typical",
+      
+      tmp_var == "gg_speed_in_traffic_kmh"  ~ "Average Speed (km/h)",
       tmp_var == "gg_speed_in_traffic_kmh_mean"  ~ "Average Speed",
       tmp_var == "gg_speed_in_traffic_kmh_wmean"  ~ "Average Speed",
       
@@ -13,7 +19,7 @@ rename_var <- function(df, var){
       tmp_var == "gg_duration_in_traffic_s_mean" ~ "Duration, Avg",
       tmp_var == "gg_duration_in_traffic_s_wmean" ~ "Duration, W Avg",
       
-      tmp_var == "gg_duration_in_traffic_min" ~ "Duration",
+      tmp_var == "gg_duration_in_traffic_min" ~ "Duration (mins)",
       tmp_var == "gg_duration_in_traffic_min_mean" ~ "Duration",
       tmp_var == "gg_duration_in_traffic_min_wmean" ~ "Duration",
       

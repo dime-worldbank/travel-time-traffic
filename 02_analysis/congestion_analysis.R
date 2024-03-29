@@ -1,8 +1,6 @@
 # Congestion in Nairobi 
 
-# TODO:
-# 1. Congestion roads vs congestion whole city (do roads capture city level patterns?)
-# 2. Speed dist -> modal route
+hvline_color <- "black"
 
 # Load data --------------------------------------------------------------------
 route_df <- readRDS(file.path(analysis_data_dir, "google_typical_route_10m_wide.Rds"))
@@ -26,61 +24,103 @@ gadm1_df <- gadm1_df %>%
                            "Weekend",
                            "Weekday"))
 
-gadm2_df <- gadm2_df %>%
-  mutate(dow = datetime %>% lubridate::wday(label = T),
-         hour = datetime %>% hour(),
-         day_type = ifelse(dow %in% c("Sat", "Sun"),
-                           "Weekend",
-                           "Weekday"))
-
-# nbo_df <- gadm_df %>%
-#   group_by(datetime) %>%
-#   dplyr::summarise(count_all_max = sum(gg_tl_count_all_max),
-#                    count_1 = sum(count_1),
-#                    count_2 = sum(count_2),
-#                    count_3 = sum(count_3),
-#                    count_4 = sum(count_4)) %>%
-#   ungroup() %>%
-#   dplyr::mutate(gg_tl_prop_234 = (count_2 + count_3 + count_4) / count_all_max,
-#                 gg_tl_prop_34  = (          count_3 + count_4) / count_all_max,
-#                 gg_tl_prop_4   = (                    count_4) / count_all_max)
-# 
-# nbo_df %>%
-#   ggplot() +
-#   geom_col(aes(x = datetime,
-#                y = gg_tl_prop_234))
-
 # Time of Day ------------------------------------------------------------------
-route_df %>%
+#### Prep data
+route_long_df <- route_df %>%
+  filter(uid %in% c(1,2,5:13)) %>% # Constant sample
+  
   group_by(hour, day_type) %>%
   dplyr::summarise_if(is.numeric, mean, na.rm = T) %>%
   ungroup() %>%
   
   pivot_longer(cols = -c(hour, day_type, uid)) %>%
-  filter(name %in% c("gg_duration_in_traffic_min",
+  filter(name %in% c("gg_distance_km",
+                     "gg_duration_in_traffic_min",
                      "gg_speed_in_traffic_kmh",
-                     "gg_tl_prop_234")) %>%
-  mutate(name_clean = case_when(
-    name == "gg_speed_in_traffic_kmh" ~ "Average Speed (km/h)",
-    name == "gg_duration_in_traffic_min" ~ "Average Duration (Mins)",
-    name == "gg_tl_prop_234" ~ "Proportion 2 - 4 Traffic"
-  )) %>%
+                     "gg_tl_prop_234",
+                     "gg_tl_prop_34",
+                     "gg_tl_prop_4")) %>%
+  rename_var("name") %>%
+  mutate(name = paste0(name, "\n[11 Routes]"))
+
+gadm1_long_df <- gadm1_df %>%
+  
+  group_by(hour, day_type) %>%
+  dplyr::summarise_if(is.numeric, mean, na.rm = T) %>%
+  ungroup() %>%
+  
+  pivot_longer(cols = -c(hour, day_type)) %>%
+  filter(name %in% c("gg_tl_prop_234",
+                     "gg_tl_prop_34",
+                     "gg_tl_prop_4")) %>%
+  rename_var("name") %>%
+  mutate(name = paste0(name, "\n[City Level]"))
+
+hour_long_df <- bind_rows(
+  route_long_df,
+  gadm1_long_df
+) %>%
+  mutate(name = name %>%
+           factor(levels = c("Distance (km)\n[11 Routes]",
+                             "Average Speed (km/h)\n[11 Routes]",
+                             "Duration (mins)\n[11 Routes]",
+                             "Traffic, Prop 2,3,4\n[11 Routes]",
+                             "Traffic, Prop 3,4\n[11 Routes]",
+                             "Traffic, Prop 4\n[11 Routes]",
+                             "Traffic, Prop 2,3,4\n[City Level]",
+                             "Traffic, Prop 3,4\n[City Level]",
+                             "Traffic, Prop 4\n[City Level]")))
+
+#### Correlation figure
+hour_cor_df <- hour_long_df %>%
+  pivot_wider(names_from = name,
+              values_from = value) %>%
+  dplyr::select(-c(hour, day_type, uid)) %>%
+  cor(use = "pairwise.complete.obs") %>%
+  as.data.frame() %>%
+  rownames_to_column(var = "variable") %>%
+  pivot_longer(cols = -variable) %>%
+  mutate(name = name %>%
+           factor(levels = c("Distance (km)\n[11 Routes]",
+                             "Average Speed (km/h)\n[11 Routes]",
+                             "Duration (mins)\n[11 Routes]",
+                             "Traffic, Prop 2,3,4\n[11 Routes]",
+                             "Traffic, Prop 3,4\n[11 Routes]",
+                             "Traffic, Prop 4\n[11 Routes]",
+                             "Traffic, Prop 2,3,4\n[City Level]",
+                             "Traffic, Prop 3,4\n[City Level]",
+                             "Traffic, Prop 4\n[City Level]"))) %>%
+  mutate(variable = variable %>%
+           factor(levels = c("Distance (km)\n[11 Routes]",
+                             "Average Speed (km/h)\n[11 Routes]",
+                             "Duration (mins)\n[11 Routes]",
+                             "Traffic, Prop 2,3,4\n[11 Routes]",
+                             "Traffic, Prop 3,4\n[11 Routes]",
+                             "Traffic, Prop 4\n[11 Routes]",
+                             "Traffic, Prop 2,3,4\n[City Level]",
+                             "Traffic, Prop 3,4\n[City Level]",
+                             "Traffic, Prop 4\n[City Level]")))
+
+#### Figure
+LW = 3.1
+
+p_trends <- hour_long_df %>%
   
   ggplot() +
-  geom_vline(aes(xintercept = 6), color = "gray90", linewidth = 3) +
-  geom_vline(aes(xintercept = 7), color = "gray90", linewidth = 3) +
-  geom_vline(aes(xintercept = 8), color = "gray90", linewidth = 3) +
-  geom_vline(aes(xintercept = 9), color = "gray90", linewidth = 3) +
+  geom_vline(aes(xintercept = 6), color = "gray90", linewidth = LW) +
+  geom_vline(aes(xintercept = 7), color = "gray90", linewidth = LW) +
+  geom_vline(aes(xintercept = 8), color = "gray90", linewidth = LW) +
+  geom_vline(aes(xintercept = 9), color = "gray90", linewidth = LW) +
   
-  geom_vline(aes(xintercept = 4 + 12), color = "gray90", linewidth = 3) +
-  geom_vline(aes(xintercept = 5 + 12), color = "gray90", linewidth = 3) +
-  geom_vline(aes(xintercept = 6 + 12), color = "gray90", linewidth = 3) +
-  geom_vline(aes(xintercept = 7 + 12), color = "gray90", linewidth = 3) +
-  geom_vline(aes(xintercept = 8 + 12), color = "gray90", linewidth = 3) +
+  geom_vline(aes(xintercept = 4 + 12), color = "gray90", linewidth = LW) +
+  geom_vline(aes(xintercept = 5 + 12), color = "gray90", linewidth = LW) +
+  geom_vline(aes(xintercept = 6 + 12), color = "gray90", linewidth = LW) +
+  geom_vline(aes(xintercept = 7 + 12), color = "gray90", linewidth = LW) +
+  geom_vline(aes(xintercept = 8 + 12), color = "gray90", linewidth = LW) +
   geom_line(aes(x = hour,
                 y = value,
                 color = day_type)) +
-  facet_wrap(~name_clean,
+  facet_wrap(~name,
              scales = "free_y") +
   labs(x = "Hour of Day",
        y = NULL,
@@ -89,23 +129,39 @@ route_df %>%
                                 "dodgerblue1")) +
   theme_classic2() +
   theme(strip.background = element_blank(),
-        strip.text = element_text(face = "bold")) 
+        strip.text = element_text(face = "bold"),
+        axis.text = element_text(size = 7, color = "black"),
+        plot.title = element_text(face = "bold"),
+        legend.position = "right") 
 
 ggsave(filename = file.path(figures_dir, "cong_timeofday.png"),
-       height = 2.5, width = 8)
+       height = 4.5, width = 9.5)
 
-# Over time: all routes --------------------------------------------------------------------
-route_df %>% 
+# Trends over time -------------------------------------------------------------
+#### Prep data
+route_df <- route_df %>%
+  filter(uid %in% c(1,2,5:13)) %>% # Constant sample
+  mutate(uid = uid %>% as.character())
+
+cong_df <- bind_rows(
+  gadm1_df %>% mutate(data_type = "[City Level]"),
+  route_df %>% mutate(data_type = "[11 Routes]")
+)
+
+trends_df <- cong_df %>%
   filter(!is.na(gg_tl_prop_234),
-         !is.na(gg_speed_in_traffic_kmh),
-         gg_tl_prop_234 > 0) %>%
-  filter(uid %in% 1:13) %>% # constant sample
+         #!is.na(gg_speed_in_traffic_kmh),
+         count_1 > 0,
+         datetime >= ymd("2022-09-01", tz = "Africa/Nairobi")) %>%
   mutate(week = datetime %>% floor_date(unit = "week")) %>%
   
-  group_by(week, day_type) %>%
+  #mutate(day_type = "all") %>%
+  
+  group_by(week, day_type, data_type) %>%
   dplyr::summarise_if(is.numeric, mean, na.rm = T) %>%
   ungroup() %>%
-  pivot_longer(cols = -c(week, day_type, uid)) %>%
+  
+  pivot_longer(cols = -c(week, day_type, data_type)) %>%
   filter(name %in% c("gg_tl_prop_234",
                      "gg_tl_prop_34",
                      "gg_tl_prop_4",
@@ -113,70 +169,167 @@ route_df %>%
                      "gg_duration_in_traffic_min",
                      "gg_distance_km")) %>%
   
-  # group_by(name, day_type) %>%
-  # dplyr::mutate(value = zoo::rollmean(value, k = 4, fill = NA, na.rm=T)) %>%
-  # ungroup() %>%
+  #group_by(name, day_type, data_type) %>%
+  #dplyr::mutate(value = zoo::rollmean(value, k = 4, fill = NA, na.rm=T)) %>%
+  #ungroup() %>%
   
-  #rename_var("name") %>%
-  dplyr::mutate(name = case_when(
-    name == "gg_tl_prop_234" ~ "Traffic, Prop. 2-4",
-    name == "gg_tl_prop_34" ~ "Traffic, Prop. 3-4",
-    name == "gg_tl_prop_4" ~ "Traffic, Prop. 4",
-    name == "gg_speed_in_traffic_kmh" ~ "Average Speed (km/)",
-    name == "gg_duration_in_traffic_min" ~ "Average Duartion (mins)",
-    name == "gg_distance_km" ~ "Average Distance (km)"
-  )) %>%
+  rename_var("name") %>%
+  mutate(name = paste0(name, "\n", data_type, "")) %>%
   
-  ggplot(aes(x = week,
-             y = value,
-             color = day_type)) +
-  geom_line() +
-  facet_wrap(~name,
-             scales = "free_y") +
-  labs(color = NULL,
-       x = NULL,
-       y = NULL) +
-  scale_color_manual(values = c("dodgerblue",
-                                "darkorange")) +
-  theme_classic2() +
-  theme(strip.background = element_blank(),
-        strip.text = element_text(face = "bold"),
-        axis.text = element_text(size = 7, color = "black")) 
-
-ggsave(filename = file.path(figures_dir, "indicators_over_time.png"),
-       height = 3.5, width = 9.5)
-
-# Over time: constant routes --------------------------------------------------------------------
-route_df %>% 
-  filter(!is.na(gg_tl_prop_234),
-         !is.na(gg_speed_in_traffic_kmh)) %>%
-  filter(uid %in% c(1,2,5:13)) %>% # constant sample
-  mutate(week = datetime %>% floor_date(unit = "week")) %>%
+  mutate(name = name %>%
+           factor(levels = c("Distance (km)\n[11 Routes]",
+                             "Average Speed (km/h)\n[11 Routes]",
+                             "Duration (mins)\n[11 Routes]",
+                             "Traffic, Prop 2,3,4\n[11 Routes]",
+                             "Traffic, Prop 3,4\n[11 Routes]",
+                             "Traffic, Prop 4\n[11 Routes]",
+                             "Traffic, Prop 2,3,4\n[City Level]",
+                             "Traffic, Prop 3,4\n[City Level]",
+                             "Traffic, Prop 4\n[City Level]"))) %>%
   
-  group_by(week, day_type) %>%
-  dplyr::summarise_if(is.numeric, mean, na.rm = T) %>%
-  ungroup() %>%
-  pivot_longer(cols = -c(week, day_type, uid)) %>%
-  filter(name %in% c("gg_tl_prop_234",
-                     "gg_tl_prop_34",
-                     "gg_tl_prop_4",
-                     "gg_speed_in_traffic_kmh",
-                     "gg_duration_in_traffic_min",
-                     "gg_distance_km")) %>%
+  ## Percent change from initial value (baseline)
+  filter(!is.na(value)) %>%
+  arrange(week) %>%
   
   group_by(name, day_type) %>%
-  dplyr::mutate(value = zoo::rollmean(value, k = 4, fill = NA, na.rm=T)) %>%
+  mutate(value_base = value[1]) %>%
   ungroup() %>%
   
-  #rename_var("name") %>%
-  dplyr::mutate(name = case_when(
-    name == "gg_tl_prop_234" ~ "Traffic, Prop. 2-4",
-    name == "gg_tl_prop_34" ~ "Traffic, Prop. 3-4",
-    name == "gg_tl_prop_4" ~ "Traffic, Prop. 4",
-    name == "gg_speed_in_traffic_kmh" ~ "Average Speed (km/)",
-    name == "gg_duration_in_traffic_min" ~ "Average Duartion (mins)",
-    name == "gg_distance_km" ~ "Average Distance (km)"
-  )) %>%
+  mutate(value_pc = (value - value_base) / value_base * 100) 
+
+#### Correlation figure
+cor_weekday_df <- trends_df %>%
+  dplyr::filter(day_type == "Weekday") %>%
+  pivot_wider(id_cols = week,
+              names_from = name,
+              values_from = value) %>%
+  dplyr::select(-week) %>%
+  
+  cor(use = "pairwise.complete.obs") %>%
+  as.data.frame() %>%
+  rownames_to_column(var = "variable") %>%
+  pivot_longer(cols = -variable) %>%
+  
+  mutate(name = name %>%
+           factor(levels = c("Distance (km)\n[11 Routes]",
+                             "Average Speed (km/h)\n[11 Routes]",
+                             "Duration (mins)\n[11 Routes]",
+                             "Traffic, Prop 2,3,4\n[11 Routes]",
+                             "Traffic, Prop 3,4\n[11 Routes]",
+                             "Traffic, Prop 4\n[11 Routes]",
+                             "Traffic, Prop 2,3,4\n[City Level]",
+                             "Traffic, Prop 3,4\n[City Level]",
+                             "Traffic, Prop 4\n[City Level]"))) %>%
+  mutate(variable = variable %>%
+           factor(levels = c("Distance (km)\n[11 Routes]",
+                             "Average Speed (km/h)\n[11 Routes]",
+                             "Duration (mins)\n[11 Routes]",
+                             "Traffic, Prop 2,3,4\n[11 Routes]",
+                             "Traffic, Prop 3,4\n[11 Routes]",
+                             "Traffic, Prop 4\n[11 Routes]",
+                             "Traffic, Prop 2,3,4\n[City Level]",
+                             "Traffic, Prop 3,4\n[City Level]",
+                             "Traffic, Prop 4\n[City Level]")))
+
+cor_weekend_df <- trends_df %>%
+  dplyr::filter(day_type == "Weekend") %>%
+  pivot_wider(id_cols = week,
+              names_from = name,
+              values_from = value) %>%
+  dplyr::select(-week) %>%
+  
+  cor(use = "pairwise.complete.obs") %>%
+  as.data.frame() %>%
+  rownames_to_column(var = "variable") %>%
+  pivot_longer(cols = -variable) %>%
+  
+  mutate(name = name %>%
+           factor(levels = c("Distance (km)\n[11 Routes]",
+                             "Average Speed (km/h)\n[11 Routes]",
+                             "Duration (mins)\n[11 Routes]",
+                             "Traffic, Prop 2,3,4\n[11 Routes]",
+                             "Traffic, Prop 3,4\n[11 Routes]",
+                             "Traffic, Prop 4\n[11 Routes]",
+                             "Traffic, Prop 2,3,4\n[City Level]",
+                             "Traffic, Prop 3,4\n[City Level]",
+                             "Traffic, Prop 4\n[City Level]"))) %>%
+  mutate(variable = variable %>%
+           factor(levels = c("Distance (km)\n[11 Routes]",
+                             "Average Speed (km/h)\n[11 Routes]",
+                             "Duration (mins)\n[11 Routes]",
+                             "Traffic, Prop 2,3,4\n[11 Routes]",
+                             "Traffic, Prop 3,4\n[11 Routes]",
+                             "Traffic, Prop 4\n[11 Routes]",
+                             "Traffic, Prop 2,3,4\n[City Level]",
+                             "Traffic, Prop 3,4\n[City Level]",
+                             "Traffic, Prop 4\n[City Level]")))
+
+
+p_cor_weekday <- cor_weekday_df %>%
+  ggplot(aes(x = variable,
+             y = name,
+             fill = value,
+             label = round(value, 2))) +
+  geom_tile(color = "white") +
+  geom_text(color = "black",
+            size = 3) +
+  
+  geom_hline(yintercept = 3.5, color = hvline_color) +
+  geom_vline(xintercept = 3.5, color = hvline_color) +
+  
+  geom_hline(yintercept = 6.5, color = hvline_color) +
+  geom_vline(xintercept = 6.5, color = hvline_color) +
+  
+  scale_fill_distiller(palette = "RdBu",
+                       na.value = "white",
+                       direction = 0,
+                       limits = c(-1, 1)) +
+  labs(y = NULL,
+       x = NULL,
+       fill = "Correlation",
+       title = "B. Correlation in indicators, weekday") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.2, color = "black"),
+        axis.text.y = element_text(color = "black"),
+        plot.title = element_text(face = "bold"),
+        legend.position = "right")
+
+p_cor_weekend <- cor_weekend_df %>%
+  ggplot(aes(x = variable,
+             y = name,
+             fill = value,
+             label = round(value, 2))) +
+  geom_tile(color = "white") +
+  geom_text(color = "black",
+            size = 3) +
+  
+  geom_hline(yintercept = 3.5, color = hvline_color) +
+  geom_vline(xintercept = 3.5, color = hvline_color) +
+  
+  geom_hline(yintercept = 6.5, color = hvline_color) +
+  geom_vline(xintercept = 6.5, color = hvline_color) +
+  
+  scale_fill_distiller(palette = "RdBu",
+                       na.value = "white",
+                       direction = 0,
+                       limits = c(-1, 1)) +
+  labs(y = NULL,
+       x = NULL,
+       fill = "Correlation",
+       title = "C. Correlation in indicators, weekend") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.2, color = "black"),
+        axis.text.y = element_text(color = "black"),
+        plot.title = element_text(face = "bold"),
+        legend.position = "right")
+
+p_cor <- ggarrange(p_cor_weekday,
+                   p_cor_weekend,
+                   common.legend = T,
+                   legend = "right")
+
+#### Trends figure
+p_trends <- trends_df %>%
   
   ggplot(aes(x = week,
              y = value,
@@ -186,78 +339,20 @@ route_df %>%
              scales = "free_y") +
   labs(color = NULL,
        x = NULL,
-       y = NULL) +
+       y = NULL,
+       title = "A. Trends in indicators") +
   scale_color_manual(values = c("dodgerblue",
                                 "darkorange")) +
   theme_classic2() +
   theme(strip.background = element_blank(),
         strip.text = element_text(face = "bold"),
+        plot.title = element_text(face = "bold"),
         axis.text = element_text(size = 7, color = "black")) 
 
-# ggsave(filename = file.path(figures_dir, "indicators_over_time.png"),
-#        height = 3.5, width = 9.5)
 
-# Map --------------------------------------------------------------------------
-# TODO: Do hexagon instead?
-gadm_wide_df <- gadm_df %>%
-  group_by(NAME_2, day_type) %>%
-  dplyr::summarise(gg_tl_prop_234 = mean(gg_tl_prop_234, na.rm = T),
-                   gg_tl_prop_34  = mean(gg_tl_prop_34, na.rm = T),
-                   gg_tl_prop_4   = mean(gg_tl_prop_4, na.rm = T)) 
+p <- ggarrange(p_trends, p_cor, ncol = 1)
 
-gadm_all_sf <- gadm_sf %>%
-  left_join(gadm_wide_df, by = "NAME_2") 
-
-ggplot() +
-  geom_sf(data = gadm_all_sf,
-          aes(fill = gg_tl_prop_234)) +
-  scale_fill_distiller(palette = "Spectral") +
-  facet_wrap(~day_type) + 
-  labs(fill = "% of roads with\ntraffic levels 2-4") +
-  theme_void() + 
-  theme(strip.text = element_text(face = "bold"))
-
-ggsave(filename = file.path(figures_dir, "congestion_map.png"),
-       height = 2, width = 8)
-
-# Roads: speed and congestion --------------------------------------------------
-p1 <- route_df %>%
-  filter(!is.na(gg_speed_in_traffic_kmh),
-         gg_diff_mode %in% F) %>%
-  
-  ggplot() +
-  geom_boxplot(aes(x = gg_speed_in_traffic_kmh,
-                   y = reorder(road_name,
-                               gg_speed_in_traffic_kmh)),
-               fill = "gray90") +
-  labs(x = "Speed (km/h)",
-       y = NULL,
-       title = "A. Distribution of speeds across roads",
-       subtitle = "Only considering speeds on modal route") +
-  theme_classic2() +
-  theme(axis.text = element_text(color = "black"),
-        plot.title = element_text(face = "bold", size = 12)) 
-
-p2 <- route_df %>%
-  filter(!is.na(gg_tl_prop_234),
-         gg_diff_mode %in% F) %>%
-  
-  ggplot() +
-  geom_boxplot(aes(x = gg_tl_prop_234,
-                   y = reorder(road_name,
-                               -gg_tl_prop_234)),
-               fill = "gray90") +
-  labs(x = NULL,
-       y = NULL,
-       title = "B. Percent of road congested",
-       subtitle = "Congestion refers to traffic level 2-4") +
-  scale_x_continuous(labels = scales::percent) +
-  theme_classic2() +
-  theme(axis.text = element_text(color = "black"),
-        plot.title = element_text(face = "bold", size = 12)) 
-
-p <- ggarrange(p1, p2)
-
-ggsave(p, filename = file.path(figures_dir, "dist_across_roads.png"),
-       height = 4, width = 10)
+ggsave(p, 
+       filename = file.path(figures_dir, "indicators_over_time_constant.png"),
+       height = 9, width = 10.5)
 

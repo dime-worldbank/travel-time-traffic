@@ -23,6 +23,7 @@ mode_df <- tt_df %>%
   ungroup()
 
 mode_sf <- tt_sf[tt_sf$uid %in% mode_df$uid,]
+mode_sf <- mode_sf[mode_sf$segment_id %in% 1:13,]
 
 # Export -----------------------------------------------------------------------
 saveRDS(mode_sf, file.path(tt_dir, "google_typical_route.Rds"))

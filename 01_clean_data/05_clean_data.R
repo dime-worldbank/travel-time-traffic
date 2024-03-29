@@ -49,7 +49,13 @@ for(polygon_i in POLYGONS_ALL){
     dplyr::select(-c(count_0, count_all)) %>%
     
     # No google traffic data beyond this date; all zeros
-    dplyr::filter(datetime < ymd("2023-08-17"))
+    dplyr::filter(datetime < ymd("2023-08-17")) 
+  
+  
+  if(polygon_i == "google_typical_route_10m"){
+    google_tl_df <- google_tl_df %>%
+      dplyr::filter(uid %in% 1:13)
+  }
   
   # Add in Travel Time ---------------------------------------------------------
   if(str_detect(polygon_i, "typical_route")){
@@ -199,30 +205,75 @@ for(polygon_i in POLYGONS_ALL){
     dplyr::filter(datetime_min %in% 0) %>%
     dplyr::select(-datetime_min)
   
-  ## Constant timeframe
+  # Version that uses full time period available for both datasets
+  google_tl_all_df <- google_tl_df
+  
+  google_tl_all_df$constant_sample <- ((google_tl_df$datetime >= start_datetime) & 
+                                         (google_tl_df$datetime <= end_datetime))
+  
+  ## Constant timeframe, when have data for both data types
   google_tl_df <- google_tl_df[(google_tl_df$datetime >= start_datetime) & 
                                  (google_tl_df$datetime <= end_datetime),]
   
   # Add modal route variable ---------------------------------------------------
   if(polygon_i == "google_typical_route_10m"){
     
+    #### Constant time sample
     google_tl_df <- google_tl_df %>%
       dplyr::filter(!is.na(gg_distance_m)) %>%
       group_by(uid) %>%
       mutate(gg_distance_m_mode = Mode(gg_distance_m)) %>%
       ungroup() %>%
-      mutate(gg_diff_mode = abs(gg_distance_m - gg_distance_m_mode) > 100)
+      mutate(gg_diff_mode = abs(gg_distance_m - gg_distance_m_mode) > 100,
+             gg_speed_in_traffic_kmh_modal = ifelse(
+               gg_diff_mode %in% T,
+               NA,
+               gg_speed_in_traffic_kmh
+             )) 
     
-    google_tl_df$gg_speed_in_traffic_kmh_mean_modal <- 
-      google_tl_df$gg_speed_in_traffic_kmh_mean
+    #### Free flow indicators
+    google_tl_df <- google_tl_df %>%
+      dplyr::mutate(gg_speed_diff = gg_speed_in_traffic_kmh - gg_speed_kmh,
+                    gg_duration_diff = gg_duration_in_traffic_min - gg_duration_min,
+                    
+                    gg_speed_pc_diff = (gg_speed_in_traffic_kmh - gg_speed_kmh) / gg_speed_kmh,
+                    gg_duration_pc_diff = (gg_duration_in_traffic_min - gg_duration_min) / gg_duration_min )
     
-    google_tl_df$gg_speed_in_traffic_kmh_mean_modal[google_tl_df$gg_diff_mode %in% T] <- NA
+    #google_tl_df$gg_speed_in_traffic_kmh_mean_modal[google_tl_df$gg_diff_mode %in% T] <- NA
+    
+    #### Full time sample
+    google_tl_all_df <- google_tl_all_df %>%
+      dplyr::filter(!is.na(gg_distance_m)) %>%
+      group_by(uid) %>%
+      mutate(gg_distance_m_mode = Mode(gg_distance_m)) %>%
+      ungroup() %>%
+      mutate(gg_diff_mode = abs(gg_distance_m - gg_distance_m_mode) > 100,
+             gg_speed_in_traffic_kmh_modal = ifelse(
+               gg_diff_mode %in% T,
+               NA,
+               gg_speed_in_traffic_kmh
+             )) 
+    
+    # google_tl_all_df <- google_tl_all_df %>%
+    #   dplyr::filter(!is.na(gg_distance_m)) %>%
+    #   group_by(uid) %>%
+    #   mutate(gg_distance_m_mode = Mode(gg_distance_m)) %>%
+    #   ungroup() %>%
+    #   mutate(gg_diff_mode = abs(gg_distance_m - gg_distance_m_mode) > 100)
+    # 
+    # google_tl_df$gg_speed_in_traffic_kmh_mean_modal <- 
+    #   google_tl_df$gg_speed_in_traffic_kmh_mean
+    # 
+    # google_tl_df$gg_speed_in_traffic_kmh_mean_modal[google_tl_df$gg_diff_mode %in% T] <- NA
     
   }
   
   # Export ---------------------------------------------------------------------
   saveRDS(google_tl_df, file.path(analysis_data_dir, 
                                   paste0(polygon_i, "_wide.Rds")))
+  
+  saveRDS(google_tl_all_df, file.path(analysis_data_dir, 
+                                      paste0(polygon_i, "_wide_fulldata.Rds")))
   
   rm(google_tl_df)
   gc()

@@ -8,7 +8,9 @@ POLYGONS_ALL <- c("google_typical_route_10m",
                   "ntsa_crashes_50m",
                   "ntsa_crashes_100m")
 
-POLYGONS_ALL <- "gadm1"
+#POLYGONS_ALL <- "gadm1"
+
+DELETE_OUTPUT <- T
 
 # Filepaths --------------------------------------------------------------------
 #### Root
@@ -38,6 +40,15 @@ tomtom_raw_dir <- file.path(sm_db_dir, "Data", "TomTom", "RawData")
 
 git_clean_dir <- file.path(git_dir, "01_clean_data")
 git_analysis_dir <- file.path(git_dir, "02_analysis")
+
+# Remove tables/figures --------------------------------------------------------
+if(DELETE_OUTPUT){
+  out_files <- c(list.files(tables_dir, full.names = T, pattern = ".tex"),
+                 list.files(figures_dir, full.names = T, pattern = ".png"))
+  
+  for(file_i in out_files) file.remove(file_i)
+}
+
 
 # API Keys ---------------------------------------------------------------------
 if(Sys.info()[["user"]] == "robmarty"){
@@ -119,8 +130,8 @@ if(F){
   
   source(file.path(git_clean_dir, "04_extract_points_to_routes.R"))
   source(file.path(git_clean_dir, "04_extract_google_traffic.R"))
-  source(file.path(git_clean_dir, "04_extract_mapbox_traffic.R"))
-  source(file.path(git_clean_dir, "04_extract_tomtom.R"))
+  #source(file.path(git_clean_dir, "04_extract_mapbox_traffic.R"))
+  #source(file.path(git_clean_dir, "04_extract_tomtom.R"))
   source(file.path(git_clean_dir, "04_extract_waze.R"))
   
   source(file.path(git_clean_dir, "05_clean_data.R"))
@@ -131,11 +142,14 @@ if(F){
   source(file.path(git_analysis_dir, "congestion_analysis.R"))
   source(file.path(git_analysis_dir, "correlation_between_vars.R"))
   source(file.path(git_analysis_dir, "crash_analysis.R"))
-  source(file.path(git_analysis_dir, "deviation_example.png"))
-  source(file.path(git_analysis_dir, "maps_levels_and_speed.R"))
+  source(file.path(git_analysis_dir, "deviation_example.R"))
+  source(file.path(git_analysis_dir, "deviation_example_2.R"))
+  source(file.path(git_analysis_dir, "map_levels_and_speed.R"))
+  source(file.path(git_analysis_dir, "nbo_election.R"))
   source(file.path(git_analysis_dir, "percent_time_route_deviates.R"))
   source(file.path(git_analysis_dir, "reg_explain_diff_route.R"))
   source(file.path(git_analysis_dir, "reg_levels_explain_speed.R"))
+  
   
 }
 

@@ -8,6 +8,8 @@ gg_tt_df <- readRDS(file.path(tt_dir,
                               "google_daily_data_nairobi",
                               "google_tt_2023-09-19.Rds"))
 
+gg_tt_df <- gg_tt_df[gg_tt_df$locations_segment_id %in% 1:13,]
+
 gg_tt_df <- gg_tt_df %>%
   mutate(time = time %>% 
            as.character %>% 
