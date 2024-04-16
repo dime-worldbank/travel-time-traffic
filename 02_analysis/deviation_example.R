@@ -111,7 +111,7 @@ route_df <- bind_rows(
              duration_in_traffic_min = round(tt_modal_sf$duration_in_traffic_s / 60,1),
              speed_in_traffic_kmh    = round(tt_modal_sf$speed_in_traffic_kmh,1)),
   
-  data.frame(type = "Route",
+  data.frame(type = "Alternate Route",
              distance_km             = round(tt_ex_sf_i$distance_m / 1000,1),
              duration_in_traffic_min = round(tt_ex_sf_i$duration_in_traffic_s / 60,1),
              speed_in_traffic_kmh    = round(tt_ex_sf_i$speed_in_traffic_kmh,1))
@@ -121,6 +121,7 @@ p_table <- route_df %>%
   
   mutate(type = case_when(
     type == "Typical Route" ~ "Typical Route\n(Values from\nhour before\nroute change)",
+    type == "Alternate Route" ~ "Alternate\nRoute",
     TRUE ~ type)) %>%
   
   pivot_longer(cols = -type) %>%
@@ -141,7 +142,7 @@ p_table <- route_df %>%
                 fill="darkorange") %>%
   table_cell_bg(row = 2:4, column = 3, linewidth = 0, alpha = 0.3,
                 fill="dodgerblue") %>%
-  tab_add_title("B. Comparing modal and used route")
+  tab_add_title("B. Comparing typical and alternate route")
 
 p_map <- ggplot() +
   geom_sf(data = roads_1_sf,
@@ -154,12 +155,12 @@ p_map <- ggplot() +
           aes(color = "Typical Route"),
           linewidth = 1.3) +
   geom_sf(data = tt_ex_sf_i,
-          aes(color = "Route"),
+          aes(color = "Alternate Route"),
           linewidth = 0.7) +
   labs(color = NULL,
-       title = "A. Typical vs used route") +
-  scale_color_manual(values = c("darkorange",
-                                "dodgerblue")) +
+       title = "A. Typical vs alternate route") +
+  scale_color_manual(values = c("dodgerblue",
+                                "darkorange")) +
   theme_void() +
   theme(legend.position = c(0.2, 0.15))
 
@@ -169,7 +170,7 @@ p <- ggarrange(p_top, p_trends, ncol = 1, heights = c(0.5, 0.5))
 
 ggsave(p, 
        filename = file.path(figures_dir, "deviation_example.png"),
-       height = 4.5, width = 6)
+       height = 4.5, width = 6.4)
 
 
 

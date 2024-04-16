@@ -12,9 +12,7 @@ df <- readRDS(file.path(analysis_data_dir, "google_typical_route_10m_wide.Rds"))
 
 # Correlation Dataframes -------------------------------------------------------
 cor_all_df <- df %>%
-  dplyr::select(c(#gg_duration_in_traffic_s,
-                  #gg_speed_in_traffic_kmh,
-                  gg_duration_pc_diff,
+  dplyr::select(c(gg_duration_pc_diff,
                   gg_speed_pc_diff,
                   gg_tl_prop_234,
                   gg_tl_prop_34,
@@ -29,9 +27,7 @@ cor_all_df <- df %>%
 cor_over_time_pairs_df <- map_df(unique(df$uid), function(uid_i){
   
   cor_df <- df[df$uid %in% uid_i,] %>%
-    dplyr::select(c(#gg_duration_in_traffic_s,
-                    #gg_speed_in_traffic_kmh,
-                    gg_duration_pc_diff,
+    dplyr::select(c(gg_duration_pc_diff,
                     gg_speed_pc_diff,
                     gg_tl_prop_234,
                     gg_tl_prop_34,
@@ -59,9 +55,7 @@ cor_over_unit_df <- df %>%
   dplyr::summarise_all(mean, na.rm = T) %>%
   ungroup() %>%
   
-  dplyr::select(c(#gg_duration_in_traffic_s,
-                  #gg_speed_in_traffic_kmh,
-                  gg_duration_pc_diff,
+  dplyr::select(c(gg_duration_pc_diff,
                   gg_speed_pc_diff,
                   gg_tl_prop_234,
                   gg_tl_prop_34,
@@ -149,14 +143,6 @@ p3 <- cor_over_time_pairs_df %>%
         legend.position = "bottom")
 
 # Arrange/export ---------------------------------------------------------------
-
-# p12 <- ggarrange(p1, p2, nrow = 1, common.legend = T, legend = "bottom")
-# p <- ggarrange(p12, p3, nrow = 1, widths = c(0.65, 0.35))
-# 
-# ggsave(p, 
-#        filename = file.path(figures_dir, "cor_across_vars.png"),
-#        height = 4.5, width = 12)
-
 p12 <- ggarrange(p1, p2, nrow = 1, common.legend = T, legend = "right")
 
 ggsave(p12, 

@@ -10,7 +10,7 @@ POLYGONS_ALL <- c("google_typical_route_10m",
 
 #POLYGONS_ALL <- "gadm1"
 
-DELETE_OUTPUT <- T
+DELETE_OUTPUT <- F
 
 # Filepaths --------------------------------------------------------------------
 #### Root
