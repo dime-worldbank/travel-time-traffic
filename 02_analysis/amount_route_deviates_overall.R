@@ -10,7 +10,8 @@ df <- readRDS(file.path(analysis_data_dir, "google_typical_route_10m_wide.Rds"))
 
 # Prep data --------------------------------------------------------------------
 df <- df %>%
-  dplyr::filter(!is.na(gg_distance_m)) %>%
+  dplyr::filter(!is.na(gg_distance_m),
+                all_26_route %in% 1) %>%
   group_by(uid) %>%
   mutate(gg_distance_m_mode = Mode(gg_distance_m)) %>%
   ungroup() %>%

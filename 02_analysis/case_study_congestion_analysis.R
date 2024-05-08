@@ -24,6 +24,8 @@ gadm1_df <- gadm1_df %>%
                            "Weekend",
                            "Weekday"))
 
+# Period with 11 Routes --------------------------------------------------------
+
 # Time of Day ------------------------------------------------------------------
 #### Prep data
 route_long_df <- route_df %>%

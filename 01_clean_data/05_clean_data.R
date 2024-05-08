@@ -24,6 +24,28 @@ tt_datetime <- tt_df %>%
 start_datetime <- max(min(tl_datetime), min(tt_datetime))
 end_datetime   <- min(max(tl_datetime), max(tt_datetime))
 
+## Dates with all 26 routes
+tl_26_datetime <- tl_df %>%
+  group_by(datetime) %>%
+  dplyr::summarise(n = n()) %>%
+  ungroup() %>%
+  
+  mutate(all_routes = n == 26) %>%
+  filter(all_routes) %>%
+  pull(datetime)
+
+tt_26_datetime <- tt_df %>%
+  group_by(datetime) %>%
+  dplyr::summarise(n = n()) %>%
+  ungroup() %>%
+  
+  mutate(all_routes = n == 26) %>%
+  filter(all_routes) %>%
+  pull(datetime)
+
+start_26_datetime <- max(min(tl_26_datetime), min(tt_26_datetime))
+end_26_datetime   <- min(max(tl_26_datetime), max(tt_26_datetime))
+
 # Load data --------------------------------------------------------------------
 for(polygon_i in POLYGONS_ALL){
   
@@ -43,19 +65,33 @@ for(polygon_i in POLYGONS_ALL){
     dplyr::mutate(gg_tl_prop_234 = (count_2 + count_3 + count_4) / count_all_max,
                   gg_tl_prop_34  = (          count_3 + count_4) / count_all_max,
                   gg_tl_prop_4   = (                    count_4) / count_all_max) %>%
+    dplyr::mutate(gg_tl_mean = gg_tl_prop_234 * 2 + gg_tl_prop_34 * 3 + gg_tl_prop_4 * 4) %>%
+    dplyr::mutate(gg_tl_max = case_when(
+      count_4 > 0 ~ 4,
+      count_3 > 0 ~ 3,
+      count_2 > 0 ~ 2,
+      count_1 > 0 ~ 1
+    )) %>%
     
     dplyr::rename(gg_tl_count_all_max = count_all_max) %>%
     #dplyr::select(-c(count_0, count_1, count_2, count_3, count_4, count_all)) %>%
-    dplyr::select(-c(count_0, count_all)) %>%
+    dplyr::select(-c(count_0)) %>%
     
     # No google traffic data beyond this date; all zeros
     dplyr::filter(datetime < ymd("2023-08-17")) 
   
+  google_tl_df$gg_tl_max[google_tl_df$count_all == 0] <- NA
+  google_tl_df$gg_tl_mean[google_tl_df$count_all == 0] <- NA
+  google_tl_df$gg_tl_prop_234[google_tl_df$count_all == 0] <- NA
+  google_tl_df$gg_tl_prop_34[google_tl_df$count_all == 0] <- NA
+  google_tl_df$gg_tl_prop_4[google_tl_df$count_all == 0] <- NA
   
-  if(polygon_i == "google_typical_route_10m"){
-    google_tl_df <- google_tl_df %>%
-      dplyr::filter(uid %in% 1:13)
-  }
+  google_tl_df$count_all <- NULL
+  
+  #if(polygon_i == "google_typical_route_10m"){
+  #  google_tl_df <- google_tl_df %>%
+  #    dplyr::filter(uid %in% 1:13)
+  #}
   
   # Add in Travel Time ---------------------------------------------------------
   if(str_detect(polygon_i, "typical_route")){
@@ -215,6 +251,10 @@ for(polygon_i in POLYGONS_ALL){
   google_tl_df <- google_tl_df[(google_tl_df$datetime >= start_datetime) & 
                                  (google_tl_df$datetime <= end_datetime),]
   
+  google_tl_df$all_26_route <- 0
+  google_tl_df$all_26_route[(google_tl_df$datetime >= start_26_datetime) & 
+                              (google_tl_df$datetime <= end_26_datetime)] <- 1
+  
   # Add modal route variable ---------------------------------------------------
   if(polygon_i == "google_typical_route_10m"){
     
@@ -236,8 +276,8 @@ for(polygon_i in POLYGONS_ALL){
       dplyr::mutate(gg_speed_diff = gg_speed_in_traffic_kmh - gg_speed_kmh,
                     gg_duration_diff = gg_duration_in_traffic_min - gg_duration_min,
                     
-                    gg_speed_pc_diff = (gg_speed_in_traffic_kmh - gg_speed_kmh) / gg_speed_kmh,
-                    gg_duration_pc_diff = (gg_duration_in_traffic_min - gg_duration_min) / gg_duration_min )
+                    gg_speed_pc_diff = (gg_speed_in_traffic_kmh - gg_speed_kmh) / gg_speed_kmh * 100,
+                    gg_duration_pc_diff = (gg_duration_in_traffic_min - gg_duration_min) / gg_duration_min * 100 )
     
     #google_tl_df$gg_speed_in_traffic_kmh_mean_modal[google_tl_df$gg_diff_mode %in% T] <- NA
     

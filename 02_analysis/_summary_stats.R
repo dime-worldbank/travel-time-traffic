@@ -6,6 +6,12 @@ route_df <- readRDS(file.path(analysis_data_dir, "google_typical_route_10m_wide.
 route_df$datetime %>% min()
 route_df$datetime %>% max()
 
+route_26_df <- route_df %>%
+  dplyr::filter(all_26_route %in% 1)
+
+route_26_df$datetime %>% min()
+route_26_df$datetime %>% max()
+
 # Crashes ----------------------------------------------------------------------
 rtc_sf <- readRDS(file.path(data_dir, "Police Crashes", "RawData", "crashes_fatal_ntsa.Rds"))
 
@@ -19,6 +25,18 @@ rtc_sf <- rtc_sf[rtc_sf$datetime <= max_datetime,]
 min(rtc_sf$datetime)
 max(rtc_sf$datetime)
 
+# Route length -----------------------------------------------------------------
+mode_sf <- readRDS(file.path(tt_dir, "google_typical_route.Rds"))
 
+summary(mode_sf$distance_m/1000)
 
+# Pixel size -------------------------------------------------------------------
+r <- traffic_gg_raw_dir %>%
+  list.files(pattern = ".tif",
+             full.names = T) %>%
+  head(1) %>%
+  raster()
+res(r)[1] * 111.12 * 1000
 
+(14853/2.38)/1000
+(24700/2.38)/1000

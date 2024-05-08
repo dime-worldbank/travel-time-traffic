@@ -1,6 +1,6 @@
 # Deviation Example
 
-# 9, 2022-12-10
+# 9, 2023-05-27
 
 # TRENDS IN INDICATORS =========================================================
 route_df <- readRDS(file.path(analysis_data_dir, "google_typical_route_10m_wide.Rds"))
@@ -19,15 +19,16 @@ route_df <- readRDS(file.path(analysis_data_dir, "google_typical_route_10m_wide.
 
 route_df %>%
   mutate(date = datetime %>% date()) %>%
-  filter(date %in% ymd("2023-05-27"),
-         uid %in% 9)
+  filter(date %in% ymd("2023-07-16"),
+         uid %in% 25)
 
 p_trends <- route_df %>%
   dplyr::mutate(date = datetime %>% date()) %>%
-  dplyr::filter(date %in% ymd("2023-05-27")) %>%
-  dplyr::filter(uid %in% 9) %>%
+  dplyr::filter(date %in% ymd("2023-07-16")) %>%
+  dplyr::filter(uid %in% 25) %>%
   dplyr::select(datetime, gg_speed_in_traffic_kmh, gg_duration_in_traffic_min, gg_distance_km, 
-                gg_tl_prop_234, gg_tl_prop_34, gg_tl_prop_4) %>%
+                gg_tl_prop_234, gg_tl_prop_34, gg_tl_prop_4,
+                gg_tl_mean, gg_tl_max) %>%
   pivot_longer(cols = -c(datetime)) %>%
   rename_var("name") %>%
   dplyr::mutate(name = case_when(
@@ -35,23 +36,29 @@ p_trends <- route_df %>%
     name == "Duration" ~ "Duration (mins)",
     TRUE ~ name
   )) %>%
+  dplyr::mutate(name = name %>%
+                  factor(levels = c("Distance (km)",
+                                    "Average Speed (km/h)",
+                                    "Duration (mins)",
+                                    "Traffic, Prop 2,3,4",
+                                    "Traffic, Prop 3,4",
+                                    "Traffic, Prop 4",
+                                    "Traffic, Average",
+                                    "Traffic, Maximum"))) %>%
   mutate(hour = datetime %>% hour()) %>%
   ggplot() +
-  geom_vline(xintercept = 11, color = "red") +
+  geom_vline(xintercept = 17, color = "red") +
   geom_line(aes(x = hour,
                 y = value)) +
   facet_wrap(~name,
              scales = "free_y") +
   labs(x = "Hour",
        y = NULL,
-       title = "C. Trends in indicators") +
+       title = "C. Trends in select indicators") +
   theme_classic2() +
   theme(strip.text = element_text(face = "bold"),
         axis.text = element_text(size = 8),
         strip.background = element_blank()) 
-
-
-
 
 # MAP ==========================================================================
 
@@ -76,12 +83,12 @@ tt_sf <- tt_sf %>%
          speed_in_traffic_kmh_diff    = speed_in_traffic_kmh - speed_in_traffic_kmh_modal)
 
 tt_ex_sf_i <- tt_sf %>%
-  filter(segment_id %in% 9,
-         datetime %in% ymd_hms("2023-05-27 11:00:00", tz = "Africa/Nairobi"))
+  filter(segment_id %in% 25,
+         datetime %in% ymd_hms("2023-07-16 17:00:00", tz = "Africa/Nairobi"))
 
 tt_modal_sf <- tt_sf %>%
-  filter(segment_id %in% 9,
-         datetime %in% ymd_hms("2023-05-27 10:00:00", tz = "Africa/Nairobi"))
+  filter(segment_id %in% 25,
+         datetime %in% ymd_hms("2023-07-16 16:00:00", tz = "Africa/Nairobi"))
 
 #tt_modal_sf <- tt_sf[(tt_sf$segment_id %in% tt_ex_sf_i$segment_id) & (tt_sf$diff_mode %in% F),][1,]
 
@@ -162,7 +169,7 @@ p_map <- ggplot() +
   scale_color_manual(values = c("dodgerblue",
                                 "darkorange")) +
   theme_void() +
-  theme(legend.position = c(0.2, 0.15))
+  theme(legend.position = c(0.75, 0.15))
 
 # ARRANGE/EXPORT ===============================================================
 p_top <- ggarrange(p_map, p_table, nrow = 1)
@@ -170,7 +177,11 @@ p <- ggarrange(p_top, p_trends, ncol = 1, heights = c(0.5, 0.5))
 
 ggsave(p, 
        filename = file.path(figures_dir, "deviation_example.png"),
-       height = 4.5, width = 6.4)
+       height = 6, width = 6.4)
+
+
+
+
 
 
 

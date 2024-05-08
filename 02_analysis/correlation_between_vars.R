@@ -10,13 +10,18 @@ hvline_color <- "black"
 # Load data --------------------------------------------------------------------
 df <- readRDS(file.path(analysis_data_dir, "google_typical_route_10m_wide.Rds"))
 
+df <- df %>%
+  dplyr::filter(all_26_route %in% 1)
+
 # Correlation Dataframes -------------------------------------------------------
 cor_all_df <- df %>%
   dplyr::select(c(gg_duration_pc_diff,
                   gg_speed_pc_diff,
                   gg_tl_prop_234,
                   gg_tl_prop_34,
-                  gg_tl_prop_4)) %>%
+                  gg_tl_prop_4,
+                  gg_tl_max,
+                  gg_tl_mean)) %>%
   cor(use = "pairwise.complete.obs") %>%
   as.data.frame() %>%
   rownames_to_column(var = "variable") %>%
@@ -31,7 +36,9 @@ cor_over_time_pairs_df <- map_df(unique(df$uid), function(uid_i){
                     gg_speed_pc_diff,
                     gg_tl_prop_234,
                     gg_tl_prop_34,
-                    gg_tl_prop_4)) %>%
+                    gg_tl_prop_4,
+                    gg_tl_max,
+                    gg_tl_mean)) %>%
     cor(use = "pairwise.complete.obs") %>%
     as.data.frame() %>%
     rownames_to_column(var = "variable") %>%
@@ -59,7 +66,9 @@ cor_over_unit_df <- df %>%
                   gg_speed_pc_diff,
                   gg_tl_prop_234,
                   gg_tl_prop_34,
-                  gg_tl_prop_4)) %>%
+                  gg_tl_prop_4,
+                  gg_tl_max,
+                  gg_tl_mean)) %>%
   cor(use = "pairwise.complete.obs") %>%
   as.data.frame() %>%
   rownames_to_column(var = "variable") %>%
@@ -110,45 +119,101 @@ make_cor_fig <- function(cor_type, title){
   
 }
 
-p1 <- make_cor_fig("gg_route_cor_over_unit", "A. Correlation across average\nvalues within units")
-p2 <- make_cor_fig("gg_route_cor_over_time", "B. Average correlation\nover time")
+p_cor_unit <- make_cor_fig("gg_route_cor_over_unit", 
+                           "A. Correlation across average\nvalues within units")
 
-# Correlation distribution over time -------------------------------------------
-## All correlations either all negative or positve, so fine
-## to take absolute value
-p3 <- cor_over_time_pairs_df %>%
-  dplyr::filter(variable %in% c("Traffic, Prop 2,3,4",
-                                "Traffic, Prop 3,4",
-                                "Traffic, Prop 4"),
-                name %in% c("Duration",
-                            "Average Speed")) %>%
-  dplyr::mutate(name = case_when(
-    name == "Average Speed" ~ "Average\nSpeed",
-    TRUE ~ name
-  )) %>%
-  dplyr::mutate(value = abs(value)) %>%
-  ggplot() +
-  geom_boxplot(aes(x = value,
-                   y = variable,
-                   fill = name)) +
-  labs(x = "Correlation, absolute value",
+pad_text <- rep("\n ", 10) %>% paste(collapse = "")
+p_cor_time <- make_cor_fig("gg_route_cor_over_time", 
+                           paste0(pad_text, "A. Average correlation over time"))
+
+
+# Correlation examples: across units -------------------------------------------
+p_cor_unit_ex <- df %>%
+  
+  group_by(uid) %>%
+  dplyr::summarise_all(mean, na.rm = T) %>%
+  ungroup() %>%
+  
+  dplyr::select(c(gg_duration_pc_diff,
+                  gg_tl_prop_234,
+                  gg_tl_prop_34,
+                  gg_tl_prop_4,
+                  gg_tl_mean)) %>%
+  
+  pivot_longer(cols = -gg_duration_pc_diff) %>%
+  rename_var("name") %>%
+  
+  ggplot(aes(x = gg_duration_pc_diff,
+             y = value)) +
+  geom_smooth(method = "lm",
+              se = F,
+              color = "orange") +
+  geom_point() +
+  facet_wrap(~name,
+             scales = "free") +
+  labs(x = "Duration, % Different than Typical", ## % difference??
        y = NULL,
-       fill = "Google travel\ntime variable",
-       title = "C. Correlation over time,\ndistribution across units") +
-  scale_fill_manual(values = c("darkorange", "dodgerblue")) +
-  scale_x_continuous(limits = c(0,1)) +
+       title = "B. Correlation of select traffic level indicators with\nhow much duration differs from typical duration",
+       subtitle = "Each dot represents one O-D route") + 
   theme_classic2() +
-  theme(axis.text = element_text(color = "black"),
-        plot.title = element_text(face = "bold"),
-        legend.position = "bottom")
+  theme(strip.background = element_blank(),
+        strip.text = element_text(face = "bold"),
+        plot.title = element_text(face = "bold"))
+
+# Correlation examples: over time ----------------------------------------------
+p_cor_time_ex <- df %>%
+  dplyr::filter(!is.na(gg_duration_in_traffic_min),
+                !is.na(gg_tl_prop_234)) %>%
+  mutate(gg_duration_in_traffic_hr = gg_duration_in_traffic_min / 60) %>%
+  
+  group_by(uid) %>%
+  mutate(cor = cor(gg_tl_prop_234, gg_duration_in_traffic_hr)) %>%
+  ungroup() %>%
+  
+  mutate(title = paste0("Route ID: ", uid, "\nCor: ", round(cor, 2))) %>%
+  
+  ggplot(aes(x = gg_tl_prop_234,
+             y = gg_duration_in_traffic_hr)) +
+  geom_point(size = 0.5,
+             alpha = 0.5) +
+  geom_smooth(method = "lm",
+              se = F,
+              color = "orange") +
+  # stat_cor(aes(label = ..r.label..),
+  #          method = "pearson",
+  #          color = "red",
+  #          size = 3,
+  #          label.x = 0.3) +
+  labs(x = "Proportion traffic level 2-4",
+       y = "Travel\nduration\n(hour)",
+       title = "B. Travel duration vs traffic levels across routes",
+       subtitle = "Each dot represents one point in time") +
+  facet_wrap(~title, 
+             scales = "free_y",
+             ncol = 5) +
+  theme_classic2() +
+  theme(strip.background = element_blank(),
+        strip.text = element_text(face = "bold", size = 8),
+        axis.title.y = element_text(angle = 0, vjust = 0.5),
+        plot.title = element_text(face = "bold"))
 
 # Arrange/export ---------------------------------------------------------------
-p12 <- ggarrange(p1, p2, nrow = 1, common.legend = T, legend = "right")
+#### Correlation across units
+p_cor_unit_all <- ggarrange(p_cor_unit, p_cor_unit_ex, nrow = 1)
 
-ggsave(p12, 
-       filename = file.path(figures_dir, "cor_across_vars.png"),
-       height = 4.5, width = 10)
+ggsave(p_cor_unit_all, 
+       filename = file.path(figures_dir, "cor_across_vars_unit.png"),
+       height = 4.5, width = 11)
 
+
+
+#### Correlation over time
+p_cor_time_all <- ggarrange(p_cor_time, p_cor_time_ex, nrow = 1,
+                            heights = c(0.3, 1))
+
+ggsave(p_cor_time_all, 
+       filename = file.path(figures_dir, "cor_time.png"),
+       height = 7, width = 12)
 
 
 

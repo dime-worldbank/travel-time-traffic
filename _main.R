@@ -4,13 +4,14 @@ POLYGONS_ALL <- c("google_typical_route_10m",
                   #"mapbox_typical_route_10m",
                   "gadm1",
                   #"gadm2",
-                  #"gadm3",
+                  "gadm3",
                   "ntsa_crashes_50m",
                   "ntsa_crashes_100m")
 
 #POLYGONS_ALL <- "gadm1"
 
 DELETE_OUTPUT <- F
+RUN_CODE      <- F
 
 # Filepaths --------------------------------------------------------------------
 #### Root
@@ -87,6 +88,7 @@ library(DescTools)
 library(fixest)
 library(modelsummary)
 library(lubridate)
+library(tidyterra)
 
 # #devtools::install_github("MBalthasar/S5Processor")
 # library(S5Processor)
@@ -139,16 +141,19 @@ if(F){
   # Analysis -------------------------------------------------------------------
   source(file.path(git_analysis_dir, "amount_route_deviates_overall.R"))
   source(file.path(git_analysis_dir, "amount_route_deviates_veh_level.R"))
-  source(file.path(git_analysis_dir, "congestion_analysis.R"))
+  source(file.path(git_analysis_dir, "case_study_crash_analysis.R"))
+  source(file.path(git_analysis_dir, "case_study_nbo_election.R"))
+  source(file.path(git_analysis_dir, "case_study_congestion_analysis.R"))
   source(file.path(git_analysis_dir, "correlation_between_vars.R"))
-  source(file.path(git_analysis_dir, "crash_analysis.R"))
-  source(file.path(git_analysis_dir, "deviation_example.R"))
+  source(file.path(git_analysis_dir, "deviation_example_1.R"))
   source(file.path(git_analysis_dir, "deviation_example_2.R"))
+  source(file.path(git_analysis_dir, "extract_traffic_example.R"))
   source(file.path(git_analysis_dir, "map_levels_and_speed.R"))
-  source(file.path(git_analysis_dir, "nbo_election.R"))
   source(file.path(git_analysis_dir, "percent_time_route_deviates.R"))
   source(file.path(git_analysis_dir, "reg_explain_diff_route.R"))
   source(file.path(git_analysis_dir, "reg_levels_explain_speed.R"))
+  source(file.path(git_analysis_dir, "route_summary.R"))
+  source(file.path(git_analysis_dir, "scatterplots_od_levels.R"))
   
   
 }

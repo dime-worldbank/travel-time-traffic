@@ -42,8 +42,8 @@ tt_sf <- tt_sf %>%
   left_join(tt_od_df, by = "segment_id")
 
 ## Subset to constant sample
-tt_sf <- tt_sf %>%
-  dplyr::filter(segment_id %in% 1:13)
+#tt_sf <- tt_sf %>%
+#  dplyr::filter(segment_id %in% 1:13)
 
 # Export -----------------------------------------------------------------------
 

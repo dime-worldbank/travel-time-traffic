@@ -10,7 +10,7 @@ p_trends <- route_df %>%
   #dplyr::filter(date %in% ymd("2023-07-16")) %>%
   dplyr::filter(uid %in% 3) %>%
   dplyr::select(datetime, gg_speed_in_traffic_kmh, gg_duration_in_traffic_min, gg_distance_km, 
-                gg_tl_prop_234, gg_tl_prop_34, gg_tl_prop_4) %>%
+                gg_tl_prop_234, gg_tl_prop_34, gg_tl_prop_4, gg_tl_mean, gg_tl_max) %>%
   pivot_longer(cols = -c(datetime)) %>%
   
   mutate(datetime = floor_date(datetime, unit = "weeks")) %>%
@@ -24,6 +24,15 @@ p_trends <- route_df %>%
     name == "Duration" ~ "Duration (mins)",
     TRUE ~ name
   )) %>%
+  dplyr::mutate(name = name %>%
+                  factor(levels = c("Distance (km)",
+                                    "Average Speed (km/h)",
+                                    "Duration (mins)",
+                                    "Traffic, Prop 2,3,4",
+                                    "Traffic, Prop 3,4",
+                                    "Traffic, Prop 4",
+                                    "Traffic, Average",
+                                    "Traffic, Maximum"))) %>%
   ggplot() +
   geom_vline(xintercept = ymd("2023-02-01", tz = "Africa/Nairobi"), color = "red") +
   geom_line(aes(x = datetime,
@@ -32,7 +41,7 @@ p_trends <- route_df %>%
              scales = "free_y") +
   labs(x = NULL,
        y = NULL,
-       title = "C. Trends in indicators") +
+       title = "C. Trends in select indicators") +
   theme_classic2() +
   theme(strip.text = element_text(face = "bold"),
         strip.background = element_blank(),
@@ -149,6 +158,6 @@ p <- ggarrange(p_top, p_trends, ncol = 1, heights = c(0.5, 0.5))
 
 ggsave(p, 
        filename = file.path(figures_dir, "deviation_example_2.png"),
-       height = 4.5, width = 7)
+       height = 6, width = 7)
 
 

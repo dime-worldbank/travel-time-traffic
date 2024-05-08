@@ -3,6 +3,9 @@
 # Load data --------------------------------------------------------------------
 df <- readRDS(file.path(analysis_data_dir, "google_typical_route_10m_wide.Rds"))
 
+# df <- df %>%
+#   dplyr::filter(all_26_route %in% 1)
+
 # Prep data --------------------------------------------------------------------
 # df <- df %>%
 #   dplyr::filter(!is.na(gg_distance_m)) %>%
@@ -32,10 +35,10 @@ df_sum <- df %>%
     gg_diff_mode_per <= 20 ~ "10 - 20\\%",
     gg_diff_mode_per <= 30 ~ "20 - 30\\%",
     gg_diff_mode_per <= 40 ~ "30 - 40\\%",
-    gg_diff_mode_per <= 50 ~ "40 - 50\\%"#,
-    # gg_diff_mode_per <= 60 ~ "50 - 60\\%",
-    # gg_diff_mode_per <= 70 ~ "60 - 70\\%",
-    # gg_diff_mode_per <= 80 ~ "70 - 80\\%",
+    gg_diff_mode_per <= 50 ~ "40 - 50\\%",
+    gg_diff_mode_per <= 60 ~ "50 - 60\\%",
+    gg_diff_mode_per <= 70 ~ "60 - 70\\%",
+    gg_diff_mode_per <= 80 ~ "70 - 80\\%"
   )) %>%
   group_by(gg_diff_mode_round) %>%
   summarise(n = n()) %>%

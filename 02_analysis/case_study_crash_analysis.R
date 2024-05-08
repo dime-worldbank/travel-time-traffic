@@ -185,9 +185,15 @@ lm_hr_coef_df <- lm_hr_coef_df %>%
                   factor(levels = c("Traffic, Prop 2,3,4\nN = 127",
                                     "Traffic, Prop 3,4\nN = 127",
                                     "Traffic, Prop 4\nN = 127",
+                                    # "Traffic, Average\nN = 127",
+                                    # "Traffic, Maximum\nN = 116", ########
+                                    
                                     "Traffic, Prop 2,3,4\nN = 15",
                                     "Traffic, Prop 3,4\nN = 15",
                                     "Traffic, Prop 4\nN = 15",
+                                    # "Traffic, Average\nN = 15",
+                                    # "Traffic, Maximum\nN = 15",
+                                    
                                     "Distance\nN = 15",
                                     "Duration, Avg\nN = 15",
                                     "Average Speed\nN = 15",

@@ -8,6 +8,9 @@ rename_var <- function(df, var){
       tmp_var == "gg_duration_diff" ~ "Duration, Diff. than Typical",
       tmp_var == "gg_speed_diff" ~ "Speed, Diff. than Typical",
       
+      tmp_var == "gg_tl_max" ~ "Traffic, Maximum",
+      tmp_var == "gg_tl_mean" ~ "Traffic, Average",
+      
       tmp_var == "gg_duration_pc_diff" ~ "Duration, Diff. than Typical",
       tmp_var == "gg_speed_pc_diff" ~ "Speed, Diff. than Typical",
       
