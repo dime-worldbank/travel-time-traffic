@@ -17,6 +17,8 @@ df <- df %>%
 cor_all_df <- df %>%
   dplyr::select(c(gg_duration_pc_diff,
                   gg_speed_pc_diff,
+                  gg_duration_in_traffic_min,
+                  gg_speed_in_traffic_kmh,
                   gg_tl_prop_234,
                   gg_tl_prop_34,
                   gg_tl_prop_4,
@@ -34,6 +36,8 @@ cor_over_time_pairs_df <- map_df(unique(df$uid), function(uid_i){
   cor_df <- df[df$uid %in% uid_i,] %>%
     dplyr::select(c(gg_duration_pc_diff,
                     gg_speed_pc_diff,
+                    gg_duration_in_traffic_min,
+                    gg_speed_in_traffic_kmh,
                     gg_tl_prop_234,
                     gg_tl_prop_34,
                     gg_tl_prop_4,
@@ -54,7 +58,11 @@ cor_over_time_pairs_df <- map_df(unique(df$uid), function(uid_i){
 cor_over_time_df <- cor_over_time_pairs_df %>%
   group_by(variable, name) %>%
   dplyr::summarise(value = mean(value, na.rm = T)) %>%
-  ungroup()
+  ungroup() %>%
+  dplyr::filter(!(name %in% c("Duration, Diff. than Typical",
+                              "Speed, Diff. than Typical"))) %>%
+  dplyr::filter(!(variable %in% c("Duration, Diff. than Typical",
+                              "Speed, Diff. than Typical")))  
 
 cor_over_unit_df <- df %>%
   

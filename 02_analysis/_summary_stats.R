@@ -40,3 +40,8 @@ res(r)[1] * 111.12 * 1000
 
 (14853/2.38)/1000
 (24700/2.38)/1000
+
+# Number of wards --------------------------------------------------------------
+nbo3_df   <- readRDS(file.path(analysis_data_dir, "gadm3_wide.Rds"))
+
+nbo3_df$NAME_3 %>% unique() %>% length()

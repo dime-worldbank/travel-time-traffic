@@ -16,17 +16,17 @@ df <- df %>%
                 gg_tl_max = log(gg_tl_max),
                 gg_tl_mean = log(gg_tl_max))
 
-lm_speed_1 <- feols(gg_speed_in_traffic_kmh ~ gg_tl_prop_234 | uid, data = df)
-lm_speed_2 <- feols(gg_speed_in_traffic_kmh ~ gg_tl_prop_34 | uid, data = df)
-lm_speed_3 <- feols(gg_speed_in_traffic_kmh ~ gg_tl_prop_4 | uid, data = df)
-lm_speed_4 <- feols(gg_speed_in_traffic_kmh ~ gg_tl_mean | uid, data = df)
-lm_speed_5 <- feols(gg_speed_in_traffic_kmh ~ gg_tl_max | uid, data = df)
+lm_speed_1 <- feols(gg_speed_in_traffic_kmh ~ gg_tl_prop_234 | uid, data = df, vcov = "hetero")
+lm_speed_2 <- feols(gg_speed_in_traffic_kmh ~ gg_tl_prop_34 | uid, data = df, vcov = "hetero")
+lm_speed_3 <- feols(gg_speed_in_traffic_kmh ~ gg_tl_prop_4 | uid, data = df, vcov = "hetero")
+lm_speed_4 <- feols(gg_speed_in_traffic_kmh ~ gg_tl_mean | uid, data = df, vcov = "hetero")
+lm_speed_5 <- feols(gg_speed_in_traffic_kmh ~ gg_tl_max | uid, data = df, vcov = "hetero")
 
-lm_dur_1 <- feols(gg_duration_in_traffic_min ~ gg_tl_prop_234 | uid, data = df)
-lm_dur_2 <- feols(gg_duration_in_traffic_min ~ gg_tl_prop_34 | uid, data = df)
-lm_dur_3 <- feols(gg_duration_in_traffic_min ~ gg_tl_prop_4 | uid, data = df)
-lm_dur_4 <- feols(gg_duration_in_traffic_min ~ gg_tl_mean | uid, data = df)
-lm_dur_5 <- feols(gg_duration_in_traffic_min ~ gg_tl_max | uid, data = df)
+lm_dur_1 <- feols(gg_duration_in_traffic_min ~ gg_tl_prop_234 | uid, data = df, vcov = "hetero")
+lm_dur_2 <- feols(gg_duration_in_traffic_min ~ gg_tl_prop_34 | uid, data = df, vcov = "hetero")
+lm_dur_3 <- feols(gg_duration_in_traffic_min ~ gg_tl_prop_4 | uid, data = df, vcov = "hetero")
+lm_dur_4 <- feols(gg_duration_in_traffic_min ~ gg_tl_mean | uid, data = df, vcov = "hetero")
+lm_dur_5 <- feols(gg_duration_in_traffic_min ~ gg_tl_max | uid, data = df, vcov = "hetero")
 
 modelsummary_tab(list("Speed (km/h), log" = lm_speed_1,
                       "Speed (km/h), log" = lm_speed_2,

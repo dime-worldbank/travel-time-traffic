@@ -3,6 +3,8 @@
 # Load data --------------------------------------------------------------------
 route_df <- readRDS(file.path(analysis_data_dir, "google_typical_route_10m_wide.Rds"))
 nbo_df   <- readRDS(file.path(analysis_data_dir, "gadm1_wide.Rds"))
+nbo3_df   <- readRDS(file.path(analysis_data_dir, "gadm3_wide.Rds"))
+nbo2_df   <- readRDS(file.path(analysis_data_dir, "gadm2_wide.Rds"))
 
 # Make daily data --------------------------------------------------------------
 route_sum_df <- route_df %>%
@@ -156,6 +158,162 @@ modelsummary_tab(list("Speed (km)" = lm1,
                  output = file.path(tables_dir,
                                     "nbo_elec.tex"))
 
-# ADM1 trends ------------------------------------------------------------------
+# ADM3 trends ------------------------------------------------------------------
+#### Prep data
+nbo3_df <- nbo3_df %>% 
+  add_period() %>%
+  dplyr::mutate(dow = datetime %>% wday(),
+                hour = datetime %>% hour())
+
+#### Regression
+clean_lm <- function(lm1, dv_i){
+  lm1$coeftable %>%
+    as.data.frame() %>%
+    clean_names() %>%
+    mutate(dv = dv_i)
+}
+
+lm_adm3_df <- map_df(unique(nbo3_df$NAME_3), function(name_i){
+  
+  print(name_i)
+  
+  nbo3_df_i <- nbo3_df[nbo3_df$NAME_3 %in% name_i,]
+  
+  lm1 <- feols(gg_tl_prop_234 ~ period | dow + hour, data = nbo3_df_i, vcov = "hetero") %>% clean_lm("gg_tl_prop_234")
+  lm2 <- feols(gg_tl_prop_34  ~ period | dow + hour, data = nbo3_df_i, vcov = "hetero") %>% clean_lm("gg_tl_prop_34")
+  lm4 <- feols(gg_tl_mean     ~ period | dow + hour, data = nbo3_df_i, vcov = "hetero") %>% clean_lm("gg_tl_mean")
+  lm5 <- feols(gg_tl_max      ~ period | dow + hour, data = nbo3_df_i, vcov = "hetero") %>% clean_lm("gg_tl_max")
+  
+  if(sd(nbo3_df_i$gg_tl_prop_4, na.rm=T) != 0){
+    lm3 <- feols(gg_tl_prop_4   ~ period | dow + hour, data = nbo3_df_i, vcov = "hetero") %>% clean_lm("gg_tl_prop_4")
+  } else{
+    lm3 <- data.frame(estimate = 0,
+                      std_error = 0,
+                      t_value = NA,
+                      pr_t = 1,
+                      dv = "gg_tl_prop_4")
+  }
+  
+  lm_df <- bind_rows(
+    lm1,
+    lm2,
+    lm3,
+    lm4,
+    lm5
+  ) %>%
+    mutate(NAME_3 = name_i)
+  
+  return(lm_df)
+  
+})
+
+#### Figure
+nbo1_sf <- readRDS(file.path(gadm_dir, "RawData", "gadm41_KEN_1_pk.rds"))
+nbo3_sf <- readRDS(file.path(gadm_dir, "RawData", "gadm41_KEN_3_pk.rds"))
+
+nbo3_sf <- nbo3_sf %>%
+  left_join(lm_adm3_df, by = "NAME_3") %>%
+  mutate(sig = pr_t < 0.05)
+
+make_fig <- function(dv_i){
+  
+  if(dv_i == "gg_tl_prop_234") title_i <- "Traffic, Prop 2-4"
+  if(dv_i == "gg_tl_prop_34")  title_i <- "Traffic, Prop 3-4"
+  if(dv_i == "gg_tl_prop_4")   title_i <- "Traffic, Prop 4"
+  if(dv_i == "gg_tl_mean")     title_i <- "Traffic, Mean"
+  if(dv_i == "gg_tl_max")      title_i <- "Traffic, Max"
+  
+  nbo3_sf_var <- nbo3_sf %>%
+    filter(dv %in% dv_i) 
+  
+  max_v <- nbo3_sf_var$estimate %>% abs() %>% max()
+  
+  nbo3_sf_var %>%
+    ggplot() +
+    # geom_sf(data = nbo1_sf,
+    #         fill = "brown") +
+    geom_sf(aes(fill = estimate,
+                color = sig)) +
+    scale_fill_gradient2(low = "green2",
+                         mid = "gray40",
+                         high = "firebrick",
+                         limits = c(-max_v, max_v)) +
+    scale_color_manual(values = c("white", 
+                                  "black")) +
+    labs(fill = "Coefficient",
+         color = "p < 0.05",
+         title = title_i) +
+    theme_void() +
+    theme(legend.position = "right",
+          plot.title = element_text(face = "bold", hjust = 0.5))
+  
+}
+
+#### All
+p <- ggarrange(make_fig("gg_tl_prop_234"),
+               make_fig("gg_tl_prop_34"),
+               make_fig("gg_tl_prop_4"), 
+               make_fig("gg_tl_mean"),
+               make_fig("gg_tl_max"))
+
+ggsave(p,
+       filename = file.path(figures_dir, "nbo_elec_adm3.png"),
+       height = 5, width = 11)
+
+#### One
+p1 <- make_fig("gg_tl_prop_234") +
+  labs(title = NULL)
+
+ggsave(p1,
+       filename = file.path(figures_dir, "nbo_elec_adm3_prop_234.png"),
+       height = 2.5, width = 5)
+
+# Traffic bump when winner announced -------------------------------------------
+nbo3_df <- readRDS(file.path(analysis_data_dir, "gadm3_wide.Rds"))
+nbo3_sf <- readRDS(file.path(gadm_dir, "RawData", "gadm41_KEN_3_pk.rds"))
+
+nbo3_df <- nbo3_df %>%
+  dplyr::mutate(period = case_when(
+    (datetime >= ymd("2022-08-14", tz = "Africa/Nairobi")) & 
+      (datetime <= ymd("2022-08-16", tz = "Africa/Nairobi")) ~ 1,
+    (datetime >= ymd("2022-08-11", tz = "Africa/Nairobi")) & 
+      (datetime <= ymd("2022-08-13", tz = "Africa/Nairobi")) ~ 0
+  )) %>%
+  filter(!is.na(period)) %>%
+  
+  mutate(date = datetime %>% date()) %>%
+  group_by(NAME_3, period) %>%
+  dplyr::summarise(gg_tl_prop_34 = mean(gg_tl_prop_34, na.rm = T)) %>%
+  ungroup() %>%
+  
+  pivot_wider(id_cols = NAME_3,
+              names_from = period,
+              values_from = gg_tl_prop_34) %>%
+  
+  mutate(pc = (`1` - `0`) / `0` * 100,
+         change = (`1` - `0`))
+
+nbo3_sf <- nbo3_sf %>%
+  left_join(nbo3_df, by = "NAME_3")
+
+p <- ggplot() +
+  geom_sf(data = nbo3_sf,
+          aes(fill = change)) +
+  scale_fill_gradient2(low = "gray50",
+                       high = "dodgerblue4") +
+  theme_void() +
+  labs(fill = "Change in\nproportion",
+       title = "Change in proportion of 3-4 traffic\nfrom August 11-13 to August 14-16")
+
+ggsave(p,
+       filename = file.path(figures_dir, "nbo_elec_bump_map.png"),
+       height = 3, width = 5)
+
+
+
+
+route_df %>%
+  filter(uid %in% 25,
+         count_1 > 0)
 
 

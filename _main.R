@@ -134,7 +134,7 @@ if(F){
   source(file.path(git_clean_dir, "04_extract_google_traffic.R"))
   #source(file.path(git_clean_dir, "04_extract_mapbox_traffic.R"))
   #source(file.path(git_clean_dir, "04_extract_tomtom.R"))
-  source(file.path(git_clean_dir, "04_extract_waze.R"))
+  #source(file.path(git_clean_dir, "04_extract_waze.R"))
   
   source(file.path(git_clean_dir, "05_clean_data.R"))
   
