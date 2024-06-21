@@ -1,5 +1,26 @@
 # Deviate Route
 
+#### Table Settings
+my_style = style.tex(tpt = TRUE, 
+                     notes.tpt.intro = "\\footnotesize")
+setFixest_etable(style.tex = my_style)
+
+dict = c(gg_speed_in_traffic_kmh = "Speed (km/h)",
+         gg_duration_in_traffic_min = "Duration (min)",
+         gg_distance_km = "Distance (km)",
+         gg_duration_in_traffic_min = "Duration (min)",
+         gg_speed_in_traffic_kmh = "Speed (km/h)",
+         gg_tl_prop_234 = "Prop 2 - 4 traffic",
+         gg_tl_prop_34 = "Prop 3 - 4 traffic",
+         gg_tl_prop_4 = "Prop 4 traffic",
+         gg_tl_mean = "Avg traffic",
+         gg_tl_max = "Max traffic",
+         uid = "Route",
+         gg_diff_mode = "Route Different: Binary",
+         gg_diff_modeTRUE = "Route Different: Binary",
+         diff_from_mode_km = "Route Difference: Kilometers")
+setFixest_dict(dict)
+
 # Load data --------------------------------------------------------------------
 df <- readRDS(file.path(analysis_data_dir, "google_typical_route_10m_wide.Rds"))
 
@@ -31,20 +52,27 @@ lm3 <- feols(gg_speed_in_traffic_kmh    ~ gg_diff_mode | uid, data = df)
 lm4 <- feols(gg_duration_in_traffic_min ~ diff_from_mode_km | uid, data = df[df$gg_diff_mode %in% T,]) 
 lm5 <- feols(gg_speed_in_traffic_kmh    ~ diff_from_mode_km | uid, data = df[df$gg_diff_mode %in% T,]) 
 
-modelsummary_tab(list("Distance (km)" = lm1,
-                      "Duration (min)" = lm2,
-                      "Speed (km/h)" = lm3,
-                      "Duration (min)" = lm4,
-                      "Speed (km/h)" = lm5),
-                 stars = c('*' = .1, '**' = .05, "***" = 0.01),
-                 coef_map = c("gg_diff_modeTRUE" = "Route Different: Binary",
-                              "diff_from_mode_km" = "Route Difference: Kilometers"),
-                 gof_map = c("nobs", "adj.r.squared"),
-                 escape = FALSE,
-                 add_rows = tribble(~term, ~V1, ~V2, ~V3, ~V4, ~V5,
-                                    'O-D Pair FE', "Y", "Y", "Y", "Y", "Y"),
-                 output = file.path(tables_dir,
-                                    "reg_route_dev.tex"))
+#### Table
+file.remove(file.path(tables_dir, "reg_route_dev.tex"))
+esttex(lm1, lm2, lm3, lm4, lm5,
+       float = F,
+       file = file.path(tables_dir,
+                        "reg_route_dev.tex"))
+
+# modelsummary_tab(list("Distance (km)" = lm1,
+#                       "Duration (min)" = lm2,
+#                       "Speed (km/h)" = lm3,
+#                       "Duration (min)" = lm4,
+#                       "Speed (km/h)" = lm5),
+#                  stars = c('*' = .1, '**' = .05, "***" = 0.01),
+#                  coef_map = c("gg_diff_modeTRUE" = "Route Different: Binary",
+#                               "diff_from_mode_km" = "Route Difference: Kilometers"),
+#                  gof_map = c("nobs", "adj.r.squared"),
+#                  escape = FALSE,
+#                  add_rows = tribble(~term, ~V1, ~V2, ~V3, ~V4, ~V5,
+#                                     'O-D Pair FE', "Y", "Y", "Y", "Y", "Y"),
+#                  output = file.path(tables_dir,
+#                                     "reg_route_dev.tex"))
 
 # 'Hour FE', "Y", "Y", "Y", "Y", "Y",
 # 'Day of Week FE', "Y", "Y", "Y", "Y", "Y"
@@ -74,29 +102,40 @@ lm8 <- feols(gg_tl_prop_4    ~ diff_from_mode_km | uid, data = df[df$gg_diff_mod
 lm9 <- feols(gg_tl_mean    ~ diff_from_mode_km | uid, data = df[df$gg_diff_mode %in% T,], vcov = "hetero") 
 lm10 <- feols(gg_tl_max    ~ diff_from_mode_km | uid, data = df[df$gg_diff_mode %in% T,], vcov = "hetero") 
 
-modelsummary_tab(list("2-4 Traffic" = lm1,
-                      "2-4 Traffic" = lm6,
-                      
-                      "3-4 Traffic" = lm2,
-                      "3-4 Traffic" = lm7,
-                      
-                      "4 Traffic" = lm3,
-                      "4 Traffic" = lm8,
-                      
-                      "Avg Traffic" = lm4,
-                      "Avg Traffic" = lm9,
-                      
-                      "Max Traffic" = lm5,
-                      "Max Traffic" = lm10),
-                 stars = c('*' = .1, '**' = .05, "***" = 0.01),
-                 coef_map = c("gg_diff_modeTRUE" = "Route Different: Binary",
-                              "diff_from_mode_km" = "Route Difference: Kilometers"),
-                 gof_map = c("nobs", "adj.r.squared"),
-                 escape = FALSE,
-                 add_rows = tribble(~term, ~V1, ~V2, ~V3, ~V4, ~V5, ~V6, ~V7, ~V8, ~V9, ~V10,
-                                    'O-D Pair FE', "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y"),
-                 output = file.path(tables_dir,
-                                    "reg_route_dev_traffic.tex"))
+#### Table
+file.remove(file.path(tables_dir, "reg_route_dev_traffic.tex"))
+esttex(lm1, lm6,
+       lm2, lm7, 
+       lm3, lm8,
+       lm4, lm9,
+       lm5, lm10,
+       float = F,
+       file = file.path(tables_dir,
+                        "reg_route_dev_traffic.tex"))
+
+# modelsummary_tab(list("2-4 Traffic" = lm1,
+#                       "2-4 Traffic" = lm6,
+#                       
+#                       "3-4 Traffic" = lm2,
+#                       "3-4 Traffic" = lm7,
+#                       
+#                       "4 Traffic" = lm3,
+#                       "4 Traffic" = lm8,
+#                       
+#                       "Avg Traffic" = lm4,
+#                       "Avg Traffic" = lm9,
+#                       
+#                       "Max Traffic" = lm5,
+#                       "Max Traffic" = lm10),
+#                  stars = c('*' = .1, '**' = .05, "***" = 0.01),
+#                  coef_map = c("gg_diff_modeTRUE" = "Route Different: Binary",
+#                               "diff_from_mode_km" = "Route Difference: Kilometers"),
+#                  gof_map = c("nobs", "adj.r.squared"),
+#                  escape = FALSE,
+#                  add_rows = tribble(~term, ~V1, ~V2, ~V3, ~V4, ~V5, ~V6, ~V7, ~V8, ~V9, ~V10,
+#                                     'O-D Pair FE', "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y"),
+#                  output = file.path(tables_dir,
+#                                     "reg_route_dev_traffic.tex"))
 
 # 'Hour FE', "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y",
 # 'Day of Week FE', "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y"
@@ -114,26 +153,33 @@ lm8  <- feols(diff_from_mode_km ~  gg_tl_prop_4   | uid, data = df[df$gg_diff_mo
 lm9  <- feols(diff_from_mode_km ~  gg_tl_mean     | uid, data = df[df$gg_diff_mode %in% T,], vcov = "hetero") 
 lm10 <- feols(diff_from_mode_km ~  gg_tl_max      | uid, data = df[df$gg_diff_mode %in% T,], vcov = "hetero") 
 
-modelsummary_tab(list("Route Different: Binary" = lm1,
-                      "Route Different: Binary" = lm2,
-                      "Route Different: Binary" = lm3,
-                      "Route Different: Binary" = lm4,
-                      "Route Different: Binary" = lm5,
-                      "Route Different: Kilometers" = lm6,
-                      "Route Different: Kilometers" = lm7,
-                      "Route Different: Kilometers" = lm8,
-                      "Route Different: Kilometers" = lm9,
-                      "Route Different: Kilometers" = lm10),
-                 stars = c('*' = .1, '**' = .05, "***" = 0.01),
-                 coef_map = c("gg_tl_prop_234" = "Prop 2-4 Traffic",
-                              "gg_tl_prop_34" = "Prop 3-4 Traffic",
-                              "gg_tl_prop_4" = "Prop 4 Traffic",
-                              "gg_tl_mean" = "Average Traffic",
-                              "gg_tl_max" = "Maximum Traffic"),
-                 gof_map = c("nobs", "adj.r.squared"),
-                 escape = FALSE,
-                 add_rows = tribble(~term, ~V1, ~V2, ~V3, ~V4, ~V5, ~V6, ~V7, ~V8, ~V9, ~V10,
-                                    'O-D Pair FE', "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y"),
-                 output = file.path(tables_dir,
-                                    "reg_route_dev_traffic_alt.tex"))
+#### Table
+file.remove(file.path(tables_dir, "reg_route_dev_traffic_alt.tex"))
+esttex(lm1, lm2, lm3, lm4, lm5, lm6, lm7, lm8, lm9, lm10,
+       float = F,
+       file = file.path(tables_dir,
+                        "reg_route_dev_traffic_alt.tex"))
 
+# modelsummary_tab(list("Route Different: Binary" = lm1,
+#                       "Route Different: Binary" = lm2,
+#                       "Route Different: Binary" = lm3,
+#                       "Route Different: Binary" = lm4,
+#                       "Route Different: Binary" = lm5,
+#                       "Route Different: Kilometers" = lm6,
+#                       "Route Different: Kilometers" = lm7,
+#                       "Route Different: Kilometers" = lm8,
+#                       "Route Different: Kilometers" = lm9,
+#                       "Route Different: Kilometers" = lm10),
+#                  stars = c('*' = .1, '**' = .05, "***" = 0.01),
+#                  coef_map = c("gg_tl_prop_234" = "Prop 2-4 Traffic",
+#                               "gg_tl_prop_34" = "Prop 3-4 Traffic",
+#                               "gg_tl_prop_4" = "Prop 4 Traffic",
+#                               "gg_tl_mean" = "Average Traffic",
+#                               "gg_tl_max" = "Maximum Traffic"),
+#                  gof_map = c("nobs", "adj.r.squared"),
+#                  escape = FALSE,
+#                  add_rows = tribble(~term, ~V1, ~V2, ~V3, ~V4, ~V5, ~V6, ~V7, ~V8, ~V9, ~V10,
+#                                     'O-D Pair FE', "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y"),
+#                  output = file.path(tables_dir,
+#                                     "reg_route_dev_traffic_alt.tex"))
+# 

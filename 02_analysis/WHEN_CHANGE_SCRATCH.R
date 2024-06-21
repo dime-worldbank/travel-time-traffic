@@ -13,7 +13,9 @@ route_df %>%
   geom_point(aes(x = gg_distance_km,
                  y = gg_duration_min)) +
   facet_wrap(~uid,
-             scales = "free")
+             scales = "free") +
+  labs(x = "Distance (kilometers)",
+       y = "Duration (minutes)") 
 
 
 route_df %>%

@@ -62,6 +62,25 @@ rtc_sf <- st_as_sf(rtc_df, coords = c("longitude", "latitude"), crs = 4326)
 
 saveRDS(rtc_sf, file.path(data_dir, "Police Crashes", "RawData", "crashes_sit_reports.Rds"))
 
+# Crashes: Twitter -------------------------------------------------------------
+twitter_df <- readRDS(file.path(sm_db_dir, "Data", "Twitter", "Microdata Catalogue - Crashes", 
+                            "ma3route_crashes_algorithmcode.Rds"))
+
+twitter_sf <- twitter_df %>%
+  dplyr::filter(crash_date >= ymd("2022-07-28"),
+                crash_date <= ymd("2023-08-17")) %>%
+  as.data.frame() %>%
+  st_as_sf(coords = c("longitude", "latitude"), crs = 4326) %>%
+  dplyr::select(crash_id, crash_datetime)
+
+ken_sf <- gadm("KEN", level=1, path = tempdir()) %>% st_as_sf()
+nbo_sf <- ken_sf[ken_sf$NAME_1 %in% "Nairobi",]
+
+inter_tf <- st_intersects(twitter_sf, nbo_sf, sparse = F) %>% as.vector()
+twitter_sf <- twitter_sf[inter_tf,]
+
+saveRDS(twitter_sf, file.path(data_dir, "Twitter Crashes", "RawData", "crashes_twitter.Rds"))
+
 # Crashes: Fatal ----------------------------------------------------------------------
 #### Load
 geo_df <- readRDS(file.path(sm_db_dir, "Data", 

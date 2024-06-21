@@ -1,16 +1,23 @@
-# Make Typical Routes
+# Extract Points to Route
 
-## Crashes
+## NTSA Crashes
 rtc_sf      <- readRDS(file.path(data_dir, "Police Crashes", "RawData", "crashes_fatal_ntsa.Rds"))
 rtc_50m_sf  <- st_buffer(rtc_sf, dist = 50)
 rtc_100m_sf <- st_buffer(rtc_sf, dist = 100)
+
+## Twitter Crashes
+twitter_sf      <- readRDS(file.path(data_dir, "Twitter Crashes", "RawData", "crashes_twitter.Rds"))
+twitter_50m_sf  <- st_buffer(twitter_sf, dist = 50)
+twitter_100m_sf <- st_buffer(twitter_sf, dist = 100)
 
 #### Load route 
 route_sf <- readRDS(file.path(tt_dir, "google_typical_route.Rds")) %>%
   dplyr::select(segment_id)
 
 for(polygon in c("ntsa_crashes_50m",
-                 "ntsa_crashes_100m")){
+                 "ntsa_crashes_100m",
+                 "twitter_crashes_50m",
+                 "twitter_crashes_100m")){
   
   #### Load
   if(polygon %in% "ntsa_crashes_50m"){
@@ -21,6 +28,18 @@ for(polygon in c("ntsa_crashes_50m",
   
   if(polygon %in% "ntsa_crashes_100m"){
     roi_sf <- rtc_100m_sf %>%
+      dplyr::select(crash_id)
+    id_var <- "crash_id"
+  }
+  
+  if(polygon %in% "twitter_crashes_50m"){
+    roi_sf <- twitter_50m_sf %>%
+      dplyr::select(crash_id)
+    id_var <- "crash_id"
+  }
+  
+  if(polygon %in% "twitter_crashes_100m"){
+    roi_sf <- twitter_100m_sf %>%
       dplyr::select(crash_id)
     id_var <- "crash_id"
   }

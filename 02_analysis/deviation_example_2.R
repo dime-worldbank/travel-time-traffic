@@ -17,6 +17,7 @@ p_trends <- route_df %>%
   group_by(datetime, name) %>%
   summarise(value = mean(value, na.rm = T)) %>%
   ungroup() %>%
+  dplyr::filter(!is.na(value)) %>%
   
   rename_var("name") %>%
   dplyr::mutate(name = case_when(

@@ -1,7 +1,7 @@
 # Crash Analysis
 
 # Load data --------------------------------------------------------------------
-df <- readRDS(file.path(analysis_data_dir, "ntsa_crashes_100m_wide_fulldata.Rds"))
+df <- readRDS(file.path(analysis_data_dir, "twitter_crashes_100m_wide_fulldata.Rds"))
 
 df$crash_datetime %>% min()
 df$crash_datetime %>% max()
@@ -157,6 +157,11 @@ lm_hr_coef_df <- lm_hr_coef_df %>%
     T,F
   )) %>%
   rename_var("data_var") %>%
+  dplyr::mutate(data_var = case_when(
+    data_var == "Duration, Avg" ~ "Duration, Avg (Min)",
+    data_var == "Average Speed" ~ "Average Speed (km/h)",
+    TRUE ~ data_var,
+  )) %>%
   dplyr::mutate(data_var = paste0(data_var, "\nN = ", n_locations))
 
 # Regression figures -----------------------------------------------------------
@@ -182,59 +187,59 @@ make_hourly_fig <- function(df){
 ## Factor
 lm_hr_coef_df <- lm_hr_coef_df %>%
   dplyr::mutate(data_var = data_var %>%
-                  factor(levels = c("Traffic, Prop 2,3,4\nN = 127",
-                                    "Traffic, Prop 3,4\nN = 127",
-                                    "Traffic, Prop 4\nN = 127",
+                  factor(levels = c("Traffic, Prop 2,3,4\nN = 664",
+                                    "Traffic, Prop 3,4\nN = 664",
+                                    "Traffic, Prop 4\nN = 664",
                                     # "Traffic, Average\nN = 127",
                                     # "Traffic, Maximum\nN = 116", ########
                                     
-                                    "Traffic, Prop 2,3,4\nN = 15",
-                                    "Traffic, Prop 3,4\nN = 15",
-                                    "Traffic, Prop 4\nN = 15",
+                                    "Traffic, Prop 2,3,4\nN = 102",
+                                    "Traffic, Prop 3,4\nN = 102",
+                                    "Traffic, Prop 4\nN = 102",
                                     # "Traffic, Average\nN = 15",
                                     # "Traffic, Maximum\nN = 15",
                                     
-                                    "Distance\nN = 15",
-                                    "Duration, Avg\nN = 15",
-                                    "Average Speed\nN = 15",
-                                    "Distance\nN = 69",
-                                    "Duration, Avg\nN = 69",
-                                    "Average Speed\nN = 69")))
+                                    "Distance\nN = 102",
+                                    "Duration, Avg (Min)\nN = 102",
+                                    "Average Speed (km/h)\nN = 102",
+                                    "Distance\nN = 113",
+                                    "Duration, Avg (Min)\nN = 113",
+                                    "Average Speed (km/h)\nN = 113")))
 
 ## Main
 lm_hr_coef_df %>%
   dplyr::filter(type %in% "Value - Typical Value",
-                data_var %>% str_detect("127|15")) %>%
+                data_var %>% str_detect("664|102")) %>%
   make_hourly_fig()
 
-ggsave(filename = file.path(figures_dir, "lm_crash_value_minus_typical.png"),
+ggsave(filename = file.path(figures_dir, "lm_crash_value_minus_typical_twitter.png"),
        height = 5, width = 8)
 
 ## Main
 lm_hr_coef_df %>%
   dplyr::filter(type %in% "Value",
-                data_var %>% str_detect("127|15")) %>%
+                data_var %>% str_detect("664|102")) %>%
   distinct() %>%
   make_hourly_fig()
 
-ggsave(filename = file.path(figures_dir, "lm_crash_value.png"),
+ggsave(filename = file.path(figures_dir, "lm_crash_value_twitter.png"),
        height = 5, width = 8)
 
 ## Full travel time data
 lm_hr_coef_df %>%
   dplyr::filter(type %in% "Value - Typical Value",
-                data_var %>% str_detect("69")) %>%
+                data_var %>% str_detect("113")) %>%
   make_hourly_fig() 
 
-ggsave(filename = file.path(figures_dir, "lm_crash_value_m_typical_tt_full.png"),
+ggsave(filename = file.path(figures_dir, "lm_crash_value_m_typical_tt_full_twitter.png"),
        height = 2.5, width = 8)
 
 
 lm_hr_coef_df %>%
   dplyr::filter(type %in% "Value",
-                data_var %>% str_detect("69")) %>%
+                data_var %>% str_detect("113")) %>%
   make_hourly_fig() 
 
-ggsave(filename = file.path(figures_dir, "lm_crash_value_tt_full.png"),
+ggsave(filename = file.path(figures_dir, "lm_crash_value_tt_full_twitter.png"),
        height = 2.5, width = 8)
 

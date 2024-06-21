@@ -2,11 +2,15 @@
 
 POLYGONS_ALL <- c("google_typical_route_10m", 
                   #"mapbox_typical_route_10m",
-                  "gadm1",
+                  #"gadm1",
                   #"gadm2",
-                  "gadm3",
+                  #"gadm3",
+                  "twitter_crashes_50m",
+                  "twitter_crashes_100m",
                   "ntsa_crashes_50m",
                   "ntsa_crashes_100m")
+
+POLYGONS_ALL <- "twitter_crashes_100m"
 
 #POLYGONS_ALL <- "gadm1"
 

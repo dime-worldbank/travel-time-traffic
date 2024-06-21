@@ -39,6 +39,37 @@ google_tl_r <- raster(file.path(traffic_gg_raw_dir,
 gg_tt_df <- gg_tt_df %>%
   arrange(speed_in_traffic_kmh)
 
+se_sf <- map_df(1:nrow(gg_tt_df), function(i){
+  
+  gg_tt_df_i <- gg_tt_df[i,]
+  
+  start_df <- gg_tt_df_i %>%
+    st_coordinates() %>%
+    as.data.frame() %>%
+    head(1) %>%
+    st_as_sf(coords = c("X", "Y"), crs = 4326) %>%
+    mutate(type = "Start",
+           route_id = i)
+  
+  end_df <- gg_tt_df_i %>%
+    st_coordinates() %>%
+    as.data.frame() %>%
+    tail(1) %>%
+    st_as_sf(coords = c("X", "Y"), crs = 4326) %>%
+    mutate(type = "End",
+           route_id = i)
+  
+  out_df <- bind_rows(start_df,
+                      end_df)
+  
+  # leaflet() %>%
+  #   addTiles() %>%
+  #   addCircles(data = out_df) %>%
+  #   addPolylines(data = gg_tt_df_i, color = "red")
+  
+  return(out_df)
+})
+
 p_tt <- ggplot() +
   geom_sf(data = nbo_sf, fill = "gray10") +
   geom_sf(data = gg_tt_df,
@@ -47,9 +78,15 @@ p_tt <- ggplot() +
   geom_sf(data = gg_tt_df,
           aes(color = speed_in_traffic_kmh),
           linewidth = 0.6) +
+  geom_sf(data = se_sf,
+          aes(fill = "Origin/Destination\nLocation"),
+          color = "gray90",
+          pch = 21) +
   labs(color = "Traffic\nSpeed\n(km/h)",
+       fill = NULL,
        title = "A. Traffic speeds between select O-D pairs") +
   scale_color_distiller(palette = "Spectral") +
+  scale_fill_manual(values = "dodgerblue") +
   theme_void() +
   theme(legend.position = "bottom",
         strip.text = element_text(face = "bold", hjust = 0.5),
@@ -88,4 +125,49 @@ ggsave(p,
        filename = file.path(figures_dir, "map_tt_tl.png"),
        height = 4, width = 10)
 
+# All routes -------------------------------------------------------------------
+#### Roads
+roads_sf <- opq(st_bbox(nbo_sf), timeout = 999) %>%
+  add_osm_feature(key = "highway", value = c("motorway",
+                                             "trunk",
+                                             "primary",
+                                             "secondary",
+                                             "tertiary",
+                                             "unclassified")) %>%
+  osmdata_sf()
+roads_sf <- roads_sf$osm_lines
+
+roads_sf <- roads_sf %>%
+  st_intersection(nbo_sf)
+
+#### Data prep
+gg_tt_df$route_id <- 1:nrow(gg_tt_df)
+
+se_sf <- se_sf %>%
+  dplyr::mutate(type = type %>%
+                  fct_rev()) %>%
+  dplyr::filter(type == "Start")
+se_sf$type <- "Origin Location"
+
+#### Figure
+p <- ggplot() +
+  geom_sf(data = nbo_sf,
+          color = NA,
+          fill = "gray80") +
+  geom_sf(data = roads_sf, 
+          linewidth = 0.1) +
+  geom_sf(data = se_sf,
+          aes(color = type)) +
+  geom_sf(data = gg_tt_df,
+          color = "red") +
+  facet_wrap(~route_id,
+             ncol = 4) +
+  scale_color_manual(values = c("green")) +
+  theme_void() +
+  theme(legend.position = "bottom") +
+  labs(color = NULL)
+
+ggsave(p,
+       filename = file.path(figures_dir, "map_tt_facet.png"),
+       height = 11, width = 8)
 

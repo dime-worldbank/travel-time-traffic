@@ -121,13 +121,19 @@ for(polygon_i in POLYGONS_ALL){
   }
   
   # For points, merge in travel time routes ------------------------------------
-  if(polygon_i %in% c("ntsa_crashes_50m", "ntsa_crashes_100m")){
+  if(polygon_i %in% c("ntsa_crashes_50m", 
+                      "ntsa_crashes_100m",
+                      "twitter_crashes_50m", 
+                      "twitter_crashes_100m")){
     
     #### Load Point / Route Intersections
     gg_inter_df <- readRDS(file.path(data_dir, "points-intersect-routes", 
                                      paste0(polygon_i, "_", "google","_route",".Rds")))
     
-    if(polygon_i %in% c("ntsa_crashes_50m", "ntsa_crashes_100m")){
+    if(polygon_i %in% c("ntsa_crashes_50m", 
+                        "ntsa_crashes_100m",
+                        "twitter_crashes_50m", 
+                        "twitter_crashes_100m")){
       gg_inter_df <- gg_inter_df %>%
         as.data.frame() %>%
         dplyr::rename(uid = crash_id)
@@ -191,10 +197,20 @@ for(polygon_i in POLYGONS_ALL){
   }
   
   # Add in attributes ----------------------------------------------------------
-  if(polygon_i %in% c("ntsa_crashes_50m", "ntsa_crashes_100m")){
+  if(polygon_i %in% c("ntsa_crashes_50m", 
+                      "ntsa_crashes_100m")){
     roi_df <- readRDS(file.path(data_dir, "Police Crashes", "RawData", "crashes_fatal_ntsa.Rds")) %>%
       dplyr::select(crash_id, datetime, no, contains("veh_type")) %>%
       dplyr::rename(crash_datetime = datetime,
+                    uid = crash_id) %>%
+      st_drop_geometry()
+  }
+  
+  if(polygon_i %in% c("twitter_crashes_50m", 
+                      "twitter_crashes_100m")){
+    roi_df <- readRDS(file.path(data_dir, "Twitter Crashes", "RawData", "crashes_twitter.Rds")) %>%
+      dplyr::select(crash_id, crash_datetime) %>%
+      dplyr::rename(#crash_datetime = datetime,
                     uid = crash_id) %>%
       st_drop_geometry()
   }

@@ -133,6 +133,35 @@ lm11 <- feols(gg_tl_mean               ~ period | dow + hour, data = nbo_df, vco
 lm12 <- feols(gg_tl_max               ~ period | uid + dow + hour, data = route_df)
 lm13 <- feols(gg_tl_max               ~ period | dow + hour, data = nbo_df, vcov = "hetero")
 
+#### Table Settings
+my_style = style.tex(tpt = TRUE, 
+                     notes.tpt.intro = "\\footnotesize")
+setFixest_etable(style.tex = my_style)
+
+dict = c(gg_speed_in_traffic_kmh = "Speed (km)",
+         gg_duration_in_traffic_min = "Duration (min)",
+         gg_distance_km = "Distance (km)",
+         gg_tl_prop_234 = "Prop 2-4 Traffic",
+         gg_tl_prop_34 = "Prop 3-4 Traffic",
+         gg_tl_prop_4 = "Prop 4 Traffic",
+         gg_tl_prop_mean = "Avg Traffic",
+         gg_tl_prop_max = "Max Traffic",
+         uid = "Route",
+         period = "Election Week",
+         dow = "Day of Week",
+         hour = "Hour")
+setFixest_dict(dict)
+
+#### Table
+# file.remove(file.path(tables_dir, "nbo_elec.tex"))
+# esttex(lm1, lm2, lm3, lm4, lm5,
+#        lm6, lm7, lm8, lm9, lm10,
+#        lm11, lm12, lm13,
+#        float = F,
+#        file = file.path(tables_dir,
+#                         "nbo_elec.tex"))
+
+
 modelsummary_tab(list("Speed (km)" = lm1,
                       "Duration (min)" = lm2,
                       "Distance (km)" = lm3,
@@ -151,7 +180,7 @@ modelsummary_tab(list("Speed (km)" = lm1,
                  gof_map = c("nobs", "adj.r.squared"),
                  escape = FALSE,
                  add_rows = tribble(~term, ~V1, ~V2, ~V3, ~V4, ~V5, ~V6, ~V7, ~V8, ~V9, ~V10, ~V11, ~V12, ~V13,
-                                    'Unit', "Route", "Route", "Route", "Route", "City", "Route", "City", "Route", "City", "Route", "City", "Route", "City", 
+                                    'Unit', "Route", "Route", "Route", "Route", "City", "Route", "City", "Route", "City", "Route", "City", "Route", "City",
                                     'Route FE', "Y", "Y", "Y", "Y", "N/A", "Y", "N/A", "Y", "N/A", "Y", "N/A", "Y", "N/A",
                                     'Hour FE', "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y",
                                     'Day of Week FE', "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y", "Y"),
