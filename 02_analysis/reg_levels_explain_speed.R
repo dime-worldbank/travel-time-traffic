@@ -16,12 +16,13 @@ dict = c(gg_speed_in_traffic_kmh = "Speed (km/h), log",
 setFixest_dict(dict)
 
 # Load data --------------------------------------------------------------------
-df <- readRDS(file.path(analysis_data_dir, "google_typical_route_10m_wide.Rds"))
+#df <- readRDS(file.path(analysis_data_dir, "google_typical_route_10m_wide.Rds"))
+df <- readRDS(file.path("~/Downloads", "google_typical_route_10m_wide.Rds"))
 
 df <- df %>%
   dplyr::filter(all_26_route %in% 1)
 
-# OLS --------------------------------------------------------------------------
+# Prep data --------------------------------------------------------------------
 df <- df %>%
   dplyr::mutate(gg_speed_in_traffic_kmh = log(gg_speed_in_traffic_kmh),
                 gg_duration_in_traffic_min = log(gg_duration_in_traffic_min),
@@ -31,6 +32,7 @@ df <- df %>%
                 gg_tl_max = log(gg_tl_max),
                 gg_tl_mean = log(gg_tl_max))
 
+# Regression: pooled -----------------------------------------------------------
 lm_speed_1 <- feols(gg_speed_in_traffic_kmh ~ gg_tl_prop_234 | uid, data = df, vcov = ~uid)
 lm_speed_2 <- feols(gg_speed_in_traffic_kmh ~ gg_tl_prop_34 | uid, data = df, vcov = ~uid)
 lm_speed_3 <- feols(gg_speed_in_traffic_kmh ~ gg_tl_prop_4 | uid, data = df, vcov = ~uid)
