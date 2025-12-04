@@ -102,6 +102,7 @@ dict = c(gg_speed_in_traffic_kmh = "Speed (km/h), log",
          uid = "Route")
 setFixest_dict(dict)
 
+
 #### Table
 file.remove(file.path(tables_dir, "ols_gg_speed_dur_traffic.tex"))
 esttex(lm_speed_1, lm_speed_2, lm_speed_3, lm_speed_4, lm_speed_5, lm_speed_6,
