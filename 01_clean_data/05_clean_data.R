@@ -64,6 +64,8 @@ for(polygon_i in POLYGONS_ALL){
     
     dplyr::mutate(gg_tl_prop_234 = (count_2 + count_3 + count_4) / count_all_max,
                   gg_tl_prop_34  = (          count_3 + count_4) / count_all_max,
+                  gg_tl_prop_2   = (                    count_2) / count_all_max,
+                  gg_tl_prop_3   = (                    count_3) / count_all_max,
                   gg_tl_prop_4   = (                    count_4) / count_all_max) %>%
     dplyr::mutate(gg_tl_mean = gg_tl_prop_234 * 2 + gg_tl_prop_34 * 3 + gg_tl_prop_4 * 4) %>%
     dplyr::mutate(gg_tl_max = case_when(
@@ -211,7 +213,7 @@ for(polygon_i in POLYGONS_ALL){
     roi_df <- readRDS(file.path(data_dir, "Twitter Crashes", "RawData", "crashes_twitter.Rds")) %>%
       dplyr::select(crash_id, crash_datetime) %>%
       dplyr::rename(#crash_datetime = datetime,
-                    uid = crash_id) %>%
+        uid = crash_id) %>%
       st_drop_geometry()
   }
   
@@ -309,18 +311,6 @@ for(polygon_i in POLYGONS_ALL){
                NA,
                gg_speed_in_traffic_kmh
              )) 
-    
-    # google_tl_all_df <- google_tl_all_df %>%
-    #   dplyr::filter(!is.na(gg_distance_m)) %>%
-    #   group_by(uid) %>%
-    #   mutate(gg_distance_m_mode = Mode(gg_distance_m)) %>%
-    #   ungroup() %>%
-    #   mutate(gg_diff_mode = abs(gg_distance_m - gg_distance_m_mode) > 100)
-    # 
-    # google_tl_df$gg_speed_in_traffic_kmh_mean_modal <- 
-    #   google_tl_df$gg_speed_in_traffic_kmh_mean
-    # 
-    # google_tl_df$gg_speed_in_traffic_kmh_mean_modal[google_tl_df$gg_diff_mode %in% T] <- NA
     
   }
   

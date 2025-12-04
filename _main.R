@@ -10,7 +10,7 @@ POLYGONS_ALL <- c("google_typical_route_10m",
                   "ntsa_crashes_50m",
                   "ntsa_crashes_100m")
 
-POLYGONS_ALL <- "twitter_crashes_100m"
+POLYGONS_ALL <- "google_typical_route_10m"
 
 #POLYGONS_ALL <- "gadm1"
 
@@ -19,7 +19,7 @@ RUN_CODE      <- F
 
 # Filepaths --------------------------------------------------------------------
 #### Root
-if(Sys.info()[["user"]] == "robmarty"){
+if(Sys.info()[["user"]] == "rmarty"){
   db_dir <- "~/Dropbox/World Bank/IEs/Travel Time and Traffic Analysis"
   git_dir <- "~/Documents/Github/travel-time-traffic"
   sm_db_dir <- "~/Dropbox/World Bank/IEs/CrashMap-Nairobi"
@@ -56,7 +56,7 @@ if(DELETE_OUTPUT){
 
 
 # API Keys ---------------------------------------------------------------------
-if(Sys.info()[["user"]] == "robmarty"){
+if(Sys.info()[["user"]] == "rmarty"){
   api_keys_df <- read.csv(file.path("~/Dropbox", "World Bank", "Webscraping", "Files for Server", "api_keys.csv"),
                           stringsAsFactors = F)
 }
@@ -93,6 +93,7 @@ library(fixest)
 library(modelsummary)
 library(lubridate)
 library(tidyterra)
+library(mapboxapi)
 
 # #devtools::install_github("MBalthasar/S5Processor")
 # library(S5Processor)
@@ -120,6 +121,17 @@ modelsummary_tab <- function(...,
   sink(output)
   cat(latex_output, sep = "\n")
   sink()
+}
+
+log_margin <- function(y, x){
+  
+  y_min_non_zero <- min(y[y > 0], na.rm = T)
+  
+  y <- y / y_min_non_zero
+  
+  case_when(y > 0 ~ log(y),
+            y == 0 ~ -x)
+  
 }
 
 # Code -------------------------------------------------------------------------
