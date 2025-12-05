@@ -10,7 +10,7 @@ df <- df %>%
 # --- Step 1: Prepare the data for reordering and plotting ---
 plot_data <- df %>%
   dplyr::select(uid,
-                gg_speed_in_traffic_kmh,
+                gg_speed_in_traffic_kmh, gg_duration_in_traffic_min, gg_distance_km,
                 gg_tl_prop_2, gg_tl_prop_3, gg_tl_prop_4) %>%
   
   # Reorder the 'uid' factor levels
@@ -27,16 +27,20 @@ plot_data <- df %>%
 placeholder_data <- plot_data %>%
   dplyr::select(uid) %>%
   distinct(uid) %>%
-  tidyr::crossing(name = c("Speed in Traffic (km/h)",
-                           "Prop. Route Traffic Level 2",
-                           "Prop. Route Traffic Level 3",
-                           "Prop. Route Traffic Level 4")) %>%
+  tidyr::crossing(name = c("A. Traffic Speed (km/h)",
+                           "B. Travel Duration (min)",
+                           "C. Travel Distance (km)",
+                           "D. Prop. Route Traffic Level 2",
+                           "E. Prop. Route Traffic Level 3",
+                           "F. Prop. Route Traffic Level 4")) %>%
   dplyr::mutate(value = 0.5) %>% # Force the x-value to be 0.5
-  dplyr::mutate(name = name %>% 
-                  factor(levels = c("Speed in Traffic (km/h)",
-                                    "Prop. Route Traffic Level 2",
-                                    "Prop. Route Traffic Level 3",
-                                    "Prop. Route Traffic Level 4")))
+  dplyr::mutate(name = name %>%
+  factor(levels = c("A. Traffic Speed (km/h)",
+                    "B. Travel Duration (min)",
+                    "C. Travel Distance (km)",
+                    "D. Prop. Route Traffic Level 2",
+                    "E. Prop. Route Traffic Level 3",
+                    "F. Prop. Route Traffic Level 4")))
 
 # --- Step 3: Reshape the main data for plotting ---
 long_data <- plot_data %>%
@@ -46,16 +50,20 @@ long_data <- plot_data %>%
   
   # Rename the facets and re-level 'name' factor (as in your original code)
   dplyr::mutate(name = case_when(
-    name == "gg_speed_in_traffic_kmh" ~ "Speed in Traffic (km/h)",
-    name == "gg_tl_prop_2" ~ "Prop. Route Traffic Level 2",
-    name == "gg_tl_prop_3" ~ "Prop. Route Traffic Level 3",
-    name == "gg_tl_prop_4" ~ "Prop. Route Traffic Level 4"
+    name == "gg_speed_in_traffic_kmh" ~ "A. Traffic Speed (km/h)",
+    name == "gg_duration_in_traffic_min" ~ "B. Travel Duration (min)", 
+    name == "gg_distance_km" ~ "C. Travel Distance (km)",
+    name == "gg_tl_prop_2" ~ "D. Prop. Route Traffic Level 2",
+    name == "gg_tl_prop_3" ~ "E. Prop. Route Traffic Level 3",
+    name == "gg_tl_prop_4" ~ "F. Prop. Route Traffic Level 4"
   ),
   name = name %>%
-    factor(levels = c("Speed in Traffic (km/h)",
-                      "Prop. Route Traffic Level 2",
-                      "Prop. Route Traffic Level 3",
-                      "Prop. Route Traffic Level 4")))
+    factor(levels = c("A. Traffic Speed (km/h)",
+                      "B. Travel Duration (min)",
+                      "C. Travel Distance (km)",
+                      "D. Prop. Route Traffic Level 2",
+                      "E. Prop. Route Traffic Level 3",
+                      "F. Prop. Route Traffic Level 4")))
 
 
 # --- Step 4: Create the plot by combining the layers ---
@@ -88,4 +96,31 @@ long_data %>%
         axis.text.y = element_text(size = 8))
 
 ggsave(filename = file.path(figures_dir, "summary_boxplots.png"),
-       height = 6, width = 8)
+       height = 6, width = 9)
+
+
+#### Stats
+q_df <- df %>%
+  dplyr::select(uid,
+                gg_speed_in_traffic_kmh,
+                gg_tl_prop_2, gg_tl_prop_3, gg_tl_prop_4) %>%
+  pivot_longer(-uid) %>%
+  group_by(name, uid) %>%
+  dplyr::summarise(q25 = quantile(value, 0.25, na.rm = T),
+                   q50 = quantile(value, 0.5, na.rm = T)) %>%
+  ungroup() %>%
+  pivot_wider(id_cols = uid,
+              names_from = name,
+              values_from = c(q25, q50))
+
+mean(q_df$q50_gg_tl_prop_2)
+mean(q_df$q50_gg_tl_prop_3)
+mean(q_df$q50_gg_tl_prop_4)
+
+table(q_df$q25_gg_tl_prop_2 > 0)
+table(q_df$q25_gg_tl_prop_3 == 0)
+table(q_df$q25_gg_tl_prop_4 == 0)
+
+mean(q_df$q25_gg_tl_prop_2 > 0)
+mean(q_df$q25_gg_tl_prop_3 == 0)
+mean(q_df$q25_gg_tl_prop_4 == 0)
