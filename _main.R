@@ -94,6 +94,7 @@ library(modelsummary)
 library(lubridate)
 library(tidyterra)
 library(mapboxapi)
+library(forcats)
 
 # #devtools::install_github("MBalthasar/S5Processor")
 # library(S5Processor)
@@ -170,6 +171,9 @@ if(F){
   source(file.path(git_analysis_dir, "reg_levels_explain_speed.R"))
   source(file.path(git_analysis_dir, "route_summary.R"))
   source(file.path(git_analysis_dir, "scatterplots_od_levels.R"))
+  
+  source(file.path(git_analysis_dir, "summary_boxplots.R"))
+  
   
   
 }
