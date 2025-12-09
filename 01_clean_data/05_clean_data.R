@@ -248,6 +248,20 @@ for(polygon_i in POLYGONS_ALL){
       dplyr::rename(uid = GID_3)
   }
   
+  if(polygon_i == "estates"){
+    roi_df <- readRDS(file.path(data_dir, "Nairobi Estates", "FinalData", "nairobi_estates.Rds")) %>%
+      dplyr::select(uid, Name) %>%
+      st_drop_geometry() %>%
+      distinct() 
+  }
+  
+  if(polygon_i == "osm_10m"){
+    roi_df <- readRDS(file.path(data_dir, "OSM", "FinalData", "osm_nbo_10m.Rds")) %>%
+      dplyr::select(uid, name, fclass) %>%
+      st_drop_geometry() %>%
+      distinct() 
+  }
+  
   #### Merge
   google_tl_df <- google_tl_df %>% 
     left_join(roi_df, by = "uid")

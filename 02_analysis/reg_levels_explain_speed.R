@@ -12,6 +12,9 @@ mean(df$gg_tl_prop_4 >= 0.1, na.rm = T)
 quantile(df$gg_tl_prop_4, 0.9, na.rm = T)
 
 df <- df %>%
+  dplyr::mutate(count_2 = count_2 / 1000,
+                count_3 = count_3 / 1000,
+                count_4 = count_4 / 1000) %>%
   dplyr::mutate(gg_speed_in_traffic_kmh_ln = log(gg_speed_in_traffic_kmh),
                 gg_duration_in_traffic_min_ln = log(gg_duration_in_traffic_min),
                 gg_tl_prop_234_logm0_1 = log_margin(gg_tl_prop_234, 0.1),
@@ -21,17 +24,30 @@ df <- df %>%
                 gg_tl_prop_4_logm0_1 = log_margin(gg_tl_prop_4, 0.1),
                 gg_tl_prop_2_sq = gg_tl_prop_2^2,
                 gg_tl_prop_3_sq = gg_tl_prop_3^2,
-                gg_tl_prop_4_sq = gg_tl_prop_4^2) %>%
+                gg_tl_prop_4_sq = gg_tl_prop_4^2,
+                
+                count_2_sq = count_2^2,
+                count_3_sq = count_3^2,
+                count_4_sq = count_4^2) %>%
   dplyr::filter(!is.na(gg_tl_prop_2))
 
-# OLS: Pooled ------------------------------------------------------------------
-lm_speed_1 <- feols(gg_speed_in_traffic_kmh_ln ~ gg_tl_prop_2 + gg_tl_prop_3 + gg_tl_prop_4 | uid, data = df, vcov = ~uid)
-lm_speed_2 <- feols(gg_speed_in_traffic_kmh_ln ~ gg_tl_prop_2 + gg_tl_prop_3 + gg_tl_prop_4 +
+# OLS: Prop --------------------------------------------------------------------
+lm_speed_prop_1 <- feols(gg_speed_in_traffic_kmh_ln ~ gg_tl_prop_2 + gg_tl_prop_3 + gg_tl_prop_4 | uid, data = df, vcov = ~uid)
+lm_speed_prop_2 <- feols(gg_speed_in_traffic_kmh_ln ~ gg_tl_prop_2 + gg_tl_prop_3 + gg_tl_prop_4 +
                       gg_tl_prop_2_sq + gg_tl_prop_3_sq + gg_tl_prop_4_sq | uid, data = df, vcov = ~uid)
 
-lm_dur_1 <- feols(gg_duration_in_traffic_min_ln ~ gg_tl_prop_2 + gg_tl_prop_3 + gg_tl_prop_4 | uid, data = df, vcov = ~uid)
-lm_dur_2 <- feols(gg_duration_in_traffic_min_ln ~ gg_tl_prop_2 + gg_tl_prop_3 + gg_tl_prop_4 +
+lm_dur_prop_1 <- feols(gg_duration_in_traffic_min_ln ~ gg_tl_prop_2 + gg_tl_prop_3 + gg_tl_prop_4 | uid, data = df, vcov = ~uid)
+lm_dur_prop_2 <- feols(gg_duration_in_traffic_min_ln ~ gg_tl_prop_2 + gg_tl_prop_3 + gg_tl_prop_4 +
                     gg_tl_prop_2_sq + gg_tl_prop_3_sq + gg_tl_prop_4_sq | uid, data = df, vcov = ~uid)
+
+# OLS: Count -------------------------------------------------------------------
+lm_speed_count_1 <- feols(gg_speed_in_traffic_kmh_ln ~ count_2 + count_3 + count_4 | uid, data = df, vcov = ~uid)
+lm_speed_count_2 <- feols(gg_speed_in_traffic_kmh_ln ~ count_2 + count_3 + count_4 +
+                      count_2_sq + count_3_sq + count_4_sq | uid, data = df, vcov = ~uid)
+
+lm_dur_count_1 <- feols(gg_duration_in_traffic_min_ln ~ count_2 + count_3 + count_4 | uid, data = df, vcov = ~uid)
+lm_dur_count_2 <- feols(gg_duration_in_traffic_min_ln ~ count_2 + count_3 + count_4 +
+                    count_2_sq + count_3_sq + count_4_sq | uid, data = df, vcov = ~uid)
 
 # OLS: Pooled ------------------------------------------------------------------
 # lm_speed_all_df <- map_df(unique(df$uid), function(uid_i){

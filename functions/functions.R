@@ -5,6 +5,9 @@ rename_var <- function(df, var){
   
   df <- df %>%
     dplyr::mutate(tmp_var = case_when(
+      tmp_var == "speed_pc" ~ "Speed, % Change",
+      tmp_var == "duration_pc" ~ "Duration, % Change",
+      tmp_var == "traffic_index" ~ "Traffic Index",
       tmp_var == "gg_duration_diff" ~ "Duration, Diff. than Typical",
       tmp_var == "gg_speed_diff" ~ "Speed, Diff. than Typical",
       

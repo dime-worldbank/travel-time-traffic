@@ -5,14 +5,16 @@ POLYGONS_ALL <- c("google_typical_route_10m",
                   #"gadm1",
                   #"gadm2",
                   #"gadm3",
+                  #"osm_10m",
+                  "estates",
                   "twitter_crashes_50m",
                   "twitter_crashes_100m",
                   "ntsa_crashes_50m",
                   "ntsa_crashes_100m")
 
 POLYGONS_ALL <- "google_typical_route_10m"
-
-#POLYGONS_ALL <- "gadm1"
+POLYGONS_ALL <- "osm_10m"
+POLYGONS_ALL <- "estates"
 
 DELETE_OUTPUT <- F
 RUN_CODE      <- F

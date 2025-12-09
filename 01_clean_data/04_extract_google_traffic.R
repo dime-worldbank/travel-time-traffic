@@ -19,23 +19,42 @@ twitter_sf      <- readRDS(file.path(data_dir, "Twitter Crashes", "RawData", "cr
 twitter_50m_sf  <- st_buffer(twitter_sf, dist = 50)
 twitter_100m_sf <- st_buffer(twitter_sf, dist = 100)
 
-# Setup parallel cores ---------------------------------------------------------
-myCluster <- makeCluster(2, type = "FORK") 
+## OSM
+osm_sf <- readRDS(file.path(data_dir, "OSM", "FinalData", "osm_nbo_10m.Rds"))
 
-registerDoParallel(myCluster)
+## Estates
+estates_sf <- readRDS(file.path(data_dir, "Nairobi Estates", "FinalData", "nairobi_estates.Rds"))
+
+# Setup parallel cores ---------------------------------------------------------
+#myCluster <- makeCluster(5, type = "FORK") 
+
+#registerDoParallel(myCluster)
 
 # Extract data -----------------------------------------------------------------
 tiff_vec <- file.path(traffic_gg_raw_dir) %>%
-  list.files(pattern = "*.tiff") 
+  list.files(pattern = "*.tiff") %>%
+  rev()
 
-#for(file_i in rev(tiff_vec)){
-foreach(file_i=tiff_vec, .combine='c', .inorder=FALSE) %dopar% {
+for(file_i in tiff_vec){
+  #foreach(file_i=tiff_vec, .combine='c', .inorder=FALSE) %dopar% {
   
   r <- rast(file.path(traffic_gg_raw_dir, file_i))
   
   file_i_str <- file_i %>% str_replace_all(".tiff|gt_nairobi_utc", "")
   
   for(polygon in POLYGONS_ALL){
+    
+    if(polygon %in% "osm_10m"){
+      roi_sf <- osm_sf %>%
+        dplyr::select(uid)
+      id_var <- "uid"
+    }
+    
+    if(polygon %in% "estates"){
+      roi_sf <- estates_sf %>%
+        dplyr::select(uid)
+      id_var <- "uid"
+    }
     
     if(polygon %in% "twitter_crashes_50m"){
       roi_sf <- twitter_50m_sf %>%

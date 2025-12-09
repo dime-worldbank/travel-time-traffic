@@ -4,8 +4,8 @@ hvline_color <- "black"
 
 # Load data --------------------------------------------------------------------
 route_df <- readRDS(file.path(analysis_data_dir, "google_typical_route_10m_wide.Rds"))
-gadm2_df <- readRDS(file.path(analysis_data_dir, "gadm2_wide.Rds"))
-gadm2_sf  <- readRDS(file.path(gadm_dir, "RawData", "gadm41_KEN_2_pk.rds"))
+# gadm2_df <- readRDS(file.path(analysis_data_dir, "gadm2_wide.Rds"))
+# gadm2_sf  <- readRDS(file.path(gadm_dir, "RawData", "gadm41_KEN_2_pk.rds"))
 
 gadm1_df <- readRDS(file.path(analysis_data_dir, "gadm1_wide.Rds"))
 
@@ -15,14 +15,16 @@ route_df <- route_df %>%
          hour = datetime %>% hour(),
          day_type = ifelse(dow %in% c("Sat", "Sun"),
                            "Weekend",
-                           "Weekday"))
+                           "Weekday"),
+         traffic_index = gg_tl_prop_2*1.086 + gg_tl_prop_3*3.946 + gg_tl_prop_4*5.979)
 
 gadm1_df <- gadm1_df %>%
   mutate(dow = datetime %>% lubridate::wday(label = T),
          hour = datetime %>% hour(),
          day_type = ifelse(dow %in% c("Sat", "Sun"),
                            "Weekend",
-                           "Weekday"))
+                           "Weekday"),
+         traffic_index = gg_tl_prop_2*1.086 + gg_tl_prop_3*3.946 + gg_tl_prop_4*5.979)
 
 # Period with 11 Routes --------------------------------------------------------
 
@@ -39,9 +41,7 @@ route_long_df <- route_df %>%
   filter(name %in% c("gg_distance_km",
                      "gg_duration_in_traffic_min",
                      "gg_speed_in_traffic_kmh",
-                     "gg_tl_prop_234",
-                     "gg_tl_prop_34",
-                     "gg_tl_prop_4")) %>%
+                     "traffic_index")) %>%
   rename_var("name") %>%
   mutate(name = paste0(name, "\n[11 Routes]"))
 
@@ -52,9 +52,7 @@ gadm1_long_df <- gadm1_df %>%
   ungroup() %>%
   
   pivot_longer(cols = -c(hour, day_type)) %>%
-  filter(name %in% c("gg_tl_prop_234",
-                     "gg_tl_prop_34",
-                     "gg_tl_prop_4")) %>%
+  filter(name %in% c("traffic_index")) %>%
   rename_var("name") %>%
   mutate(name = paste0(name, "\n[City Level]"))
 
@@ -66,12 +64,8 @@ hour_long_df <- bind_rows(
            factor(levels = c("Distance (km)\n[11 Routes]",
                              "Average Speed (km/h)\n[11 Routes]",
                              "Duration (mins)\n[11 Routes]",
-                             "Traffic, Prop 2,3,4\n[11 Routes]",
-                             "Traffic, Prop 3,4\n[11 Routes]",
-                             "Traffic, Prop 4\n[11 Routes]",
-                             "Traffic, Prop 2,3,4\n[City Level]",
-                             "Traffic, Prop 3,4\n[City Level]",
-                             "Traffic, Prop 4\n[City Level]")))
+                             "Traffic Index\n[11 Routes]",
+                             "Traffic Index\n[City Level]")))
 
 #### Correlation figure
 hour_cor_df <- hour_long_df %>%
@@ -136,7 +130,8 @@ p_trends <- hour_long_df %>%
         plot.title = element_text(face = "bold"),
         legend.position = "right") 
 
-ggsave(filename = file.path(figures_dir, "cong_timeofday.png"),
+ggsave(p_trends,
+       filename = file.path(figures_dir, "cong_timeofday.png"),
        height = 4.5, width = 9.5)
 
 # Trends over time -------------------------------------------------------------
@@ -164,9 +159,7 @@ trends_df <- cong_df %>%
   ungroup() %>%
   
   pivot_longer(cols = -c(week, day_type, data_type)) %>%
-  filter(name %in% c("gg_tl_prop_234",
-                     "gg_tl_prop_34",
-                     "gg_tl_prop_4",
+  filter(name %in% c("traffic_index",
                      "gg_speed_in_traffic_kmh",
                      "gg_duration_in_traffic_min",
                      "gg_distance_km")) %>%
@@ -182,12 +175,8 @@ trends_df <- cong_df %>%
            factor(levels = c("Distance (km)\n[11 Routes]",
                              "Average Speed (km/h)\n[11 Routes]",
                              "Duration (mins)\n[11 Routes]",
-                             "Traffic, Prop 2,3,4\n[11 Routes]",
-                             "Traffic, Prop 3,4\n[11 Routes]",
-                             "Traffic, Prop 4\n[11 Routes]",
-                             "Traffic, Prop 2,3,4\n[City Level]",
-                             "Traffic, Prop 3,4\n[City Level]",
-                             "Traffic, Prop 4\n[City Level]"))) %>%
+                             "Traffic Index\n[11 Routes]",
+                             "Traffic Index\n[City Level]"))) %>%
   
   ## Percent change from initial value (baseline)
   filter(!is.na(value)) %>%
@@ -216,22 +205,14 @@ cor_weekday_df <- trends_df %>%
            factor(levels = c("Distance (km)\n[11 Routes]",
                              "Average Speed (km/h)\n[11 Routes]",
                              "Duration (mins)\n[11 Routes]",
-                             "Traffic, Prop 2,3,4\n[11 Routes]",
-                             "Traffic, Prop 3,4\n[11 Routes]",
-                             "Traffic, Prop 4\n[11 Routes]",
-                             "Traffic, Prop 2,3,4\n[City Level]",
-                             "Traffic, Prop 3,4\n[City Level]",
-                             "Traffic, Prop 4\n[City Level]"))) %>%
+                             "Traffic Index\n[11 Routes]",
+                             "Traffic Index\n[City Level]"))) %>%
   mutate(variable = variable %>%
            factor(levels = c("Distance (km)\n[11 Routes]",
                              "Average Speed (km/h)\n[11 Routes]",
                              "Duration (mins)\n[11 Routes]",
-                             "Traffic, Prop 2,3,4\n[11 Routes]",
-                             "Traffic, Prop 3,4\n[11 Routes]",
-                             "Traffic, Prop 4\n[11 Routes]",
-                             "Traffic, Prop 2,3,4\n[City Level]",
-                             "Traffic, Prop 3,4\n[City Level]",
-                             "Traffic, Prop 4\n[City Level]")))
+                             "Traffic Index\n[11 Routes]",
+                             "Traffic Index\n[City Level]")))
 
 cor_weekend_df <- trends_df %>%
   dplyr::filter(day_type == "Weekend") %>%
@@ -249,22 +230,14 @@ cor_weekend_df <- trends_df %>%
            factor(levels = c("Distance (km)\n[11 Routes]",
                              "Average Speed (km/h)\n[11 Routes]",
                              "Duration (mins)\n[11 Routes]",
-                             "Traffic, Prop 2,3,4\n[11 Routes]",
-                             "Traffic, Prop 3,4\n[11 Routes]",
-                             "Traffic, Prop 4\n[11 Routes]",
-                             "Traffic, Prop 2,3,4\n[City Level]",
-                             "Traffic, Prop 3,4\n[City Level]",
-                             "Traffic, Prop 4\n[City Level]"))) %>%
+                             "Traffic Index\n[11 Routes]",
+                             "Traffic Index\n[City Level]"))) %>%
   mutate(variable = variable %>%
            factor(levels = c("Distance (km)\n[11 Routes]",
                              "Average Speed (km/h)\n[11 Routes]",
                              "Duration (mins)\n[11 Routes]",
-                             "Traffic, Prop 2,3,4\n[11 Routes]",
-                             "Traffic, Prop 3,4\n[11 Routes]",
-                             "Traffic, Prop 4\n[11 Routes]",
-                             "Traffic, Prop 2,3,4\n[City Level]",
-                             "Traffic, Prop 3,4\n[City Level]",
-                             "Traffic, Prop 4\n[City Level]")))
+                             "Traffic Index\n[11 Routes]",
+                             "Traffic Index\n[City Level]")))
 
 
 p_cor_weekday <- cor_weekday_df %>%
