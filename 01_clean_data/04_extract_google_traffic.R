@@ -26,17 +26,17 @@ osm_sf <- readRDS(file.path(data_dir, "OSM", "FinalData", "osm_nbo_10m.Rds"))
 estates_sf <- readRDS(file.path(data_dir, "Nairobi Estates", "FinalData", "nairobi_estates.Rds"))
 
 # Setup parallel cores ---------------------------------------------------------
-#myCluster <- makeCluster(5, type = "FORK") 
+myCluster <- makeCluster(3, type = "FORK") 
 
-#registerDoParallel(myCluster)
+registerDoParallel(myCluster)
 
 # Extract data -----------------------------------------------------------------
 tiff_vec <- file.path(traffic_gg_raw_dir) %>%
   list.files(pattern = "*.tiff") %>%
   rev()
 
-for(file_i in tiff_vec){
-  #foreach(file_i=tiff_vec, .combine='c', .inorder=FALSE) %dopar% {
+#for(file_i in tiff_vec){
+  foreach(file_i=tiff_vec, .combine='c', .inorder=FALSE) %dopar% {
   
   r <- rast(file.path(traffic_gg_raw_dir, file_i))
   
