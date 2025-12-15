@@ -14,7 +14,7 @@ POLYGONS_ALL <- c("google_typical_route_10m",
 
 POLYGONS_ALL <- "google_typical_route_10m"
 POLYGONS_ALL <- "osm_10m"
-POLYGONS_ALL <- "osm_10m"
+POLYGONS_ALL <- "estates"
 
 DELETE_OUTPUT <- F
 RUN_CODE      <- F
@@ -22,6 +22,14 @@ RUN_CODE      <- F
 # Filepaths --------------------------------------------------------------------
 #### Root
 if(Sys.info()[["user"]] == "rmarty"){
+  db_dir <- "~/Dropbox/World Bank/IEs/Travel Time and Traffic Analysis"
+  git_dir <- "~/Documents/Github/travel-time-traffic"
+  sm_db_dir <- "~/Dropbox/World Bank/IEs/CrashMap-Nairobi"
+  figures_dir <- "~/Dropbox/Apps/Overleaf/Travel Time and Traffic/figures"
+  tables_dir <- "~/Dropbox/Apps/Overleaf/Travel Time and Traffic/tables"
+}
+
+if(Sys.info()[["user"]] == "robmarty"){
   db_dir <- "~/Dropbox/World Bank/IEs/Travel Time and Traffic Analysis"
   git_dir <- "~/Documents/Github/travel-time-traffic"
   sm_db_dir <- "~/Dropbox/World Bank/IEs/CrashMap-Nairobi"
