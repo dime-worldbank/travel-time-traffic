@@ -15,6 +15,7 @@ POLYGONS_ALL <- c("google_typical_route_10m",
 POLYGONS_ALL <- "google_typical_route_10m"
 POLYGONS_ALL <- "osm_10m"
 POLYGONS_ALL <- "osm_10m"
+POLYGONS_ALL <- c("osm_10m", "estates")
 
 DELETE_OUTPUT <- F
 RUN_CODE      <- F

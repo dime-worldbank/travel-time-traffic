@@ -5,8 +5,12 @@ hvline_color <- "black"
 # Load data --------------------------------------------------------------------
 route_df <- readRDS(file.path(analysis_data_dir, "google_typical_route_10m_wide.Rds"))
 gadm1_df <- readRDS(file.path(analysis_data_dir, "gadm1_wide.Rds"))
-gadm3_df <- readRDS(file.path(analysis_data_dir, "gadm3_wide.Rds"))
-gadm3_sf <- readRDS(file.path(gadm_dir, "RawData", paste0("gadm41_KEN_",3,"_pk.rds")))
+
+gadm3_df <- readRDS(file.path(analysis_data_dir, "estates_wide.Rds"))
+gadm3_sf <- readRDS(file.path(data_dir, "Nairobi Estates", "FinalData", "nairobi_estates.Rds"))
+
+osm_df <- readRDS(file.path(analysis_data_dir, "osm_10m_wide.Rds"))
+gadm3_sf <- readRDS(file.path(data_dir, "Nairobi Estates", "FinalData", "nairobi_estates.Rds"))
 
 # Cleanup ----------------------------------------------------------------------
 route_df$gg_tl_prop_4[is.na(route_df$gg_tl_prop_4)] <- 0
@@ -108,11 +112,10 @@ gadm3_sum_df <- gadm3_df %>%
   dplyr::mutate(traffic_index = gg_tl_prop_2*1.086 + gg_tl_prop_3*3.946 + gg_tl_prop_4*5.979) %>%
   group_by(uid, day_type) %>%
   dplyr::summarise(traffic_index = mean(traffic_index)) %>%
-  ungroup() %>%
-  dplyr::rename(GID_3 = uid) 
+  ungroup() 
 
 gadm3_data_sf <- gadm3_sf %>%
-  left_join(gadm3_sum_df, by = "GID_3")
+  left_join(gadm3_sum_df, by = "uid")
 
 # Figures ----------------------------------------------------------------------
 p_1 <- week_df %>%
