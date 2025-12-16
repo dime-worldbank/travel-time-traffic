@@ -36,7 +36,7 @@ twitter_100m_sf <- st_buffer(twitter_sf, dist = 100)
 rds_i <- rds_vec_all[1]
 dataset = "mapbox_typical_route_10m"
 
-for(dataset in "mapbox_typical_route_20m"){
+for(dataset in "osm_10m"){
   
   if(dataset == "gadm1"){
     polyline_sf <- nbo_sf
@@ -90,8 +90,7 @@ for(dataset in "mapbox_typical_route_20m"){
   }
   
   rds_vec <- sample(rds_vec)
-  rds_vec <- sample(rds_vec)
-  
+
   for(rds_i in rds_vec){
     
     mp_sf <- readRDS(rds_i)
