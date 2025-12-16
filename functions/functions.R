@@ -139,10 +139,14 @@ extract_gt_to_poly <- function(r, locations_sf){
 calc_traffic_length <- function(polygon_sf, traffic_sf, add_by_class = F){
   
   length_all_df <- map_df(1:nrow(polygon_sf), function(i){
-    
+
     road_i <- polygon_sf[i,]
     
-    mp_sf_i_roadi <- st_intersection(road_i, traffic_sf)
+    mp_sf_i_roadi <- st_intersection_chunks(traffic_sf, road_i, 2000)
+    #mp_sf_i_roadi <- st_intersection(traffic_sf, road_i)
+    
+    road_i_df <- road_i
+    road_i_df$geometry <- NULL 
     
     if(nrow(mp_sf_i_roadi) == 0){
       
@@ -161,9 +165,6 @@ calc_traffic_length <- function(polygon_sf, traffic_sf, add_by_class = F){
       length_moderate <- mp_sf_i_roadi$length_m[mp_sf_i_roadi$congestion %in% "moderate"] %>% sum()
       length_heavy    <- mp_sf_i_roadi$length_m[mp_sf_i_roadi$congestion %in% "heavy"] %>% sum()
       length_severe   <- mp_sf_i_roadi$length_m[mp_sf_i_roadi$congestion %in% "severe"] %>% sum()
-      
-      road_i_df <- road_i
-      road_i_df$geometry <- NULL 
       
       length_df <- data.frame(
         length_low = length_low,
@@ -197,3 +198,35 @@ calc_traffic_length <- function(polygon_sf, traffic_sf, add_by_class = F){
   return(length_all_df)
   
 }
+
+calc_traffic_length_all <- function(polygon_sf, traffic_sf, uid_var, chunk_size){
+  
+  polygon_sf$uid_tmp <- polygon_sf[[uid_var]]
+  
+  traffic_poly_sf <- st_intersection_chunks(traffic_sf, polygon_sf, chunk_size)
+  
+  traffic_poly_sf <- traffic_poly_sf %>%
+    dplyr::mutate(length_m = geometry %>% st_length() %>% as.numeric())
+  
+  traffic_poly_df <- traffic_poly_sf %>%
+    group_by(uid_tmp, congestion) %>%
+    dplyr::summarise(length_m = sum(length_m)) %>%
+    ungroup() %>%
+    st_drop_geometry() %>%
+    pivot_wider(id_cols = uid_tmp,
+                names_from = congestion,
+                values_from = length_m,
+                names_prefix = "length_",
+                values_fill = 0) 
+  
+  polygon_df <- polygon_sf %>%
+    st_drop_geometry()
+  
+  traffic_poly_df <- traffic_poly_df %>%
+    left_join(polygon_df, by = "uid_tmp") %>%
+    dplyr::select(-uid_tmp)
+  
+  return(traffic_poly_df)
+  
+}
+

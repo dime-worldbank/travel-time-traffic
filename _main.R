@@ -1,7 +1,7 @@
 # Travel Time and Traffic: Main Script
 
 POLYGONS_ALL <- c("google_typical_route_10m", 
-                  #"mapbox_typical_route_10m",
+                  "mapbox_typical_route_10m",
                   #"gadm1",
                   #"gadm2",
                   #"gadm3",
@@ -106,8 +106,12 @@ library(fixest)
 library(modelsummary)
 library(lubridate)
 library(tidyterra)
+library(pbmcapply)
 library(mapboxapi)
 library(forcats)
+
+source("https://raw.githubusercontent.com/ramarty/fast-functions/refs/heads/master/R/functions_in_chunks.R")
+
 
 # #devtools::install_github("MBalthasar/S5Processor")
 # library(S5Processor)

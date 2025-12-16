@@ -1,7 +1,14 @@
 # Regression
 
 # Load data --------------------------------------------------------------------
-route_df <- readRDS(file.path(analysis_data_dir, "google_typical_route_10m_wide.Rds"))
+groute_df <- readRDS(file.path(analysis_data_dir, "google_typical_route_10m_wide.Rds"))
+mroute_df <- readRDS(file.path(analysis_data_dir, "mapbox_typical_route_10m_wide.Rds"))
+
+groute_df$datetime %>% summary()
+mroute_df$datetime %>% summary()
+
+a <- mroute_df$datetime[!is.na(mroute_df$mb_tl_prop_4)]
+
 osm_df   <- readRDS(file.path(analysis_data_dir, "osm_10m_wide.Rds"))
 
 # Clean data -------------------------------------------------------------------
