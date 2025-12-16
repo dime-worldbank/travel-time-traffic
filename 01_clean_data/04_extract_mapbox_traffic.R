@@ -10,8 +10,10 @@ rds_vec_all <- file.path(traffic_mb_raw_dir) %>%
 
 ## Typical Routes
 rt_typ_mapbox_sf      <- readRDS(file.path(tt_dir, "mapbox_typical_route.Rds"))
-rt_typ_mapbox_buff_sf <- st_buffer(rt_typ_mapbox_sf, dist = BUFFER_M)
-rt_typ_mapbox_buff_sf$route_area_m2_mptyp <- rt_typ_mapbox_buff_sf %>% st_area() %>% as.numeric()
+rt_typ_mapbox_10m_buff_sf <- st_buffer(rt_typ_mapbox_sf, dist = 10)
+rt_typ_mapbox_20m_buff_sf <- st_buffer(rt_typ_mapbox_sf, dist = 20)
+rt_typ_mapbox_10m_buff_sf$route_area_m2_mptyp <- rt_typ_mapbox_10m_buff_sf %>% st_area() %>% as.numeric()
+rt_typ_mapbox_20m_buff_sf$route_area_m2_mptyp <- rt_typ_mapbox_20m_buff_sf %>% st_area() %>% as.numeric()
 
 ## OSM
 osm_sf <- readRDS(file.path(data_dir, "OSM", "FinalData", "osm_nbo_10m.Rds"))
@@ -34,7 +36,7 @@ twitter_100m_sf <- st_buffer(twitter_sf, dist = 100)
 rds_i <- rds_vec_all[1]
 dataset = "mapbox_typical_route_10m"
 
-for(dataset in "osm_10m"){
+for(dataset in "mapbox_typical_route_20m"){
   
   if(dataset == "gadm1"){
     polyline_sf <- nbo_sf
@@ -67,7 +69,14 @@ for(dataset in "osm_10m"){
   }
   
   if(dataset == "mapbox_typical_route_10m"){
-    polyline_sf <- rt_typ_mapbox_buff_sf
+    polyline_sf <- rt_typ_mapbox_10m_buff_sf
+    uid_var <- "segment_id"
+    chunk_size <- 10
+    rds_vec <- rds_vec_all
+  }
+  
+  if(dataset == "mapbox_typical_route_20m"){
+    polyline_sf <- rt_typ_mapbox_20m_buff_sf
     uid_var <- "segment_id"
     chunk_size <- 10
     rds_vec <- rds_vec_all
@@ -114,13 +123,13 @@ for(dataset in "osm_10m"){
           ## Grab Mapbox Traffic for Hour i
           mp_sf_i <- mp_sf[mp_sf$datetime_scrape %in% ymd_hms(datetime_i, tz = "Africa/Nairobi"),]
           
-          if(dataset %in% c("mapbox_typical_route_10m", "gadm1")){
+          if(dataset %in% c("mapbox_typical_route_10m", "mapbox_typical_route_20m", "gadm1")){
             rt_mapbox_df <- calc_traffic_length(polyline_sf, mp_sf_i)
           } else{
             rt_mapbox_df <- calc_traffic_length_all(polyline_sf, mp_sf_i, uid_var, chunk_size)
           }
           #
-
+          
           rt_mapbox_clean_df <- rt_mapbox_df %>%
             dplyr::select(!!uid_var, contains("length_")) %>%
             dplyr::rename_at(vars(contains("length_")), . %>% str_replace_all("length_", "length_mb_"))
