@@ -34,7 +34,7 @@ twitter_100m_sf <- st_buffer(twitter_sf, dist = 100)
 rds_i <- rds_vec_all[1]
 dataset = "mapbox_typical_route_10m"
 
-for(dataset in rev(c("twitter_crashes_50m", "twitter_crashes_100m", "estates", "gadm1"))){
+for(dataset in "osm_10m"){
   
   if(dataset == "gadm1"){
     polyline_sf <- nbo_sf
@@ -79,6 +79,9 @@ for(dataset in rev(c("twitter_crashes_50m", "twitter_crashes_100m", "estates", "
     chunk_size <- 200
     rds_vec <- rds_vec_all
   }
+  
+  rds_vec <- sample(rds_vec)
+  rds_vec <- sample(rds_vec)
   
   for(rds_i in rds_vec){
     
