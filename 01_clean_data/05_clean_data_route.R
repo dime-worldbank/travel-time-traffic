@@ -35,9 +35,15 @@ mb_df <- mb_df %>%
                 distance_m_mode = Mode(distance_m)) %>%
   ungroup() %>%
   
-  dplyr::mutate(tl_prop_2 = length_mb_moderate/length_traffic_total_max,
+  dplyr::mutate(tl_prop_1 = length_mb_low/length_traffic_total_max,
+                tl_prop_2 = length_mb_moderate/length_traffic_total_max,
                 tl_prop_3 = length_mb_heavy/length_traffic_total_max,
-                tl_prop_4 = length_mb_severe/length_traffic_total_max) %>%
+                tl_prop_4 = length_mb_severe/length_traffic_total_max,
+                
+                tl_prop_1_unadj = length_mb_low/length_traffic_total,
+                tl_prop_2_unadj = length_mb_moderate/length_traffic_total,
+                tl_prop_3_unadj = length_mb_heavy/length_traffic_total,
+                tl_prop_4_unadj = length_mb_severe/length_traffic_total) %>%
   
   dplyr::mutate(tl_and_tt_data = !is.na(tl_prop_2) & !is.na(duration_s), 
                 route_change_length = (segment_id %in% c(18, 25)),

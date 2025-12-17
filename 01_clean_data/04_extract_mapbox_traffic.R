@@ -44,7 +44,7 @@ twitter_crashes_dataset_vec <- c(#"twitter_crashes_50m",
 rds_i <- rds_vec_all[1]
 dataset = "mapbox_typical_route_10m"
 
-for(dataset in twitter_crashes_dataset_vec){
+for(dataset in rev(twitter_crashes_dataset_vec)){
   
   if(dataset == "gadm1"){
     polyline_sf <- nbo_sf
@@ -90,7 +90,7 @@ for(dataset in twitter_crashes_dataset_vec){
     rds_vec <- rds_vec_all
   }
   
-  rds_vec <- sample(rds_vec)
+  rds_vec <- rev(rds_vec)
   
   for(rds_i in rds_vec){
     
