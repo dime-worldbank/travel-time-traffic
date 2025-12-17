@@ -14,33 +14,25 @@ twitter_100m_sf <- st_buffer(twitter_sf, dist = 100)
 route_sf <- readRDS(file.path(tt_dir, "mapbox_typical_route.Rds")) %>%
   dplyr::select(segment_id)
 
+buff_sizes_50m <- seq(from = 100, to = 2000, by = 50)
+buff_sizes_100m <- seq(from = 200, to = 2000, by = 100)
+
 for(polygon in c("twitter_crashes_50m",
-                 "twitter_crashes_100m")){
+                 "twitter_crashes_100m",
+                 paste0("twitter_crashes_",buff_sizes_50m,"m_doughnut50m"),
+                 paste0("twitter_crashes_",buff_sizes_100m,"m_doughnut100m"))){
+  
+  message(polygon)
+  
+  buff_name <- polygon %>% str_replace_all("twitter_crashes_", "")
   
   #### Load
-  if(polygon %in% "ntsa_crashes_50m"){
-    roi_sf <- rtc_50m_sf %>%
-      dplyr::select(crash_id)
-    id_var <- "crash_id"
-  }
+  twitter_sf <- readRDS(file.path(data_dir, "Twitter Crashes", "FinalData", paste0("crashes_twitter_",buff_name,".Rds")))
   
-  if(polygon %in% "ntsa_crashes_100m"){
-    roi_sf <- rtc_100m_sf %>%
-      dplyr::select(crash_id)
-    id_var <- "crash_id"
-  }
+  roi_sf <- twitter_sf %>%
+    dplyr::select(crash_id)
+  id_var <- "crash_id"
   
-  if(polygon %in% "twitter_crashes_50m"){
-    roi_sf <- twitter_50m_sf %>%
-      dplyr::select(crash_id)
-    id_var <- "crash_id"
-  }
-  
-  if(polygon %in% "twitter_crashes_100m"){
-    roi_sf <- twitter_100m_sf %>%
-      dplyr::select(crash_id)
-    id_var <- "crash_id"
-  }
   
   #### Intersect Points and Route
   roi_route_df <- map_df(1:nrow(roi_sf), function(i){

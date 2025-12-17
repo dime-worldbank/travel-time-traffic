@@ -40,7 +40,9 @@ for(unit in c("50m", "100m")){
   mb_tt_crash_agg_df <- mb_tt_crash_df %>%
     group_by(crash_id, datetime) %>%
     dplyr::summarise(speed_kmh = weighted.mean(speed_kmh, road_length_near_crash_m),
-                     duration_s = weighted.mean(duration_s, road_length_near_crash_m)) %>%
+                     duration_s = weighted.mean(duration_s, road_length_near_crash_m),
+                     distance_m_weighted = weighted.mean(distance_m, road_length_near_crash_m),
+                     distance_m = mean(distance_m)) %>%
     ungroup()
   
   #### Merge + Create variables - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 

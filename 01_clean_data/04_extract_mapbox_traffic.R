@@ -25,18 +25,26 @@ estates_sf <- readRDS(file.path(data_dir, "Nairobi Estates", "FinalData", "nairo
 nbo_sf <- readRDS(file.path(gadm_dir, "RawData", "gadm41_KEN_1_pk.rds"))
 
 ## Twitter Crashes
-twitter_sf      <- readRDS(file.path(data_dir, "Twitter Crashes", "RawData", "crashes_twitter.Rds"))
-twitter_sf <- twitter_sf %>%
-  dplyr::filter(crash_datetime >= ymd_hms("2023-05-20 00:00:00", tz = "Africa/Nairobi"))
-twitter_50m_sf  <- st_buffer(twitter_sf, dist = 50)
-twitter_100m_sf <- st_buffer(twitter_sf, dist = 100)
+# twitter_sf      <- readRDS(file.path(data_dir, "Twitter Crashes", "RawData", "crashes_twitter.Rds"))
+# twitter_sf <- twitter_sf %>%
+#   dplyr::filter(crash_datetime >= ymd_hms("2023-05-20 00:00:00", tz = "Africa/Nairobi"))
+# twitter_50m_sf  <- st_buffer(twitter_sf, dist = 50)
+# twitter_100m_sf <- st_buffer(twitter_sf, dist = 100)
 
+### Twitter Crashes Vectors
+buff_sizes_50m <- seq(from = 100, to = 2000, by = 50)
+buff_sizes_100m <- seq(from = 200, to = 2000, by = 100)
+
+twitter_crashes_dataset_vec <- c(#"twitter_crashes_50m",
+  #"twitter_crashes_100m",
+  #paste0("twitter_crashes_",buff_sizes_50m,"m_doughnut50m"),
+  paste0("twitter_crashes_",buff_sizes_100m,"m_doughnut100m"))
 
 # Extract  data ----------------------------------------------------------------
 rds_i <- rds_vec_all[1]
 dataset = "mapbox_typical_route_10m"
 
-for(dataset in "osm_10m"){
+for(dataset in twitter_crashes_dataset_vec){
   
   if(dataset == "gadm1"){
     polyline_sf <- nbo_sf
@@ -45,16 +53,9 @@ for(dataset in "osm_10m"){
     rds_vec <- rds_vec_all
   }
   
-  if(dataset == "twitter_crashes_50m"){
-    polyline_sf <- twitter_50m_sf
-    uid_var <- "crash_id"
-    chunk_size <- 100
-    rds_vec <- rds_vec_all
-    rds_vec <- rds_vec[basename(rds_vec) <= "mp_nairobi_2023_07_13.Rds"]
-  }
-  
-  if(dataset == "twitter_crashes_100m"){
-    polyline_sf <- twitter_100m_sf
+  if(dataset %>% str_detect("twitter_crashes")){
+    buff_name <- dataset %>% str_replace_all("twitter_crashes_", "")
+    polyline_sf <- readRDS(file.path(data_dir, "Twitter Crashes", "FinalData", paste0("crashes_twitter_",buff_name,".Rds")))
     uid_var <- "crash_id"
     chunk_size <- 100
     rds_vec <- rds_vec_all
@@ -90,7 +91,7 @@ for(dataset in "osm_10m"){
   }
   
   rds_vec <- sample(rds_vec)
-
+  
   for(rds_i in rds_vec){
     
     mp_sf <- readRDS(rds_i)
@@ -114,6 +115,8 @@ for(dataset in "osm_10m"){
           paste0(paste0("_buffer", BUFFER_M, "m")) %>%
           paste0(".Rds")
         
+        file.path(data_dir, "extracted-data", dataset) %>% dir.create()
+        file.path(data_dir, "extracted-data", dataset, "mapbox_traffic_levels") %>% dir.create()
         OUT_PATH <- file.path(data_dir, "extracted-data", dataset, "mapbox_traffic_levels", filename_i)
         
         if(!file.exists(OUT_PATH)){
