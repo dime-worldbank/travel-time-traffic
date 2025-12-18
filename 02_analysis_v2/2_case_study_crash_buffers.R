@@ -5,6 +5,18 @@ crash_df <- readRDS(file.path(analysis_data_dir, "mapbox_twitter_100m.Rds"))
 
 beta <- readRDS(file.path(data_dir, "Calibration Coefficients", "coefs.Rds"))
 
+# Make long --------------------------------------------------------------------
+crash_df <- crash_df %>%
+  dplyr::select(crash_id, datetime, crash_datetime, hours_since_crash, contains("tl_prop")) %>%
+  pivot_longer(cols = -c(crash_id, datetime, crash_datetime, hours_since_crash)) %>%
+  dplyr::mutate(buffer = name %>% str_replace_all("tl_prop_2_doughbuff_|tl_prop_3_doughbuff_|tl_prop_4_doughbuff_|m", "") %>%
+                  as.numeric() %>%
+                  replace_na(100),
+                variable = name %>% str_replace_all("_doughbuff_.*", "")) %>%
+  pivot_wider(id_cols = c(crash_id, datetime, crash_datetime, hours_since_crash, buffer),
+              names_from = variable,
+              values_from = value)
+
 # Clean data -------------------------------------------------------------------
 crash_df <- crash_df %>%
   mutate(
@@ -22,14 +34,7 @@ crash_df <- crash_df %>%
   dplyr::mutate(date = datetime %>% hour(),
                 hour = datetime %>% hour(),
                 dow = datetime %>% lubridate::wday(),
-                crash_dow = crash_datetime %>% lubridate::wday(),
-                duration_min = duration_s / 60,
-                duration_min_ln = log(duration_min),
-                speed_kmh_ln = log(speed_kmh),
-                delay_factor_ttsample = case_when(
-                  is.na(speed_kmh) ~ NA,
-                  TRUE ~ delay_factor
-                ))
+                crash_dow = crash_datetime %>% lubridate::wday())
 
 hours_since_df <- crash_df %>%
   dplyr::filter(hours_since_crash <= 10,
@@ -61,20 +66,8 @@ crash_df <- crash_df %>%
                 hours_since_crash >= -24*7*4) %>%
   group_by(crash_id) %>%
   dplyr::mutate(n_obs = n()) %>%
-  ungroup() %>%
-  dplyr::filter(n_obs >= 21*2)
-
-n_crash_tl <- crash_df %>%
-  dplyr::filter(!is.na(delay_factor)) %>%
-  pull(crash_id) %>%
-  unique() %>%
-  length()
-
-n_crash_tt <- crash_df %>%
-  dplyr::filter(!is.na(speed_kmh)) %>%
-  pull(crash_id) %>%
-  unique() %>%
-  length()
+  ungroup() #%>%
+  #dplyr::filter(n_obs >= 21*2)
 
 # Regressions ------------------------------------------------------------------
 lm_to_df <- function(lm_i){
@@ -92,36 +85,19 @@ lm_to_df <- function(lm_i){
 }
 
 #### Regressions
-lm_delayfactor_df <- feols(
-  delay_factor ~ i(hour_of_day_since_crash, crash_day, ref = -1) | crash_id,
-  data = crash_df,
-  cluster = ~crash_id
-) %>%
-  lm_to_df() %>%
-  dplyr::mutate(dv = paste0("Traffic Level: Delay Factor\n[N Crashes = ", n_crash_tl, "]"))
+lm_df <- map_df(unique(crash_df$buffer), function(buffer_i){
+  message(buffer_i)
+  feols(
+    delay_factor ~ i(hour_of_day_since_crash, crash_day, ref = -1) | crash_id,
+    data = crash_df[crash_df$buffer == buffer_i,],
+    cluster = ~crash_id
+  ) %>%
+    lm_to_df() %>%
+    dplyr::mutate(buffer = buffer_i)
+})
 
-lm_delayfactor_ttsample_df <- feols(
-  delay_factor_ttsample ~ i(hour_of_day_since_crash, crash_day, ref = -1) | crash_id,
-  data = crash_df,
-  cluster = ~crash_id
-) %>%
-  lm_to_df() %>%
-  dplyr::mutate(dv = paste0("Traffic Level: Delay Factor\n[N Crashes = ", n_crash_tt, "]"))
-
-lm_duration_df <- feols(
-  duration_min_ln ~ i(hour_of_day_since_crash, crash_day, ref = -1) | crash_id,
-  data = crash_df,
-  cluster = ~crash_id
-) %>%
-  lm_to_df() %>%
-  dplyr::mutate(dv = paste0("Duration, Logged\n[N Crashes = ", n_crash_tt, "]"))
-
-lm_all_df <- bind_rows(lm_delayfactor_df,
-                       lm_delayfactor_ttsample_df,
-                       lm_duration_df)
-
-lm_all_df %>%
-  dplyr::mutate(dv = dv %>% fct_rev()) %>%
+lm_df %>%
+  #dplyr::filter(buffer )
   ggplot(aes(x = hour_of_day_since_crash,
              y = b,
              ymin = x2_5_percent,
@@ -136,9 +112,10 @@ lm_all_df %>%
   theme_classic2() +
   theme(strip.text = element_text(face = "bold"),
         panel.background = element_rect(fill = "gray95", color = NA),
-        strip.background = element_blank())
+        strip.background = element_blank()) +
+  facet_wrap(~buffer)
 
-ggsave(filename = file.path(figures_dir, "lm_crash.png"),
+ggsave(filename = file.path(figures_dir, "lm_crash_buffers.png"),
        height = 3,
        width = 9)
 

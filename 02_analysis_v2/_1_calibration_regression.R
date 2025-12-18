@@ -1,7 +1,5 @@
 # Regression
 
-# DO - add interaciton reg.
-
 # Load data --------------------------------------------------------------------
 route_df <- readRDS(file.path(analysis_data_dir, "mapbox_routes.Rds"))
 osm_df   <- readRDS(file.path(analysis_data_dir, "mapbox_osm_10m.Rds"))
@@ -94,12 +92,12 @@ lm_prop_1 <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid,
 route_over50_df <- route_rm_infl_df %>% dplyr::filter(speed_kmh_uid_max >= 50)
 lm_prop_2 <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid, 
                    vcov = ~ uid,
-                   data = route_over50_df)
+                   data = route_common1_df)
 
 route_under50_df <- route_rm_infl_df %>% dplyr::filter(speed_kmh_uid_max < 50)
 lm_prop_3 <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid, 
                    vcov = ~ uid,
-                   data = route_under50_df)
+                   data = route_common2_df)
 
 #### Worst Color
 lm_worst_1 <- feols(tt_hour_per_km_ln ~ worst_color_2 + worst_color_3 + worst_color_4 | uid, 
@@ -116,8 +114,8 @@ lm_worst_3 <- feols(tt_hour_per_km_ln ~ worst_color_2 + worst_color_3 + worst_co
 
 #### N Routes
 n_routes         <- route_df$uid %>% unique() %>% length()
-n_routes_over50 <- route_over50_df$uid %>% unique() %>% length()
-n_routes_under50 <- route_under50_df$uid %>% unique() %>% length()
+n_routes_common1 <- route_over50_df$uid %>% unique() %>% length()
+n_routes_common2 <- route_under50_df$uid %>% unique() %>% length()
 
 # Export coefficients ----------------------------------------------------------
 beta <- coef(lm_prop_1)
@@ -135,12 +133,17 @@ dict = c(tt_hour_per_km_ln = "Travel time per hour, logged",
          tl_prop_3 = "Prop traffic level 3",
          tl_prop_4 = "Prop traffic level 4",
          
+         worst_color_2 = "Worst traffic level: 2",
+         worst_color_3 = "Worst traffic level: 3",
+         worst_color_4 = "Worst traffic level: 4",
+         
          uid = "Route")
 setFixest_dict(dict)
 
 #### Table
 #file.remove(file.path(tables_dir, "ols_calibration.tex"))
 esttex(lm_prop_1, lm_prop_2, lm_prop_3,
+       lm_worst_1, lm_worst_2, lm_worst_3,
        float = F,
        replace = T,
        extralines = list(
@@ -148,25 +151,47 @@ esttex(lm_prop_1, lm_prop_2, lm_prop_3,
          "_ \\midrule \\emph{Routes Used}" = 
            c("", "", "", "", "", ""), 
          
-         "_Max Route Speed" = c("Any", "$\\ge 50$", "< 50"),
+         "_Max Route Speed" = c("Any", "$\\ge 50$", "< 50", "Any", "$\\ge 50$", "< 50"),
          
-         "_N Routes" = c(n_routes, n_routes_over50, n_routes_under50),
+         "_N Routes" = c(n_routes, n_routes_common1, n_routes_common2,
+                         n_routes, n_routes_common1, n_routes_common2),
          
          "_ \\midrule \\emph{Indep. Var. Averages}" = 
-           c("", "", ""), 
+           c("", "", "", "", "", ""), 
          
          "_Prop traffic level 2" = c(
            route_df$tl_prop_2 %>% mean() %>% round(3),
-           route_over50_df$tl_prop_2 %>% mean() %>% round(3),
-           route_under50_df$tl_prop_2 %>% mean() %>% round(3)),
+           route_common1_df$tl_prop_2 %>% mean() %>% round(3),
+           route_common2_df$tl_prop_2 %>% mean() %>% round(3),
+           NA, NA, NA),
          "_Prop traffic level 3" = c(
            route_df$tl_prop_3 %>% mean() %>% round(3),
-           route_over50_df$tl_prop_3 %>% mean() %>% round(3),
-           route_under50_df$tl_prop_3 %>% mean() %>% round(3)),
+           route_common1_df$tl_prop_3 %>% mean() %>% round(3),
+           route_common2_df$tl_prop_3 %>% mean() %>% round(3),
+           NA, NA, NA),
          "_Prop traffic level 4" = c(
            route_df$tl_prop_4 %>% mean() %>% round(3),
-           route_over50_df$tl_prop_4 %>% mean() %>% round(3),
-           route_under50_df$tl_prop_4 %>% mean() %>% round(3))
+           route_common1_df$tl_prop_4 %>% mean() %>% round(3),
+           route_common2_df$tl_prop_4 %>% mean() %>% round(3),
+           NA, NA, NA),
+         
+         "_Worst traffic level 2" = c(
+           NA, NA, NA,
+           route_df$worst_color_2 %>% mean() %>% round(3),
+           route_common1_df$worst_color_2 %>% mean() %>% round(3),
+           route_common2_df$worst_color_2 %>% mean() %>% round(3)),
+         
+         "_Worst traffic level 3" = c(
+           NA, NA, NA,
+           route_df$worst_color_3 %>% mean() %>% round(3),
+           route_common1_df$worst_color_3 %>% mean() %>% round(3),
+           route_common2_df$worst_color_3 %>% mean() %>% round(3)),
+         
+         "_Worst traffic level 4" = c(
+           NA, NA, NA,
+           route_df$worst_color_4 %>% mean() %>% round(3),
+           route_common1_df$worst_color_4 %>% mean() %>% round(3),
+           route_common2_df$worst_color_4 %>% mean() %>% round(3))
        ),
        file = file.path(tables_dir, "ols_calibration.tex"))
 

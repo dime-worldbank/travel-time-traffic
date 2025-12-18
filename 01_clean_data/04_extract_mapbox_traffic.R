@@ -32,8 +32,8 @@ nbo_sf <- readRDS(file.path(gadm_dir, "RawData", "gadm41_KEN_1_pk.rds"))
 # twitter_100m_sf <- st_buffer(twitter_sf, dist = 100)
 
 ### Twitter Crashes Vectors
-buff_sizes_50m <- seq(from = 100, to = 2000, by = 50)
-buff_sizes_100m <- seq(from = 200, to = 2000, by = 100)
+buff_sizes_50m <- seq(from = 100, to = 3000, by = 50)
+buff_sizes_100m <- seq(from = 200, to = 3000, by = 100)
 
 twitter_crashes_dataset_vec <- c(#"twitter_crashes_50m",
   #"twitter_crashes_100m",

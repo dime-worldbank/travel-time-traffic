@@ -5,7 +5,7 @@ twitter_sf      <- readRDS(file.path(data_dir, "Twitter Crashes", "RawData", "cr
 twitter_sf <- twitter_sf %>%
   dplyr::filter(crash_datetime >= ymd_hms("2023-05-20 00:00:00", tz = "Africa/Nairobi"))
 
-for(buffer_m in seq(from = 50, to = 2000, by = 50)){
+for(buffer_m in seq(from = 50, to = 3000, by = 50)){
   message(buffer_m)
   
   twitter_buff_sf <- st_buffer(twitter_sf, dist = buffer_m)
@@ -23,7 +23,7 @@ for(buffer_m in seq(from = 50, to = 2000, by = 50)){
   }) %>%
     dplyr::select(-c(crash_id.1, crash_datetime.1))
   
-  saveRDS(twitter_buff_doughnut_sf,
+  saveRDS(twitter_buff_sf,
           file.path(data_dir, "Twitter Crashes", "FinalData",
                     paste0("crashes_twitter_", buffer_m, "m.Rds")))
   
