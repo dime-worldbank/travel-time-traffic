@@ -3,10 +3,6 @@
 # Load data --------------------------------------------------------------------
 df <- readRDS(file.path(analysis_data_dir, "twitter_crashes_100m_wide_fulldata.Rds"))
 
-df$crash_datetime %>% min()
-df$crash_datetime %>% max()
-df$uid %>% unique() %>% length()
-
 # Clean data -------------------------------------------------------------------
 df <- df %>%
   dplyr::select(uid,

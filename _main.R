@@ -152,6 +152,29 @@ log_margin <- function(y, x){
   
 }
 
+Mode <- function(x, na.rm = TRUE) {
+  if (na.rm) x <- x[!is.na(x)]
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+mk_traffic_indicators <- function(data_df, beta){
+  
+  data_df %>%
+    mutate(
+      # Linear predictor: log(delay per km)
+      CI = beta["tl_prop_2"] * tl_prop_2 +
+        beta["tl_prop_3"] * tl_prop_3 +
+        beta["tl_prop_4"] * tl_prop_4,
+      
+      # Delay factor relative to green
+      delay_factor = exp(CI),
+      
+      # Speed as a fraction of green speed
+      speed_multiplier = exp(-CI)
+    ) 
+}
+
 # Code -------------------------------------------------------------------------
 if(F){
   
