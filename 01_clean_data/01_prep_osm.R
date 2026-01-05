@@ -37,9 +37,10 @@ osm_sf <- osm_sf %>%
                    fclass = min(fclass)) %>% # min gives highest category
   ungroup()
 
-osm_10m_sf <- osm_sf %>% st_buffer_chunks(dist = 10, chunk_size = 50)
-
-osm_10m_sf <- osm_10m_sf %>%
+osm_sf <- osm_sf %>%
   dplyr::mutate(uid = 1:n())
 
+osm_10m_sf <- osm_sf %>% st_buffer_chunks(dist = 10, chunk_size = 50)
+
 saveRDS(osm_10m_sf, file.path(data_dir, "OSM", "FinalData", "osm_nbo_10m.Rds"))
+saveRDS(osm_sf, file.path(data_dir, "OSM", "FinalData", "osm_nbo_line.Rds"))

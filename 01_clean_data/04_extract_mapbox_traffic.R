@@ -44,8 +44,14 @@ twitter_crashes_dataset_vec <- c(#"twitter_crashes_50m",
 rds_i <- rds_vec_all[1]
 dataset = "mapbox_typical_route_10m"
 
-for(dataset in rev(twitter_crashes_dataset_vec)){
+#rds_vec_all <- rds_vec_all[(basename(rds_vec_all) >= "mp_nairobi_2023_05_08.Rds") & ((basename(rds_vec_all) <= "mp_nairobi_2023_05_08.Rds"))]
+#rds_vec_all <- rds_vec_all[(basename(rds_vec_all) >= "mp_nairobi_2023_07_15.Rds") & ((basename(rds_vec_all) <= "mp_nairobi_2023_09_02.Rds"))]
+#rds_vec_all <- rds_vec_all[(basename(rds_vec_all) >= "mp_nairobi_2023_08_04.Rds") & ((basename(rds_vec_all) <= "mp_nairobi_2023_08_18.Rds"))]
 
+rds_vec_all <- rds_vec_all[(basename(rds_vec_all) >= "mp_nairobi_2023_05_08.Rds") & ((basename(rds_vec_all) <= "mp_nairobi_2023_08_30.Rds"))]
+
+for(dataset in "osm_10m"){
+  
   if(dataset == "gadm1"){
     polyline_sf <- nbo_sf
     uid_var <- "GID_1"
@@ -90,11 +96,9 @@ for(dataset in rev(twitter_crashes_dataset_vec)){
     rds_vec <- rds_vec_all
   }
   
-<<<<<<< HEAD:01_clean_data/04_extract_mapbox_traffic_routes.R
+  #rds_vec <- rev(rds_vec)
   rds_vec <- sample(rds_vec)
-=======
-  rds_vec <- rev(rds_vec)
->>>>>>> 17806486edbbfb4a3f3546e973bc6badd54a20f6:01_clean_data/04_extract_mapbox_traffic.R
+  #rds_vec <- rev(rds_vec)
   
   for(rds_i in rds_vec){
     
@@ -104,7 +108,7 @@ for(dataset in rev(twitter_crashes_dataset_vec)){
       mp_sf <- mp_sf %>%
         dplyr::mutate(datetime_scrape = datetime_scrape %>% floor_date(unit = "30 minutes"))
       
-      for(datetime_i in as.character(unique(mp_sf$datetime_scrape))){
+      for(datetime_i in rev(as.character(unique(mp_sf$datetime_scrape)))){
         
         if(nchar(datetime_i) == 10){
           datetime_i <- paste0(datetime_i, "00:00:00")
@@ -124,7 +128,7 @@ for(dataset in rev(twitter_crashes_dataset_vec)){
         OUT_PATH <- file.path(data_dir, "extracted-data", dataset, "mapbox_traffic_levels", filename_i)
         
         if(!file.exists(OUT_PATH)){
-          print(OUT_PATH)
+          message(OUT_PATH)
           
           ## Grab Mapbox Traffic for Hour i
           mp_sf_i <- mp_sf[mp_sf$datetime_scrape %in% ymd_hms(datetime_i, tz = "Africa/Nairobi"),]

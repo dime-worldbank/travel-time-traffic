@@ -18,6 +18,10 @@ unit_data_df <- mb_tl_df %>%
 
 # Cleanup ----------------------------------------------------------------------
 unit_data_df <- unit_data_df %>%
+  dplyr::mutate(length_mb_low = replace_na(length_mb_low, 0),
+                length_mb_moderate = replace_na(length_mb_moderate, 0),
+                length_mb_heavy = replace_na(length_mb_heavy, 0),
+                length_mb_severe = replace_na(length_mb_severe, 0)) %>%
   dplyr::mutate(length_traffic_total = length_mb_low + length_mb_moderate + length_mb_heavy + length_mb_severe) %>%
   group_by(uid) %>%
   dplyr::mutate(length_traffic_total_max = max(length_traffic_total, na.rm = T)) %>%
