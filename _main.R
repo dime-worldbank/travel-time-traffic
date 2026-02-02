@@ -57,7 +57,7 @@ waze_bq_dir <- file.path(sm_db_dir, "Data", "Waze - BigQuery", "FinalData")
 tomtom_raw_dir <- file.path(sm_db_dir, "Data", "TomTom", "RawData")
 
 git_clean_dir <- file.path(git_dir, "01_clean_data")
-git_analysis_dir <- file.path(git_dir, "02_analysis")
+git_analysis_dir <- file.path(git_dir, "02_analysis_v2")
 
 # Remove tables/figures --------------------------------------------------------
 if(DELETE_OUTPUT){
@@ -196,23 +196,27 @@ if(F){
   source(file.path(git_clean_dir, "05_clean_data.R"))
   
   # Analysis -------------------------------------------------------------------
-  source(file.path(git_analysis_dir, "amount_route_deviates_overall.R"))
-  source(file.path(git_analysis_dir, "amount_route_deviates_veh_level.R"))
-  source(file.path(git_analysis_dir, "case_study_crash_analysis.R"))
-  source(file.path(git_analysis_dir, "case_study_nbo_election.R"))
-  source(file.path(git_analysis_dir, "case_study_congestion_analysis.R"))
-  source(file.path(git_analysis_dir, "correlation_between_vars.R"))
-  source(file.path(git_analysis_dir, "deviation_example_1.R"))
-  source(file.path(git_analysis_dir, "deviation_example_2.R"))
-  source(file.path(git_analysis_dir, "extract_traffic_example.R"))
-  source(file.path(git_analysis_dir, "map_levels_and_speed.R"))
-  source(file.path(git_analysis_dir, "percent_time_route_deviates.R"))
-  source(file.path(git_analysis_dir, "reg_explain_diff_route.R"))
-  source(file.path(git_analysis_dir, "reg_levels_explain_speed.R"))
-  source(file.path(git_analysis_dir, "route_summary.R"))
-  source(file.path(git_analysis_dir, "scatterplots_od_levels.R"))
+  source(file.path(git_analysis_dir, "1_calibration_regression.R"))
+  source(file.path(git_analysis_dir, "2_case_study_crash.R"))
+  source(file.path(git_analysis_dir, "2_case_study_crash_buffers.R"))
   
-  source(file.path(git_analysis_dir, "summary_boxplots.R"))
+  # source(file.path(git_analysis_dir, "amount_route_deviates_overall.R"))
+  # source(file.path(git_analysis_dir, "amount_route_deviates_veh_level.R"))
+  # source(file.path(git_analysis_dir, "case_study_crash_analysis.R"))
+  # source(file.path(git_analysis_dir, "case_study_nbo_election.R"))
+  # source(file.path(git_analysis_dir, "case_study_congestion_analysis.R"))
+  # source(file.path(git_analysis_dir, "correlation_between_vars.R"))
+  # source(file.path(git_analysis_dir, "deviation_example_1.R"))
+  # source(file.path(git_analysis_dir, "deviation_example_2.R"))
+  # source(file.path(git_analysis_dir, "extract_traffic_example.R"))
+  # source(file.path(git_analysis_dir, "map_levels_and_speed.R"))
+  # source(file.path(git_analysis_dir, "percent_time_route_deviates.R"))
+  # source(file.path(git_analysis_dir, "reg_explain_diff_route.R"))
+  # source(file.path(git_analysis_dir, "reg_levels_explain_speed.R"))
+  # source(file.path(git_analysis_dir, "route_summary.R"))
+  # source(file.path(git_analysis_dir, "scatterplots_od_levels.R"))
+  # 
+  # source(file.path(git_analysis_dir, "summary_boxplots.R"))
   
   
   

@@ -6,6 +6,10 @@ source("https://raw.githubusercontent.com/ramarty/fast-functions/refs/heads/mast
 osm_sf <- readRDS(file.path(data_dir, "OSM", "FinalData", "gis_osm_roads_free_1_nairobi.Rds")) %>%
   st_as_sf()
 
+#nbo_sf <- readRDS(file.path(data_dir, "GADM", "RawData", "gadm41_KEN_1_pk.rds")) %>%
+#  st_as_sf() %>%
+#  dplyr::select(NAME_1)
+
 osm_sf <- osm_sf %>%
   dplyr::filter(fclass %in% c("motorway", "motorway_link",
                               "trunk", "trunk_link",
@@ -39,6 +43,8 @@ osm_sf <- osm_sf %>%
 
 osm_sf <- osm_sf %>%
   dplyr::mutate(uid = 1:n())
+
+#osm_sf <- osm_sf %>% st_intersection(nbo_sf)
 
 osm_10m_sf <- osm_sf %>% st_buffer_chunks(dist = 10, chunk_size = 50)
 

@@ -2,6 +2,7 @@
 
 # Load data --------------------------------------------------------------------
 crash_df <- readRDS(file.path(analysis_data_dir, "mapbox_twitter_100m.Rds"))
+crash_attr_df <- readRDS(file.path(data_dir, "Twitter Crashes", "FinalData", "crashes_twitter_attributes.Rds"))
 
 beta <- readRDS(file.path(data_dir, "Calibration Coefficients", "coefs.Rds"))
 
@@ -34,19 +35,22 @@ crash_df <- crash_df %>%
   dplyr::mutate(date = datetime %>% hour(),
                 hour = datetime %>% hour(),
                 dow = datetime %>% lubridate::wday(),
-                crash_dow = crash_datetime %>% lubridate::wday())
+                crash_dow = crash_datetime %>% lubridate::wday()) %>%
+  dplyr::select(-c(tl_prop_2, tl_prop_3, tl_prop_4, speed_multiplier))
 
 hours_since_df <- crash_df %>%
   dplyr::filter(hours_since_crash <= 10,
                 hours_since_crash >= -10) %>%
   dplyr::select(crash_id, hours_since_crash, hour) %>%
-  dplyr::rename(hour_of_day_since_crash = hours_since_crash)
+  dplyr::rename(hour_of_day_since_crash = hours_since_crash) %>%
+  distinct() ##
 
 hours_since_same_dow_df <- crash_df %>%
   dplyr::filter(hours_since_crash <= 10,
                 hours_since_crash >= -10) %>%
   dplyr::select(crash_id, hours_since_crash, dow, hour) %>%
-  dplyr::rename(hour_of_day_since_crash_same_dow = hours_since_crash)
+  dplyr::rename(hour_of_day_since_crash_same_dow = hours_since_crash) %>%
+  distinct()
 
 crash_df <- crash_df %>%
   left_join(hours_since_df, by = c("crash_id", "hour")) %>%
@@ -66,8 +70,12 @@ crash_df <- crash_df %>%
                 hours_since_crash >= -24*7*4) %>%
   group_by(crash_id) %>%
   dplyr::mutate(n_obs = n()) %>%
-  ungroup() #%>%
-  #dplyr::filter(n_obs >= 21*2)
+  ungroup()
+
+#crash_df <- crash_df %>% dplyr::filter(n_obs >= 2000)
+
+crash_df <- crash_df %>%
+  left_join(crash_attr_df, by = "crash_id")
 
 # Regressions ------------------------------------------------------------------
 lm_to_df <- function(lm_i){
@@ -85,19 +93,61 @@ lm_to_df <- function(lm_i){
 }
 
 #### Regressions
-lm_df <- map_df(unique(crash_df$buffer), function(buffer_i){
-  message(buffer_i)
-  feols(
-    delay_factor ~ i(hour_of_day_since_crash, crash_day, ref = -1) | crash_id,
-    data = crash_df[crash_df$buffer == buffer_i,],
-    cluster = ~crash_id
-  ) %>%
-    lm_to_df() %>%
-    dplyr::mutate(buffer = buffer_i)
-})
+run_buffer_reg <- function(crash_df){
+  
+   map_df(unique(crash_df$buffer), function(buffer_i){
+    #message(buffer_i)
+    feols(
+      delay_factor ~ i(hour_of_day_since_crash, crash_day, ref = -1) | crash_id,
+      data = crash_df[crash_df$buffer == buffer_i,],
+      cluster = ~crash_id
+    ) %>%
+      lm_to_df() %>%
+      dplyr::mutate(buffer = buffer_i)
+  })
+  
+}
+
+crash_attr_df$dist_cbd_m
+crash_attr_df$osm_fclass_largest %>% table()
+
+crash_large_df <- crash_df %>%
+  dplyr::filter(osm_fclass_largest %in% c("trunk", "primary"))
+
+crash_small_df <- crash_df %>%
+  dplyr::filter(!(osm_fclass_largest %in% c("trunk", "primary")))
+
+lm_df <- run_buffer_reg(crash_df)
+lm_large_df <- run_buffer_reg(crash_large_df)
+lm_small_df <- run_buffer_reg(crash_small_df)
+
+lm_all_df <- bind_rows(
+  lm_df %>% mutate(type = "All"),
+  lm_large_df %>% mutate(type = "Large"),
+  lm_small_df %>% mutate(type = "Small")
+)
 
 lm_df %>%
-  #dplyr::filter(buffer )
+  dplyr::filter(hour_of_day_since_crash %in% c(1),
+                buffer <= 3000) %>%
+  dplyr::mutate(buffer = buffer / 1000) %>%
+  ggplot(aes(x = buffer,
+             y = b,
+             ymin = x2_5_percent,
+             ymax = x97_5_percent)) +
+  geom_hline(yintercept = 0, color = "gray30") +
+  #geom_vline(xintercept = -1, color = "red", linetype = "dotted") +
+  geom_linerange() +
+  geom_point() +
+  labs(x = "Distance from crash (meters)",
+       y = "Coef (+/- 95% CI)") +
+  theme_classic2() +
+  theme(strip.text = element_text(face = "bold"),
+        panel.background = element_rect(fill = "gray95", color = NA),
+        strip.background = element_blank()) +
+  facet_wrap(~hour_of_day_since_crash) 
+
+lm_df %>%
   ggplot(aes(x = hour_of_day_since_crash,
              y = b,
              ymin = x2_5_percent,
@@ -106,16 +156,24 @@ lm_df %>%
   geom_vline(xintercept = -1, color = "red", linetype = "dotted") +
   geom_linerange() +
   geom_point() +
-  facet_wrap(~dv) +
   labs(x = "Hours Since Crash",
        y = "Coef (+/- 95% CI)") +
   theme_classic2() +
   theme(strip.text = element_text(face = "bold"),
         panel.background = element_rect(fill = "gray95", color = NA),
         strip.background = element_blank()) +
-  facet_wrap(~buffer)
-
+  facet_wrap(~buffer) 
+  
 ggsave(filename = file.path(figures_dir, "lm_crash_buffers.png"),
        height = 3,
        width = 9)
+
+
+# crash_df$dist_cbd_m
+# 
+# table(crash_attr_df$dist_cbd_m <= 1000)
+
+
+
+
 

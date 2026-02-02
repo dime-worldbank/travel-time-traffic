@@ -7,6 +7,8 @@ gadm1_df   <- readRDS(file.path(analysis_data_dir, "mapbox_gadm1.Rds"))
 estates_df <- readRDS(file.path(analysis_data_dir, "mapbox_estates.Rds"))
 
 estates_sf <- readRDS(file.path(data_dir, "Nairobi Estates", "FinalData", "nairobi_estates.Rds"))
+#osm_sf     <- readRDS(file.path(data_dir, "OSM", "FinalData", "osm_nbo_line.Rds"))
+#osm_sf     <- osm_sf %>% st_intersection(estates_sf)
 
 beta <- readRDS(file.path(data_dir, "Calibration Coefficients", "coefs.Rds"))
 
@@ -76,7 +78,62 @@ osm_hr_class_df <- osm_df %>%
   dplyr::summarise(delay_factor = mean(delay_factor)) %>%
   ungroup()
 
-# Analysis ---------------------------------------------------------------------
+# Time of Day: 26 Routes and city wide -----------------------------------------
+p_route_tt <- route_hr_df %>%
+  ggplot() +
+  geom_line(aes(x = hour,
+                y = duration_pc,
+                color = dow_group),
+            linewidth = 1) +
+  scale_color_manual(values = c("darkorange",
+                                "dodgerblue",
+                                "purple")) +
+  labs(x = "Hour of day",
+       y = "Duration (% change)",
+       color = NULL,
+       title = "A. Travel Duration\n% Change from Free-Flow\nRoutes [N=26]") +
+  theme_classic2() +
+  theme(strip.background = element_blank(),
+        plot.title = element_text(face = "bold", hjust = 0.5, size = 10))
+
+p_route_tl <- route_hr_df %>%
+  ggplot() +
+  geom_line(aes(x = hour,
+                y = delay_factor,
+                color = dow_group),
+            linewidth = 1) +
+  scale_color_manual(values = c("darkorange",
+                                "dodgerblue",
+                                "purple")) +
+  labs(x = "Hour of day",
+       y = "Delay factor",
+       color = NULL,
+       title = "B. Delay Factor\nRoutes [N=26]") +
+  scale_y_continuous(limits = c(1, 1.15)) +
+  theme_classic2() +
+  theme(strip.background = element_blank(),
+        plot.title = element_text(face = "bold", hjust = 0.5, size = 10))
+
+## City-wide
+p_nbo <- gadm1_hr_df %>%
+  ggplot() +
+  geom_line(aes(x = hour,
+                y = delay_factor,
+                color = dow_group),
+            linewidth = 1) +
+  scale_color_manual(values = c("darkorange",
+                                "dodgerblue",
+                                "purple")) +
+  labs(x = "Hour of day",
+       y = "Delay factor",
+       color = NULL,
+       title = "C. Delay Factor\n[All Nairobi]") +
+  scale_y_continuous(limits = c(1, 1.15)) +
+  theme_classic2() +
+  theme(strip.background = element_blank(),
+        plot.title = element_text(face = "bold", hjust = 0.5, size = 10))
+
+# Time of Day: Road Type -------------------------------------------------------
 p_osm <- osm_hr_class_df %>%
   dplyr::mutate(fclass = fclass %>% as.character() %>% tools::toTitleCase(),
                 fclass = fclass %>%
@@ -98,104 +155,119 @@ p_osm <- osm_hr_class_df %>%
   labs(x = "Hour of day",
        y = "Delay factor",
        color = NULL,
-       title = "C. OpenStreetMap Road Classes") +
+       title = "D. OpenStreetMap Road Classes",
+       subtitle = "Average delay across roads by class, considering all roads in Nairobi with available data") +
   theme_classic2() +
   theme(strip.background = element_blank(),
-        plot.title = element_text(face = "bold"))
+        plot.title = element_text(face = "bold"),
+        plot.subtitle = element_text(face = "italic"))
 
-p_route_tl <- route_hr_df %>%
-  ggplot() +
-  geom_line(aes(x = hour,
-                y = delay_factor,
-                color = dow_group),
-            linewidth = 1) +
-  scale_color_manual(values = c("darkorange",
-                                "dodgerblue",
-                                "purple")) +
-  labs(x = "Hour of day",
-       y = "Delay factor",
-       color = NULL,
-       title = "Routes [N=26]") +
-  theme_classic2() +
-  theme(strip.background = element_blank(),
-        plot.title = element_text(face = "bold"))
-
-p_route_tt <- route_hr_df %>%
-  ggplot() +
-  geom_line(aes(x = hour,
-                y = duration_pc,
-                color = dow_group),
-            linewidth = 1) +
-  scale_color_manual(values = c("darkorange",
-                                "dodgerblue",
-                                "purple")) +
-  labs(x = "Hour of day",
-       y = "Duration (% change)",
-       color = NULL,
-       title = "Routes [N=26]") +
-  theme_classic2() +
-  theme(strip.background = element_blank(),
-        plot.title = element_text(face = "bold"))
-
-## City-wide
-p_nbo <- gadm1_hr_df %>%
-  ggplot() +
-  geom_line(aes(x = hour,
-                y = delay_factor,
-                color = dow_group),
-            linewidth = 1) +
-  scale_color_manual(values = c("darkorange",
-                                "dodgerblue",
-                                "purple")) +
-  labs(x = "Hour of day",
-       y = "Delay factor",
-       color = NULL,
-       title = "All Nairobi") +
-  theme_classic2() +
-  theme(strip.background = element_blank(),
-        plot.title = element_text(face = "bold"))
-
-
-
-p_top <- ggarrange(p_route_tt,
-                   p_route_tl,
-                   p_nbo,
+# Time of Day: Arrange/Export --------------------------------------------------
+p_top <- ggarrange(p_route_tt + theme(legend.position = "none"),
+                   p_route_tl + theme(legend.position = "none"),
+                   p_nbo + theme(legend.position = "none"),
                    nrow = 1,
-                   common.legend = T)
+                   common.legend = F)
+
 p <- ggarrange(p_top,
                p_osm + theme(legend.position = "none"),
                ncol = 1,
-               common.legend = F,
-               heights = c(0.4, 0.6))
+               common.legend = T,
+               legend = "right",
+               heights = c(0.4, 0.65))
 
-p
-
+ggsave(p,
+       filename = file.path(figures_dir, "delay_by_hour.png"),
+       height = 8,
+       width = 9)
 
 # Map --------------------------------------------------------------------------
+#estates_df <- osm_df
+#estates_sf <- osm_sf
+
 estates_uid_df <- estates_df %>%
   group_by(uid, weekday_end) %>%
   dplyr::summarise(delay_factor = mean(delay_factor)) %>%
   ungroup()
 
+estates_uid_wide_df <- estates_uid_df %>%
+  pivot_wider(id_cols = uid,
+              names_from = weekday_end,
+              values_from = delay_factor) %>%
+  dplyr::mutate(weekday_m_weekend = Weekday - Weekend,
+                weekday_m_weekend_pc = weekday_m_weekend / Weekend * 100,
+                weekday_weekend_ratio = Weekday/Weekend)
+
+
 estates_data_sf <- estates_sf %>%
   left_join(estates_uid_df, by = "uid") %>%
-  dplyr::filter(!is.na(weekday_end))
+  dplyr::filter(!is.na(weekday_end)) %>%
+  dplyr::mutate(weekday_end = case_when(
+    weekday_end == "Weekday" ~ "A. Weekday",
+    weekday_end == "Weekend" ~ "B. Weekend"
+  ))
 
-ggplot() +
+estates_data_diff_sf <- estates_sf %>%
+  left_join(estates_uid_wide_df, by = "uid") %>%
+  dplyr::filter(!is.na(weekday_m_weekend))
+
+## Levels
+estates_data_sf$delay_factor[estates_data_sf$delay_factor >= 1.15] <- 1.15
+
+estates_data_sf <- estates_data_sf %>%
+  arrange(delay_factor)
+
+p_map_levels <- ggplot() +
   geom_sf(data = estates_data_sf,
           aes(fill = delay_factor)) +
   facet_wrap(~weekday_end) +
   scale_fill_distiller(
-    palette = "Spectral",
+    palette = "RdYlGn",
     direction = -1   # optional: flip so high = red
   ) +
-  theme_void()
+  labs(fill = "Delay\nFactor") +
+  theme_void() +
+  theme(legend.position = "right",
+        strip.text = element_text(face = "bold", size = 11))
 
-estates_data_sf %>%
-  st_drop_geometry() %>%
-  ggplot() +
-  geom_boxplot(aes(x = weekday_end,
-                   y = delay_factor))
+
+estates_data_diff_sf$weekday_m_weekend_pc_adj <- estates_data_diff_sf$weekday_m_weekend_pc
+estates_data_diff_sf$weekday_m_weekend_pc_adj[estates_data_diff_sf$weekday_m_weekend_pc_adj >= 2] <- 2
+estates_data_diff_sf$weekday_m_weekend_pc_adj[estates_data_diff_sf$weekday_m_weekend_pc_adj <= -2] <- -2
+
+estates_data_diff_sf$weekday_weekend_ratio_adj <- estates_data_diff_sf$weekday_weekend_ratio
+estates_data_diff_sf$weekday_weekend_ratio_adj[estates_data_diff_sf$weekday_weekend_ratio >= 1.02] <- 1.02
+estates_data_diff_sf$weekday_weekend_ratio_adj[estates_data_diff_sf$weekday_weekend_ratio <= -0.98] <- -0.98
+
+## % Change
+p_map_pc <- ggplot() +
+  geom_sf(data = estates_data_diff_sf,
+          aes(fill = weekday_m_weekend_pc_adj)) +
+  scale_fill_distiller(
+    palette = "RdBu",
+    direction = -1   # optional: flip so high = red
+  ) +
+  labs(title = "C. % Change in Delay Factor\nWeekday relative to Weekends",
+       fill = "% Change") +
+  theme_void() +
+  theme(legend.position = "right",
+        plot.title = element_text(face = "bold", hjust = 0.5, size = 11))
+
+p_map <- ggarrange(p_map_levels,
+          p_map_pc,
+          ncol = 1,
+          heights = c(0.5, 0.5))
+
+ggsave(p_map,
+       filename = file.path(figures_dir, "cong_maps_estates.png"),
+       height = 5,
+       width = 7)
+
+# estates_data_sf %>%
+#   st_drop_geometry() %>%
+#   ggplot() +
+#   geom_boxplot(aes(x = weekday_end,
+#                    y = delay_factor))
 
 
 
