@@ -10,12 +10,12 @@ twitter_sf      <- readRDS(file.path(data_dir, "Twitter Crashes", "RawData", "cr
 twitter_50m_sf  <- st_buffer(twitter_sf, dist = 50)
 twitter_100m_sf <- st_buffer(twitter_sf, dist = 100)
 
+buff_sizes_50m <- seq(from = 100, to = 2000, by = 50)
+buff_sizes_100m <- seq(from = 200, to = 2000, by = 100)
+
 #### Load route 
 route_sf <- readRDS(file.path(tt_dir, "mapbox_typical_route.Rds")) %>%
   dplyr::select(segment_id)
-
-buff_sizes_50m <- seq(from = 100, to = 2000, by = 50)
-buff_sizes_100m <- seq(from = 200, to = 2000, by = 100)
 
 for(polygon in c("twitter_crashes_50m",
                  "twitter_crashes_100m",

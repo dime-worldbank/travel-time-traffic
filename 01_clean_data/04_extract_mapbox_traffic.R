@@ -40,9 +40,12 @@ twitter_crashes_dataset_vec <- c(#"twitter_crashes_50m",
   #paste0("twitter_crashes_",buff_sizes_50m,"m_doughnut50m"),
   paste0("twitter_crashes_",buff_sizes_100m,"m_doughnut100m"))
 
+## Iso Routes
+h3_iso_routes_sf <- readRDS(file.path(data_dir, "Isochrone Routes", "appended_routes", "iso_20m_routes.Rds"))
+
 # Extract  data ----------------------------------------------------------------
 rds_i <- rds_vec_all[1]
-dataset = "mapbox_typical_route_10m"
+dataset = "h3_iso_routes"
 
 #rds_vec_all <- rds_vec_all[(basename(rds_vec_all) >= "mp_nairobi_2023_05_08.Rds") & ((basename(rds_vec_all) <= "mp_nairobi_2023_05_08.Rds"))]
 #rds_vec_all <- rds_vec_all[(basename(rds_vec_all) >= "mp_nairobi_2023_07_15.Rds") & ((basename(rds_vec_all) <= "mp_nairobi_2023_09_02.Rds"))]
@@ -50,7 +53,14 @@ dataset = "mapbox_typical_route_10m"
 
 rds_vec_all <- rds_vec_all[(basename(rds_vec_all) >= "mp_nairobi_2023_05_08.Rds") & ((basename(rds_vec_all) <= "mp_nairobi_2023_08_30.Rds"))]
 
-for(dataset in "osm_10m"){
+for(dataset in "h3_iso_routes"){
+  
+  if(dataset == "h3_iso_routes"){
+    polyline_sf <- h3_iso_routes_sf
+    uid_var <- "route_id"
+    chunk_size <- 100
+    rds_vec <- rds_vec_all[1:43]
+  }
   
   if(dataset == "gadm1"){
     polyline_sf <- nbo_sf
@@ -96,8 +106,8 @@ for(dataset in "osm_10m"){
     rds_vec <- rds_vec_all
   }
   
-  #rds_vec <- rev(rds_vec)
-  rds_vec <- sample(rds_vec)
+  rds_vec <- rev(rds_vec)
+  #rds_vec <- sample(rds_vec)
   #rds_vec <- rev(rds_vec)
   
   for(rds_i in rds_vec){

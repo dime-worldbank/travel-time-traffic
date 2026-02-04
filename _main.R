@@ -109,6 +109,9 @@ library(tidyterra)
 library(pbmcapply)
 library(mapboxapi)
 library(forcats)
+library(osrm)
+library(h3jsr)
+library(lwgeom)
 
 source("https://raw.githubusercontent.com/ramarty/fast-functions/refs/heads/master/R/functions_in_chunks.R")
 
