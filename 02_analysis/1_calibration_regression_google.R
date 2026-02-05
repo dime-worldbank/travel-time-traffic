@@ -1,0 +1,124 @@
+# Regression
+
+# Load data --------------------------------------------------------------------
+route_df <- readRDS(file.path(analysis_data_dir, "google_routes.Rds"))
+
+# Clean data -------------------------------------------------------------------
+route_df <- route_df %>%
+  #dplyr::filter(modal_route %in% T) %>%
+  dplyr::mutate(speed_kmh = speed_in_traffic_kmh,
+                tt_hour_per_km = (duration_in_traffic_s/60/60) / (distance_m/1000),
+                prop_ge_2 = tl_prop_2 + tl_prop_3 + tl_prop_4,
+                prop_ge_3 = tl_prop_3 + tl_prop_4,
+                prop_ge_4 = tl_prop_4) %>%
+  dplyr::mutate(speed_kmh_ln = log(speed_kmh),
+                tt_hour_per_km_ln = log(tt_hour_per_km)) %>%
+  dplyr::mutate(hour = datetime %>% hour(),
+                dow = datetime %>% lubridate::wday(),
+                date = datetime %>% date()) %>%
+  group_by(uid) %>%
+  dplyr::mutate(speed_kmh_uid_max = quantile(speed_kmh, prob = 0.95, na.rm = T) %>% as.numeric()) %>%
+  ungroup() 
+
+speed_df <- route_df %>%
+  distinct(uid, speed_kmh_uid_max) %>%
+  arrange(speed_kmh_uid_max)
+
+median(speed_df$speed_kmh_uid_max)
+table(speed_df$speed_kmh_uid_max >= 53.4)
+
+route_df <- route_df %>%
+  dplyr::mutate(speed_kmh_uid_over_med = (speed_kmh_uid_max >= 55)) %>%
+  dplyr::mutate(tl_prop_2_omed = tl_prop_2 * speed_kmh_uid_over_med,
+                tl_prop_3_omed = tl_prop_3 * speed_kmh_uid_over_med,
+                tl_prop_4_omed = tl_prop_4 * speed_kmh_uid_over_med)
+
+# Pooled regressions -----------------------------------------------------------
+#### Proportions
+lm_prop_1 <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid, 
+                   vcov = ~ uid,
+                   data = route_df)
+
+route_omed_df <- route_df %>% dplyr::filter(speed_kmh_uid_over_med %in% T)
+lm_prop_2 <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid, 
+                   vcov = ~ uid,
+                   data = route_omed_df)
+
+route_umed_df <- route_df %>% dplyr::filter(speed_kmh_uid_over_med %in% F)
+lm_prop_3 <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid, 
+                   vcov = ~ uid,
+                   data = route_umed_df)
+
+lm_prop_4 <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 +
+                     tl_prop_2_omed + tl_prop_3_omed + tl_prop_4_omed | uid, 
+                   vcov = ~ uid,
+                   data = route_df)
+
+lm_prop_1
+lm_prop_2
+lm_prop_3
+lm_prop_4
+
+#### N Routes
+n_routes      <- route_df$uid      %>% unique() %>% length()
+n_routes_omed <- route_omed_df$uid %>% unique() %>% length()
+n_routes_umed <- route_umed_df$uid %>% unique() %>% length()
+
+# Export coefficients ----------------------------------------------------------
+beta <- coef(lm_prop_1)
+
+saveRDS(beta, file.path(data_dir, "Calibration Coefficients", "coefs.Rds"))
+
+# Export regression table ------------------------------------------------------
+my_style = style.tex(tpt = TRUE, 
+                     notes.tpt.intro = "\\footnotesize")
+setFixest_etable(style.tex = my_style)
+
+dict = c(tt_hour_per_km_ln = "Travel time per hour, logged",
+         
+         tl_prop_2 = "Prop traffic level 2",
+         tl_prop_3 = "Prop traffic level 3",
+         tl_prop_4 = "Prop traffic level 4",
+         
+         tl_prop_2_omed = "Prop traffic level 2 $\\times$ 95$^{\\text{th}}$ Perc. Speed $\\ge$ 55km/h",
+         tl_prop_3_omed = "Prop traffic level 3 $\\times$ 95$^{\\text{th}}$ Perc. Speed $\\ge$ 55km/h",
+         tl_prop_4_omed = "Prop traffic level 4 $\\times$ 95$^{\\text{th}}$ Perc. Speed $\\ge$ 55km/h",
+         
+         uid = "Route")
+setFixest_dict(dict)
+
+#### Table
+#file.remove(file.path(tables_dir, "ols_calibration.tex"))
+esttex(lm_prop_1, lm_prop_2, lm_prop_3, lm_prop_4,
+       float = F,
+       replace = T,
+       extralines = list(
+         
+         "_ \\midrule \\emph{Routes Used}" = 
+           c("", "", "", ""), 
+         
+         "_Max Route Speed (km/h)" = c("Any", "$\\ge 55$", "< 55", "Any"),
+         
+         "_N Routes" = c(n_routes, n_routes_omed, n_routes_umed, n_routes),
+         
+         "_ \\midrule \\emph{Indep. Var. Averages}" = 
+           c("", "", "", ""), 
+         
+         "_Prop traffic level 2" = c(
+           route_df$tl_prop_2 %>% mean() %>% round(3),
+           route_over50_df$tl_prop_2 %>% mean() %>% round(3),
+           route_under50_df$tl_prop_2 %>% mean() %>% round(3),
+           route_df$tl_prop_2 %>% mean() %>% round(3)),
+         "_Prop traffic level 3" = c(
+           route_df$tl_prop_3 %>% mean() %>% round(3),
+           route_over50_df$tl_prop_3 %>% mean() %>% round(3),
+           route_under50_df$tl_prop_3 %>% mean() %>% round(3),
+           route_df$tl_prop_3 %>% mean() %>% round(3)),
+         "_Prop traffic level 4" = c(
+           route_df$tl_prop_4 %>% mean() %>% round(3),
+           route_over50_df$tl_prop_4 %>% mean() %>% round(3),
+           route_under50_df$tl_prop_4 %>% mean() %>% round(3),
+           route_df$tl_prop_4 %>% mean() %>% round(3))
+       ),
+       file = file.path(tables_dir, "ols_calibration.tex"))
+

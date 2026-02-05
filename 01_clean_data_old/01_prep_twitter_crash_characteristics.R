@@ -2,8 +2,8 @@
 
 # Load twitter data ------------------------------------------------------------
 twitter_sf <- readRDS(file.path(data_dir, "Twitter Crashes", "RawData", "crashes_twitter.Rds"))
-# twitter_sf <- twitter_sf %>%
-#   dplyr::filter(crash_datetime >= ymd_hms("2023-05-20 00:00:00", tz = "Africa/Nairobi"))
+twitter_sf <- twitter_sf %>%
+  dplyr::filter(crash_datetime >= ymd_hms("2023-05-20 00:00:00", tz = "Africa/Nairobi"))
 
 twitter_buff_sf <- twitter_sf %>%
   st_buffer(dist = 100)

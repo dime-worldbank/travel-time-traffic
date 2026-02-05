@@ -1,7 +1,5 @@
 # Regression
 
-# DO - add interaciton reg.
-
 # Load data --------------------------------------------------------------------
 route_df <- readRDS(file.path(analysis_data_dir, "mapbox_routes.Rds"))
 osm_df   <- readRDS(file.path(analysis_data_dir, "mapbox_osm_10m.Rds"))

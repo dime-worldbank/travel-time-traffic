@@ -25,6 +25,9 @@ osm_sf <- readRDS(file.path(data_dir, "OSM", "FinalData", "osm_nbo_10m.Rds"))
 ## Estates
 estates_sf <- readRDS(file.path(data_dir, "Nairobi Estates", "FinalData", "nairobi_estates.Rds"))
 
+## Iso Routes
+h3_iso_routes_sf <- readRDS(file.path(data_dir, "Isochrone Routes", "appended_routes", "iso_10m_routes.Rds"))
+
 # Setup parallel cores ---------------------------------------------------------
 
 #myCluster <- makeCluster(4, type = "FORK") 
@@ -46,6 +49,12 @@ for(file_i in tiff_vec){
   file_i_str <- file_i %>% str_replace_all(".tiff|gt_nairobi_utc", "")
   
   for(polygon in POLYGONS_ALL){
+    
+    if(dataset == "h3_iso_routes"){
+      roi_sf <- h3_iso_routes_sf %>%
+        dplyr::select(route_id)
+      id_var <- "route_id"
+    }
     
     if(polygon %in% "osm_10m"){
       roi_sf <- osm_sf %>%

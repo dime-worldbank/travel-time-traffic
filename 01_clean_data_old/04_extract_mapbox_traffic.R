@@ -59,7 +59,7 @@ for(dataset in "h3_iso_routes"){
     polyline_sf <- h3_iso_routes_sf
     uid_var <- "route_id"
     chunk_size <- 100
-    rds_vec <- rds_vec_all[1:43]
+    rds_vec <- rds_vec_all[1:21]
   }
   
   if(dataset == "gadm1"){
@@ -106,7 +106,7 @@ for(dataset in "h3_iso_routes"){
     rds_vec <- rds_vec_all
   }
   
-  rds_vec <- rev(rds_vec)
+  #rds_vec <- rev(rds_vec)
   #rds_vec <- sample(rds_vec)
   #rds_vec <- rev(rds_vec)
   
@@ -118,7 +118,7 @@ for(dataset in "h3_iso_routes"){
       mp_sf <- mp_sf %>%
         dplyr::mutate(datetime_scrape = datetime_scrape %>% floor_date(unit = "30 minutes"))
       
-      for(datetime_i in rev(as.character(unique(mp_sf$datetime_scrape)))){
+      for(datetime_i in as.character(unique(mp_sf$datetime_scrape))){
         
         if(nchar(datetime_i) == 10){
           datetime_i <- paste0(datetime_i, "00:00:00")
