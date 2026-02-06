@@ -75,66 +75,99 @@ rename_var <- function(df, var){
 
 extract_gt_to_poly <- function(r, locations_sf){
   
-  count_0 <- function(x){
-    sum(x == 0, na.rm = T)
-  }
-  
-  count_1 <- function(x){
-    sum(x == 1, na.rm = T)
-  }
-  
-  count_2 <- function(x){
-    sum(x==2, na.rm = T)
-  }
-  
-  count_3 <- function(x){
-    sum(x==3, na.rm = T)
-  }
-  
-  count_4 <- function(x){
-    sum(x==4, na.rm = T)
-  }
-  
-  count_5 <- function(x){
-    sum(x==5, na.rm = T)
-  }
-  
-  ## Weird issue of counting "1s" -- numbers are way too large
+  ## Add 1 to handle the counting issue
   r[] <- r[] + 1
   
-  locations_sf$count_0 <- exact_extract(x = r,
-                                        y = locations_sf,
-                                        fun = count_1, ## count_1 because add 1 (so raw is 0)
-                                        summarize_df = T,
-                                        max_cells_in_memory = 3e07)
+  ## Create a single function that returns all counts
+  count_all <- function(x) {
+    data.frame(
+      count_0 = sum(x == 1, na.rm = TRUE),  # count_1 because raw 0 becomes 1
+      count_1 = sum(x == 2, na.rm = TRUE),  # count_2 because raw 1 becomes 2
+      count_2 = sum(x == 3, na.rm = TRUE),  # count_3 because raw 2 becomes 3
+      count_3 = sum(x == 4, na.rm = TRUE),  # count_4 because raw 3 becomes 4
+      count_4 = sum(x == 5, na.rm = TRUE)   # count_5 because raw 4 becomes 5
+    )
+  }
   
-  locations_sf$count_1 <- exact_extract(x = r,
-                                        y = locations_sf,
-                                        fun = count_2, ## count_2 because add 1 (so raw is 1)
-                                        summarize_df = T,
-                                        max_cells_in_memory = 3e07)
+  ## Single exact_extract call
+  result <- exact_extract(x = r,
+                          y = locations_sf,
+                          fun = count_all,
+                          summarize_df = TRUE,
+                          max_cells_in_memory = 3e07)
   
-  locations_sf$count_2 <- exact_extract(x = r,
-                                        y = locations_sf,
-                                        fun = count_3, ## count_3 because add 1 (so raw is 2)
-                                        summarize_df = T,
-                                        max_cells_in_memory = 3e07)
+  ## Add columns to locations_sf
+  locations_sf <- cbind(locations_sf, result)
   
-  locations_sf$count_3 <- exact_extract(x = r,
-                                        y = locations_sf,
-                                        fun = count_4, ## count_4 because add 1 (so raw is 3)
-                                        summarize_df = T,
-                                        max_cells_in_memory = 3e07)
+  locations_sf <- locations_sf %>%
+    st_drop_geometry()
   
-  locations_sf$count_4 <- exact_extract(x = r,
-                                        y = locations_sf,
-                                        fun = count_5, ## count_5 because add 1 (so raw is 4)
-                                        summarize_df = T,
-                                        max_cells_in_memory = 3e07)
-  
-  locations_sf$geometry <- NULL
   return(locations_sf)
 }
+
+
+# extract_gt_to_poly <- function(r, locations_sf){
+#   
+#   count_0 <- function(x){
+#     sum(x == 0, na.rm = T)
+#   }
+#   
+#   count_1 <- function(x){
+#     sum(x == 1, na.rm = T)
+#   }
+#   
+#   count_2 <- function(x){
+#     sum(x==2, na.rm = T)
+#   }
+#   
+#   count_3 <- function(x){
+#     sum(x==3, na.rm = T)
+#   }
+#   
+#   count_4 <- function(x){
+#     sum(x==4, na.rm = T)
+#   }
+#   
+#   count_5 <- function(x){
+#     sum(x==5, na.rm = T)
+#   }
+#   
+#   ## Weird issue of counting "1s" -- numbers are way too large
+#   r[] <- r[] + 1
+#   
+#   locations_sf$count_0 <- exact_extract(x = r,
+#                                         y = locations_sf,
+#                                         fun = count_1, ## count_1 because add 1 (so raw is 0)
+#                                         summarize_df = T,
+#                                         max_cells_in_memory = 3e07)
+#   
+#   locations_sf$count_1 <- exact_extract(x = r,
+#                                         y = locations_sf,
+#                                         fun = count_2, ## count_2 because add 1 (so raw is 1)
+#                                         summarize_df = T,
+#                                         max_cells_in_memory = 3e07)
+#   
+#   locations_sf$count_2 <- exact_extract(x = r,
+#                                         y = locations_sf,
+#                                         fun = count_3, ## count_3 because add 1 (so raw is 2)
+#                                         summarize_df = T,
+#                                         max_cells_in_memory = 3e07)
+#   
+#   locations_sf$count_3 <- exact_extract(x = r,
+#                                         y = locations_sf,
+#                                         fun = count_4, ## count_4 because add 1 (so raw is 3)
+#                                         summarize_df = T,
+#                                         max_cells_in_memory = 3e07)
+#   
+#   locations_sf$count_4 <- exact_extract(x = r,
+#                                         y = locations_sf,
+#                                         fun = count_5, ## count_5 because add 1 (so raw is 4)
+#                                         summarize_df = T,
+#                                         max_cells_in_memory = 3e07)
+#   
+#   locations_sf$geometry <- NULL
+#   return(locations_sf)
+# }
 
 calc_traffic_length <- function(polygon_sf, traffic_sf, add_by_class = F){
   

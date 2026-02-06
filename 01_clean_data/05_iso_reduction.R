@@ -9,9 +9,10 @@ iso_sf <- readRDS(file.path(data_dir, "Isochrone Routes", "appended_routes",
 iso_sf$length_m_orig <- iso_sf %>% st_length() %>% as.numeric()
 
 #### Traffic
-iso_traffic_df <- file.path(data_dir, "extracted-data", "h3_iso_routes", "mapbox_traffic_levels") %>%
+iso_traffic_df <- file.path(data_dir, "extracted-data", "h3_iso_routes", "google_traffic_levels") %>%
   list.files(full.names = T) %>%
-  map_df(readRDS)
+  map_df(readRDS) %>%
+  dplyr::rename(route_id = uid)
 
 #### Beta Coefficients
 beta <- readRDS(file.path(data_dir, "Calibration Coefficients", "coefs.Rds"))
@@ -24,12 +25,12 @@ iso_length_orig_df <- iso_sf %>%
 iso_traffic_agg_df <- iso_traffic_df %>%
   dplyr::mutate(dow = datetime %>% lubridate::wday(label = T),
                 hour = datetime %>% hour()) %>%
-  dplyr::filter(dow %in% c("Mon", "Tue", "Wed", "Thu", "Fri")) %>%
-  dplyr::mutate(length_total = (length_mb_low + length_mb_moderate + length_mb_heavy + length_mb_severe),
-                tl_prop_2 = length_mb_moderate / length_total,
-                tl_prop_3 = length_mb_heavy    / length_total,
-                tl_prop_4 = length_mb_severe   / length_total) %>%
-  group_by(route_id, hour) %>%
+  dplyr::mutate(dow_weekday = dow %in% c("Mon", "Tue", "Wed", "Thu", "Fri")) %>%
+  dplyr::mutate(length_total = (count_1 + count_2 + count_3 + count_4),
+                tl_prop_2 = count_2 / length_total,
+                tl_prop_3 = count_3 / length_total,
+                tl_prop_4 = count_4 / length_total) %>%
+  group_by(route_id, hour, dow_weekday) %>%
   dplyr::summarise(tl_prop_2 = mean(tl_prop_2),
                    tl_prop_3 = mean(tl_prop_3),
                    tl_prop_4 = mean(tl_prop_4)) %>%
@@ -58,20 +59,12 @@ iso_traffic_agg_df <- iso_traffic_df %>%
   dplyr::rename(prop_reduction = speed_multiplier)
 
 prop_reduc_df <- iso_traffic_agg_df %>%
-  dplyr::select(route_id, prop_reduction)
+  dplyr::select(route_id, prop_reduction, hour, dow_weekday)
 
 iso_sf <- iso_sf %>%
   left_join(prop_reduc_df, by = "route_id")
 
 # Make shortened routes --------------------------------------------------------
-# 0) Check geometry types (optional sanity check)
-#iso_sf$geometry %>% st_geometry_type() %>% as.character() %>% table()
-
-# 1) Merge MULTILINESTRING -> LINESTRING where possible (and keep only line features)
-# iso_sf1 <- iso_sf %>%
-#   mutate(geometry = st_line_merge(geometry)) %>%
-#   filter(st_is(geometry, c("LINESTRING", "MULTILINESTRING")))
-
 # 2) Project to meters (Kenya-ish example: UTM 37S)
 iso_m <- st_transform(iso_sf, 32737)
 
@@ -85,91 +78,48 @@ iso_m_trim <- iso_m %>%
   ungroup() %>%
   st_as_sf()
 
-# 4) (Optional) Transform back to the original CRS
+# 4) Transform back to the original CRS
 iso_trim_sf <- st_transform(iso_m_trim, st_crs(iso_sf))
 
 # 5) New end point / destination coordinates
-iso_trim_sf <- iso_trim_sf %>%
-  mutate(
-    .end_xy = lapply(st_geometry(.), \(g) {
-      xy <- st_coordinates(g)
-      xy[nrow(xy), c("X", "Y")]
-    }),
-    dst_longitude = vapply(.end_xy, `[[`, numeric(1), 1),
-    dst_latitude  = vapply(.end_xy, `[[`, numeric(1), 2)
-  ) %>%
-  select(-.end_xy)
+# iso_trim_sf <- iso_trim_sf %>%
+#   mutate(
+#     .end_xy = lapply(st_geometry(.), \(g) {
+#       xy <- st_coordinates(g)
+#       xy[nrow(xy), c("X", "Y")]
+#     }),
+#     dst_longitude = vapply(.end_xy, `[[`, numeric(1), 1),
+#     dst_latitude  = vapply(.end_xy, `[[`, numeric(1), 2)
+#   ) %>%
+#   select(-.end_xy)
+
+# 6) Make polygons
+iso_trim_poly_sf <- iso_trim_sf %>%
+  group_by(uid, hour, dow_weekday) %>%
+  dplyr::summarise(geometry = geometry %>% st_union() %>% st_concave_hull(ratio = 0.75)) %>%
+  ungroup()
+
+# iso_trim_sf_i <- iso_trim_sf[iso_trim_sf$uid %in% "887a6e5537fffff",] %>%
+#   dplyr::filter(hour %in% 19,
+#                 dow_weekday %in% T)
+# 
+# iso_trim_poly_sf_i <- iso_trim_poly_sf[iso_trim_poly_sf$uid %in% "887a6e5537fffff",] %>%
+#   dplyr::filter(hour %in% 19,
+#                 dow_weekday %in% T)
+# 
+# leaflet() %>%
+#   addTiles() %>%
+#   addPolylines(data = iso_trim_sf_i) %>%
+#   addPolygons(data = iso_trim_poly_sf_i)
+
+saveRDS(iso_trim_sf, file.path(data_dir, "Isochrone Routes", "iso_congestion_routes.Rds"))
+saveRDS(iso_trim_poly_sf, file.path(data_dir, "Isochrone Routes", "iso_congestion_poly.Rds"))
 
 # Make polygons ----------------------------------------------------------------
 iso_poly_sf <- iso_sf %>%
-  st_drop_geometry() %>%
   group_by(uid) %>%
-  summarise(
-    geometry = st_sfc({
-      coords <- cbind(dst_longitude, dst_latitude)
-      
-      if (!all(coords[1, ] == coords[nrow(coords), ])) {
-        coords <- rbind(coords, coords[1, ])
-      }
-      
-      st_polygon(list(coords))
-    }, crs = 4326),
-    .groups = "drop"
-  ) %>%
-  st_as_sf()
+  dplyr::summarise(geometry = geometry %>% st_union() %>% st_concave_hull(ratio = 0.75)) %>%
+  ungroup()
 
-iso_trim_poly_sf <- iso_trim_sf %>%
-  st_drop_geometry() %>%
-  group_by(uid) %>%
-  summarise(
-    geometry = st_sfc({
-      coords <- cbind(dst_longitude, dst_latitude)
-      
-      if (!all(coords[1, ] == coords[nrow(coords), ])) {
-        coords <- rbind(coords, coords[1, ])
-      }
-      
-      st_polygon(list(coords))
-    }, crs = 4326),
-    .groups = "drop"
-  ) %>%
-  st_as_sf()
-
-i = 20
-leaflet() %>%
-  addTiles() %>%
-  addPolygons(data = iso_trim_poly_sf[i,], color = "red", opacity = 1) %>%
-  addPolygons(data = iso_poly_sf[i,])
-
-
-
-
-
-
-
-
-
-
-### CHECKS
-iso_trim_sf$length_m_trim <- iso_trim_sf %>% st_length() %>% as.numeric()
-
-iso_trim_sf <- iso_trim_sf %>%
-  dplyr::mutate(prop_trim = length_m_trim/length_m_orig)
-
-iso_trim_sf %>%
-  st_drop_geometry() %>%
-  ggplot() +
-  geom_point(aes(x = prop_trim, y = prop_reduction))
-
-i <- 350
-iso_sf$prop_reduction[i]
-
-leaflet() %>%
-  addTiles() %>%
-  addPolylines(data = iso_trim_sf[i,], color = "red", opacity = 1) %>%
-  addPolylines(data = iso_sf[i,])
-
-
-
-
-
+saveRDS(iso_poly_sf, 
+        file.path(data_dir, "Isochrone Routes", "iso_poly.Rds"))

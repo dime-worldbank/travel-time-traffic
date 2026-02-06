@@ -1,6 +1,6 @@
 # Make Isochrone Polygons
 
-if(F){
+if(T){
   file.path(data_dir, "Isochrone Routes", "individual_routes") %>%
     list.files(full.names = T) %>%
     file.remove()
@@ -13,11 +13,49 @@ if(F){
 osm_sf <- readRDS(file.path(data_dir, "OSM", "FinalData", "osm_nbo_line.Rds")) %>%
   st_combine()
 
-nbo_sf <- readRDS(file.path(data_dir, "GADM", "RawData", "gadm41_KEN_1_pk.rds")) %>%
-  dplyr::filter(NAME_1 == "Nairobi") 
+nbo_sf <- readRDS(file.path(data_dir, "Nairobi Estates", "FinalData", "nairobi_estates.Rds")) 
 
-h3_ids <- nbo_sf %>%
-  polygon_to_cells(res = 7) 
+nbo_sub_sf <- nbo_sf %>%
+  dplyr::filter(uid %in% c(124,
+                           127,
+                           131,
+                           134,
+                           136,
+                           138,
+                           10,
+                           20,
+                           23,
+                           29,
+                           18,
+                           17,
+                           142,
+                           138,
+                           128,
+                           132,
+                           133,
+                           140,
+                           151,
+                           137,
+                           27,
+                           24,
+                           26,
+                           32,
+                           41,
+                           19,
+                           147,
+                           149,
+                           141))
+
+# leaflet() %>%
+#   addTiles() %>%
+#   addPolygons(data = nbo_sub_sf,
+#               popup = ~as.character(uid), color = "red") %>%
+#   addPolygons(data = nbo_sf,
+#               popup = ~as.character(uid))
+
+h3_ids <- nbo_sub_sf %>%
+  st_union() %>%
+  polygon_to_cells(res = 8) 
 
 h3_sf <- cell_to_polygon(h3_ids, simple = T) %>% st_as_sf()
 h3_sf$uid <- h3_ids[[1]]
@@ -30,6 +68,8 @@ h3_sf <- h3_sf[inter_tf,]
 # leaflet() %>%
 #   addTiles() %>%
 #   addPolygons(data = h3_sf)
+
+saveRDS(h3_sf, file.path(data_dir, "Isochrone Routes", "h3_polygon.Rds"))
 
 # Make isochrones --------------------------------------------------------------
 for(uid_i in unique(h3_sf$uid)){
@@ -46,7 +86,11 @@ for(uid_i in unique(h3_sf$uid)){
       st_coordinates() %>%
       as.vector()
     
-    iso_sf <- osrmIsochrone(loc = coord_i, breaks = 30, res = 30)
+    iso_sf <- osrmIsochrone(loc = coord_i, breaks = 15, res = 20)
+    
+    # leaflet() %>%
+    #   addTiles() %>%
+    #   addPolygons(data = iso_sf)
     
     if(nrow(iso_sf) > 0){
       

@@ -40,6 +40,8 @@ h3_iso_routes_sf <- readRDS(file.path(data_dir, "Isochrone Routes", "appended_ro
 tiff_vec <- file.path(traffic_gg_raw_dir) %>%
   list.files(pattern = "*.tiff") 
 
+tiff_vec <- tiff_vec %>% rev()
+
 length(tiff_vec)
 
 for(file_i in tiff_vec){
@@ -127,6 +129,8 @@ for(file_i in tiff_vec){
     
     OUT_PATH <- file.path(OUT_DIR, FILE_NAME)
     
+    # OUT_DIR %>% list.files(full.names = T) %>% file.remove
+    
     if(!file.exists(OUT_PATH)){
       print(file_i)
       
@@ -149,6 +153,7 @@ for(file_i in tiff_vec){
     }
   } 
 }
+
 
 
 

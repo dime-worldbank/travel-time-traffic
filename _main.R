@@ -19,6 +19,8 @@ POLYGONS_ALL <- "osm_10m"
 POLYGONS_ALL <- "estates"
 POLYGONS_ALL <- "gadm1"
 POLYGONS_ALL <- "h3_iso_routes"
+POLYGONS_ALL <- "twitter_crashes_50m"
+POLYGONS_ALL <- "h3_iso_routes"
 
 
 DELETE_OUTPUT <- F
@@ -114,6 +116,7 @@ library(forcats)
 library(osrm)
 library(h3jsr)
 library(lwgeom)
+library(tidyterra)
 
 source("https://raw.githubusercontent.com/ramarty/fast-functions/refs/heads/master/R/functions_in_chunks.R")
 
