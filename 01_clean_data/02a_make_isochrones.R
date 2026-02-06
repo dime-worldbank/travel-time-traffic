@@ -1,5 +1,14 @@
 # Make Isochrone Polygons
 
+if(F){
+  file.path(data_dir, "Isochrone Routes", "individual_routes") %>%
+    list.files(full.names = T) %>%
+    file.remove()
+  
+  file.path(data_dir, "Isochrone Routes", "individual_routes") %>%
+    list.files(full.names = T)
+}
+
 # Prep h3 cells ----------------------------------------------------------------
 osm_sf <- readRDS(file.path(data_dir, "OSM", "FinalData", "osm_nbo_line.Rds")) %>%
   st_combine()
@@ -8,7 +17,7 @@ nbo_sf <- readRDS(file.path(data_dir, "GADM", "RawData", "gadm41_KEN_1_pk.rds"))
   dplyr::filter(NAME_1 == "Nairobi") 
 
 h3_ids <- nbo_sf %>%
-  polygon_to_cells(res = 8) 
+  polygon_to_cells(res = 7) 
 
 h3_sf <- cell_to_polygon(h3_ids, simple = T) %>% st_as_sf()
 h3_sf$uid <- h3_ids[[1]]
@@ -17,6 +26,7 @@ inter_tf <- st_intersects(h3_sf, osm_sf, sparse = F) %>% as.vector()
 
 h3_sf <- h3_sf[inter_tf,]
 
+# nrow(h3_sf)
 # leaflet() %>%
 #   addTiles() %>%
 #   addPolygons(data = h3_sf)

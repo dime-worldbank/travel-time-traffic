@@ -38,8 +38,9 @@ h3_iso_routes_sf <- readRDS(file.path(data_dir, "Isochrone Routes", "appended_ro
 
 # Extract data -----------------------------------------------------------------
 tiff_vec <- file.path(traffic_gg_raw_dir) %>%
-  list.files(pattern = "*.tiff") %>%
-  rev()
+  list.files(pattern = "*.tiff") 
+
+length(tiff_vec)
 
 for(file_i in tiff_vec){
   #foreach(file_i=tiff_vec, .combine='c', .inorder=FALSE) %dopar% {
@@ -141,7 +142,6 @@ for(file_i in tiff_vec){
       if(id_var != "uid") roi_sf[[id_var]] <- NULL
       
       google_df <- extract_gt_to_poly(r, roi_sf)
-      
       google_df$datetime <- datetime_i
       
       saveRDS(google_df, OUT_PATH)

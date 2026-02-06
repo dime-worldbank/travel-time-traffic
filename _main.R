@@ -18,6 +18,7 @@ POLYGONS_ALL <- "osm_10m"
 POLYGONS_ALL <- "osm_10m"
 POLYGONS_ALL <- "estates"
 POLYGONS_ALL <- "gadm1"
+POLYGONS_ALL <- "h3_iso_routes"
 
 
 DELETE_OUTPUT <- F
