@@ -3,16 +3,23 @@
 # Load data --------------------------------------------------------------------
 df <- readRDS(file.path(analysis_data_dir, "google_routes.Rds"))
 
+beta <- readRDS(file.path(data_dir, "Calibration Coefficients", "coefs.Rds"))
+
+df <- df %>%
+  mk_traffic_indicators(beta)
+
 # df <- df %>%
 #   dplyr::filter(modal_route %in% T)
 
 # Figure -----------------------------------------------------------------------
 # --- Step 1: Prepare the data for reordering and plotting ---
 plot_data <- df %>%
-  dplyr::mutate(duration_min = duration_in_traffic_s/60) %>%
+  dplyr::mutate(duration_min = duration_in_traffic_s/60,
+                distance_km = distance_m / 1000) %>%
   dplyr::select(uid,
-                speed_kmh, duration_min,
-                tl_prop_2, tl_prop_3, tl_prop_4) %>%
+                speed_kmh, duration_min, distance_km,
+                tl_prop_2, tl_prop_3, tl_prop_4,
+                delay_factor) %>%
   
   # Reorder the 'uid' factor levels
   dplyr::mutate(uid = as.factor(uid)) %>%
@@ -31,15 +38,20 @@ placeholder_data <- plot_data %>%
   tidyr::crossing(name = c("A. Prop. Route Traffic Level 2",
                            "B. Prop. Route Traffic Level 3",
                            "C. Prop. Route Traffic Level 4",
-                           "D. Traffic Speed (km/h)",
-                           "E. Travel Duration (min)")) %>%
+                           "D. Delay Factor",
+                           "E. Traffic Speed (km/h)",
+                           "F. Travel Duration (min)",
+                           "G. Travel Distance (km)"
+  )) %>%
   dplyr::mutate(value = 0.5) %>% # Force the x-value to be 0.5
   dplyr::mutate(name = name %>%
                   factor(levels = c("A. Prop. Route Traffic Level 2",
                                     "B. Prop. Route Traffic Level 3",
                                     "C. Prop. Route Traffic Level 4",
-                                    "D. Traffic Speed (km/h)",
-                                    "E. Travel Duration (min)")))
+                                    "D. Delay Factor",
+                                    "E. Traffic Speed (km/h)",
+                                    "F. Travel Duration (min)",
+                                    "G. Travel Distance (km)")))
 
 # --- Step 3: Reshape the main data for plotting ---
 long_data <- plot_data %>%
@@ -49,19 +61,23 @@ long_data <- plot_data %>%
   
   # Rename the facets and re-level 'name' factor (as in your original code)
   dplyr::mutate(name = case_when(
-    name == "speed_kmh" ~ "D. Traffic Speed (km/h)",
-    name == "duration_min" ~ "E. Travel Duration (min)", 
-    #name == "distance_m" ~ "C. Travel Distance (km)",
     name == "tl_prop_2" ~ "A. Prop. Route Traffic Level 2",
     name == "tl_prop_3" ~ "B. Prop. Route Traffic Level 3",
-    name == "tl_prop_4" ~ "C. Prop. Route Traffic Level 4"
+    name == "tl_prop_4" ~ "C. Prop. Route Traffic Level 4",
+    name == "delay_factor" ~ "D. Delay Factor",
+    name == "speed_kmh" ~ "E. Traffic Speed (km/h)",
+    name == "duration_min" ~ "F. Travel Duration (min)", 
+    name == "distance_km" ~ "G. Travel Distance (km)"
   ),
   name = name %>%
     factor(levels = c("A. Prop. Route Traffic Level 2",
                       "B. Prop. Route Traffic Level 3",
                       "C. Prop. Route Traffic Level 4",
-                      "D. Traffic Speed (km/h)",
-                      "E. Travel Duration (min)")))
+                      "D. Delay Factor",
+                      "E. Traffic Speed (km/h)",
+                      "F. Travel Duration (min)",
+                      "G. Travel Distance (km)"
+    )))
 
 
 # --- Step 4: Create the plot by combining the layers ---
@@ -94,7 +110,7 @@ long_data %>%
         axis.text.y = element_text(size = 8))
 
 ggsave(filename = file.path(figures_dir, "summary_boxplots.png"),
-       height = 6, width = 9)
+       height = 6, width = 10)
 
 
 # #### Stats

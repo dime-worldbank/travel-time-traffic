@@ -1,14 +1,14 @@
 # Descriptive Summary
 
 # Load data --------------------------------------------------------------------
-route_df   <- readRDS(file.path(analysis_data_dir, "mapbox_routes.Rds"))
-osm_df     <- readRDS(file.path(analysis_data_dir, "mapbox_osm_10m.Rds"))
-gadm1_df   <- readRDS(file.path(analysis_data_dir, "mapbox_gadm1.Rds"))
-estates_df <- readRDS(file.path(analysis_data_dir, "mapbox_estates.Rds"))
+route_df   <- readRDS(file.path(analysis_data_dir, "google_routes.Rds"))
+osm_df     <- readRDS(file.path(analysis_data_dir, "google_osm_10m.Rds"))
+gadm1_df   <- readRDS(file.path(analysis_data_dir, "google_gadm1.Rds"))
+estates_df <- readRDS(file.path(analysis_data_dir, "google_estates.Rds"))
 
 estates_sf <- readRDS(file.path(data_dir, "Nairobi Estates", "FinalData", "nairobi_estates.Rds"))
-#osm_sf     <- readRDS(file.path(data_dir, "OSM", "FinalData", "osm_nbo_line.Rds"))
-#osm_sf     <- osm_sf %>% st_intersection(estates_sf)
+osm_sf     <- readRDS(file.path(data_dir, "OSM", "FinalData", "osm_nbo_line.Rds"))
+osm_sf     <- osm_sf %>% st_intersection(estates_sf)
 
 beta <- readRDS(file.path(data_dir, "Calibration Coefficients", "coefs.Rds"))
 
@@ -52,9 +52,12 @@ gadm1_df   <- gadm1_df %>% prep_datetime
 ## Extra cleaning
 route_df <- route_df %>%
   group_by(uid) %>%
-  dplyr::mutate(duration_s_minimum = min(duration_s)) %>%
+  #dplyr::mutate(duration_in_traffic_s_minimum = min(duration_in_traffic_s, na.rm = T)) %>%
+  dplyr::mutate(duration_in_traffic_s_minimum = duration_in_traffic_s %>%
+                  quantile(0.05, na.rm = T) %>%
+                  as.numeric()) %>%
   ungroup() %>%
-  dplyr::mutate(duration_pc = (duration_s - duration_s_minimum)/duration_s_minimum)
+  dplyr::mutate(duration_pc = (duration_in_traffic_s - duration_in_traffic_s_minimum)/duration_in_traffic_s_minimum)
 
 ## To hour
 route_hr_df <- route_df %>%
@@ -75,7 +78,7 @@ gadm1_hr_df <- gadm1_df %>%
 
 osm_hr_class_df <- osm_df %>%
   group_by(hour, dow_group, fclass) %>%
-  dplyr::summarise(delay_factor = mean(delay_factor)) %>%
+  dplyr::summarise(delay_factor = mean(delay_factor, na.rm = T)) %>%
   ungroup()
 
 # Time of Day: 26 Routes and city wide -----------------------------------------
@@ -92,9 +95,11 @@ p_route_tt <- route_hr_df %>%
        y = "Duration (% change)",
        color = NULL,
        title = "A. Travel Duration\n% Change from Free-Flow\nRoutes [N=26]") +
+  scale_y_continuous(limits = c(0, 1.03)) +
   theme_classic2() +
   theme(strip.background = element_blank(),
         plot.title = element_text(face = "bold", hjust = 0.5, size = 10))
+p_route_tt
 
 p_route_tl <- route_hr_df %>%
   ggplot() +
@@ -109,10 +114,11 @@ p_route_tl <- route_hr_df %>%
        y = "Delay factor",
        color = NULL,
        title = "B. Delay Factor\nRoutes [N=26]") +
-  scale_y_continuous(limits = c(1, 1.15)) +
+  scale_y_continuous(limits = c(1, 2.03)) +
   theme_classic2() +
   theme(strip.background = element_blank(),
         plot.title = element_text(face = "bold", hjust = 0.5, size = 10))
+p_route_tl
 
 ## City-wide
 p_nbo <- gadm1_hr_df %>%
@@ -128,7 +134,7 @@ p_nbo <- gadm1_hr_df %>%
        y = "Delay factor",
        color = NULL,
        title = "C. Delay Factor\n[All Nairobi]") +
-  scale_y_continuous(limits = c(1, 1.15)) +
+  scale_y_continuous(limits = c(1, 2.03)) +
   theme_classic2() +
   theme(strip.background = element_blank(),
         plot.title = element_text(face = "bold", hjust = 0.5, size = 10))
@@ -212,7 +218,7 @@ estates_data_diff_sf <- estates_sf %>%
   dplyr::filter(!is.na(weekday_m_weekend))
 
 ## Levels
-estates_data_sf$delay_factor[estates_data_sf$delay_factor >= 1.15] <- 1.15
+estates_data_sf$delay_factor[estates_data_sf$delay_factor >= 1.5] <- 1.5
 
 estates_data_sf <- estates_data_sf %>%
   arrange(delay_factor)
@@ -223,6 +229,8 @@ p_map_levels <- ggplot() +
   facet_wrap(~weekday_end) +
   scale_fill_distiller(
     palette = "RdYlGn",
+    breaks = c(1.1, 1.2, 1.3, 1.4, 1.5),
+    labels = c("1.1", "1.2", "1.3", "1.4", "> 1.5"),
     direction = -1   # optional: flip so high = red
   ) +
   labs(fill = "Delay\nFactor") +
@@ -230,14 +238,13 @@ p_map_levels <- ggplot() +
   theme(legend.position = "right",
         strip.text = element_text(face = "bold", size = 11))
 
-
 estates_data_diff_sf$weekday_m_weekend_pc_adj <- estates_data_diff_sf$weekday_m_weekend_pc
-estates_data_diff_sf$weekday_m_weekend_pc_adj[estates_data_diff_sf$weekday_m_weekend_pc_adj >= 2] <- 2
-estates_data_diff_sf$weekday_m_weekend_pc_adj[estates_data_diff_sf$weekday_m_weekend_pc_adj <= -2] <- -2
+estates_data_diff_sf$weekday_m_weekend_pc_adj[estates_data_diff_sf$weekday_m_weekend_pc_adj >= 10] <- 10
+estates_data_diff_sf$weekday_m_weekend_pc_adj[estates_data_diff_sf$weekday_m_weekend_pc_adj <= -10] <- -10
 
 estates_data_diff_sf$weekday_weekend_ratio_adj <- estates_data_diff_sf$weekday_weekend_ratio
-estates_data_diff_sf$weekday_weekend_ratio_adj[estates_data_diff_sf$weekday_weekend_ratio >= 1.02] <- 1.02
-estates_data_diff_sf$weekday_weekend_ratio_adj[estates_data_diff_sf$weekday_weekend_ratio <= -0.98] <- -0.98
+estates_data_diff_sf$weekday_weekend_ratio_adj[estates_data_diff_sf$weekday_weekend_ratio >= 1.1] <- 1.1
+estates_data_diff_sf$weekday_weekend_ratio_adj[estates_data_diff_sf$weekday_weekend_ratio <= -0.9] <- -0.9
 
 ## % Change
 p_map_pc <- ggplot() +
@@ -245,6 +252,9 @@ p_map_pc <- ggplot() +
           aes(fill = weekday_m_weekend_pc_adj)) +
   scale_fill_distiller(
     palette = "RdBu",
+    limits = c(-10, 10),
+    breaks = c(-10, -5, 0, 5, 10),
+    labels = c("< -10%", "-5%", "0%", "5%", "> 10%"),
     direction = -1   # optional: flip so high = red
   ) +
   labs(title = "C. % Change in Delay Factor\nWeekday relative to Weekends",

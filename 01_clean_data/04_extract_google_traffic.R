@@ -40,7 +40,7 @@ h3_iso_routes_sf <- readRDS(file.path(data_dir, "Isochrone Routes", "appended_ro
 tiff_vec <- file.path(traffic_gg_raw_dir) %>%
   list.files(pattern = "*.tiff") 
 
-tiff_vec <- tiff_vec %>% rev()
+#tiff_vec <- tiff_vec[1:1000] %>% rev()
 
 length(tiff_vec)
 

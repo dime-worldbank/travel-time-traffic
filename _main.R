@@ -21,6 +21,7 @@ POLYGONS_ALL <- "gadm1"
 POLYGONS_ALL <- "h3_iso_routes"
 POLYGONS_ALL <- "twitter_crashes_50m"
 POLYGONS_ALL <- "h3_iso_routes"
+POLYGONS_ALL <- "osm_10m"
 
 
 DELETE_OUTPUT <- F
