@@ -33,6 +33,11 @@ route_df <- route_df %>%
                 tl_prop_3_omed = tl_prop_3 * speed_kmh_uid_over_med,
                 tl_prop_4_omed = tl_prop_4 * speed_kmh_uid_over_med)
 
+route_df <- route_df %>%
+  dplyr::mutate(tl_prop_2_sq = tl_prop_2^2,
+                tl_prop_3_sq = tl_prop_3^2,
+                tl_prop_4_sq = tl_prop_4^2)
+
 # Pooled regressions -----------------------------------------------------------
 #### Proportions
 lm_prop_1 <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid, 
@@ -54,10 +59,11 @@ lm_prop_4 <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 +
                    vcov = ~ uid,
                    data = route_df)
 
-lm_prop_1
-lm_prop_2
-lm_prop_3
-lm_prop_4
+#### Proportions: Squared
+lm_prop_1_sq <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 +
+                     tl_prop_2_sq + tl_prop_3_sq + tl_prop_4_sq | uid, 
+                   vcov = ~ uid,
+                   data = route_df)
 
 #### N Routes
 n_routes      <- route_df$uid      %>% unique() %>% length()
@@ -74,11 +80,15 @@ my_style = style.tex(tpt = TRUE,
                      notes.tpt.intro = "\\footnotesize")
 setFixest_etable(style.tex = my_style)
 
-dict = c(tt_hour_per_km_ln = "Travel time per hour, logged",
+dict = c(tt_hour_per_km_ln = "Travel time (hours) per kilometer, logged",
          
          tl_prop_2 = "Prop traffic level 2",
          tl_prop_3 = "Prop traffic level 3",
          tl_prop_4 = "Prop traffic level 4",
+         
+         tl_prop_2_sq = "Prop traffic level 2, Squared",
+         tl_prop_3_sq = "Prop traffic level 3, Squared",
+         tl_prop_4_sq = "Prop traffic level 4, Squared",
          
          tl_prop_2_omed = "Prop traffic level 2 $\\times$ 95$^{\\text{th}}$ Perc. Speed $\\ge$ 55km/h",
          tl_prop_3_omed = "Prop traffic level 3 $\\times$ 95$^{\\text{th}}$ Perc. Speed $\\ge$ 55km/h",
@@ -89,35 +99,38 @@ setFixest_dict(dict)
 
 #### Table
 #file.remove(file.path(tables_dir, "ols_calibration.tex"))
-esttex(lm_prop_1, lm_prop_2, lm_prop_3, lm_prop_4,
+esttex(lm_prop_1, lm_prop_1_sq, lm_prop_2, lm_prop_3, lm_prop_4,
        float = F,
        replace = T,
        extralines = list(
          
          "_ \\midrule \\emph{Routes Used}" = 
-           c("", "", "", ""), 
+           c("", "", "", "", ""), 
          
-         "_Max Route Speed (km/h)" = c("Any", "$\\ge 55$", "< 55", "Any"),
+         "_Max Route Speed (km/h)" = c("Any", "Any", "$\\ge 55$", "< 55", "Any"),
          
-         "_N Routes" = c(n_routes, n_routes_omed, n_routes_umed, n_routes),
+         "_N Routes" = c(n_routes, n_routes, n_routes_omed, n_routes_umed, n_routes),
          
          "_ \\midrule \\emph{Indep. Var. Averages}" = 
-           c("", "", "", ""), 
+           c("", "", "", "", ""), 
          
          "_Prop traffic level 2" = c(
            route_df$tl_prop_2 %>% mean() %>% round(3),
-           route_over50_df$tl_prop_2 %>% mean() %>% round(3),
-           route_under50_df$tl_prop_2 %>% mean() %>% round(3),
+           route_df$tl_prop_2 %>% mean() %>% round(3),
+           route_omed_df$tl_prop_2 %>% mean() %>% round(3),
+           route_umed_df$tl_prop_2 %>% mean() %>% round(3),
            route_df$tl_prop_2 %>% mean() %>% round(3)),
          "_Prop traffic level 3" = c(
            route_df$tl_prop_3 %>% mean() %>% round(3),
-           route_over50_df$tl_prop_3 %>% mean() %>% round(3),
-           route_under50_df$tl_prop_3 %>% mean() %>% round(3),
+           route_df$tl_prop_3 %>% mean() %>% round(3),
+           route_omed_df$tl_prop_3 %>% mean() %>% round(3),
+           route_umed_df$tl_prop_3 %>% mean() %>% round(3),
            route_df$tl_prop_3 %>% mean() %>% round(3)),
          "_Prop traffic level 4" = c(
            route_df$tl_prop_4 %>% mean() %>% round(3),
-           route_over50_df$tl_prop_4 %>% mean() %>% round(3),
-           route_under50_df$tl_prop_4 %>% mean() %>% round(3),
+           route_df$tl_prop_4 %>% mean() %>% round(3),
+           route_omed_df$tl_prop_4 %>% mean() %>% round(3),
+           route_umed_df$tl_prop_4 %>% mean() %>% round(3),
            route_df$tl_prop_4 %>% mean() %>% round(3))
        ),
        file = file.path(tables_dir, "ols_calibration.tex"))
