@@ -20,9 +20,12 @@ iso_cong_poly_sf <- readRDS(file.path(data_dir, "Isochrone Routes", "iso_congest
 
 building_r <- rast(file.path(data_dir, "Google Building Volume", 
                                       "rawdata",
-                                      "open_buildings_temporal_nairobi_5km_buffer_building_height_max_30m.tif"))
+                                      "nairobi_building_heights_2023_10m.tif"))
 
 # Prep data --------------------------------------------------------------------
+iso_poly_sf$bv_ff      <- exact_extract(building_r, iso_poly_sf,      "sum") %>% as.vector()
+iso_cong_poly_sf$bv_traffic <- exact_extract(building_r, iso_cong_poly_sf, "sum") %>% as.vector()
+
 iso_poly_sf <- iso_poly_sf %>% 
   dplyr::mutate(area_ff = geometry %>% st_area %>% as.numeric()) %>%
   st_drop_geometry()
@@ -33,34 +36,80 @@ iso_cong_poly_sf <- iso_cong_poly_sf %>%
 
 iso_cong_poly_sf <- iso_cong_poly_sf %>%
   left_join(iso_poly_sf, by = "uid") %>%
-  dplyr::mutate(prop_area = area_traffic / area_ff)
+  dplyr::mutate(prop_area = area_traffic / area_ff,
+                prop_bv = bv_traffic / bv_ff,
+                prop_bv_m_area = prop_bv - prop_area)
 
 iso_cong_poly_wdays_df <- iso_cong_poly_sf %>%
-  dplyr::filter(hour %in% seq(0, 22, 2),
+  dplyr::filter(hour %in% seq(0, 21, 3),
                 dow_weekday %in% T)
 
 h3_data_sf <- h3_sf %>%
   left_join(iso_cong_poly_wdays_df, by = "uid")
 
 # Figure -----------------------------------------------------------------------
-ggplot() +
+p1 <- ggplot() +
   geom_sf(data = osm_main_sf, color = "gray40") +
   geom_sf(data = osm_other_sf, linewidth = 0.1, color = "gray40") +
-  geom_sf(data = h3_data_sf, aes(fill = prop_area)) +
+  geom_sf(data = h3_data_sf, 
+          aes(fill = prop_area)) +
   scale_fill_distiller(
     palette = "Spectral",
     direction = 1,
     limits = c(0, 1),
     oob = scales::squish
   ) +
-  facet_wrap(~hour, ncol = 3) +
+  facet_wrap(~hour, ncol = 4) +
   labs(fill = "Proportion",
-       title = "Proportion of free-flow 15-minute isochrone reachable under traffic conditions,\nby time of day and origin location") +
+       title = "A. Proportion of free-flow 15-minute isochrone reachable under traffic conditions,\nby time of day and origin location") +
   theme_void() +
   theme(plot.title = element_text(face = "bold", size = 14),
         strip.text = element_text(size = 12)) 
 
-ggsave(filename = file.path(figures_dir, "isochrone_hex_changes.png"),
+p2 <- ggplot() +
+  geom_sf(data = osm_main_sf, color = "gray40") +
+  geom_sf(data = osm_other_sf, linewidth = 0.1, color = "gray40") +
+  geom_sf(data = h3_data_sf, aes(fill = prop_bv)) +
+  scale_fill_distiller(
+    palette = "Spectral",
+    direction = 1,
+    limits = c(0, 1),
+    oob = scales::squish
+  ) +
+  facet_wrap(~hour, ncol = 4) +
+  labs(fill = "Proportion",
+       title = "B. Proportion of total building volume within free-flow 15-minute isochrone\nreachable under traffic conditions, by time of day and origin location") +
+  theme_void() +
+  theme(plot.title = element_text(face = "bold", size = 14),
+        strip.text = element_text(size = 12)) 
+
+p3 <- ggplot() +
+  geom_sf(data = osm_main_sf, color = "gray40") +
+  geom_sf(data = osm_other_sf, linewidth = 0.1, color = "gray40") +
+  geom_sf(data = h3_data_sf, aes(fill = prop_bv_m_area)) +
+  scale_fill_gradient2(
+    low = "green2",        # Forest Green
+    mid = "white",          # Zero point
+    high = "#800080",       # Purple
+    midpoint = 0,           # Anchor white at exactly 0
+    limits = c(-0.05, 0.2), # Your requested range
+    oob = scales::squish,   # Values outside the range get the edge colors
+    name = "Proportion"
+  ) + 
+  facet_wrap(~hour, ncol = 4) +
+  labs(fill = "Proportion",
+       title = "C. Difference in proportion of buildings reachable compared to area reachable\n[panel B - panel A]",
+       subtitle = "Positive values indicate proportion of buildings accessible is higher than proportion of area accessible when\ncomparing free flow to traffic conditions") +
+  theme_void() +
+  theme(plot.title = element_text(face = "bold", size = 14),
+        plot.subtitle = element_text(face = "italic"),
+        strip.text = element_text(size = 12)) 
+
+p_top <- ggarrange(p1, p2, ncol = 1, common.legend = T, legend = "right")
+p <- ggarrange(p_top, p3, ncol = 1, heights = c(0.66, 0.37))
+
+ggsave(p, filename = file.path(figures_dir, "isochrone_hex_changes.png"),
        height = 10,
-       width = 11)
+       width = 9)
+
 

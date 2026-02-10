@@ -20,14 +20,17 @@ route_crash_df <- readRDS(file.path(data_dir, "points-intersect-routes",
                                     paste0("twitter_crashes_",unit,"_google_route.Rds"))) %>%
   dplyr::rename(road_length_near_crash_m = road_length_m)
 
-tt_df <- readRDS(file.path(data_dir, "Travel Time", "google_tt_data.Rds")) %>%
-  dplyr::select(segment_id, datetime,
+#tt_df <- readRDS(file.path(data_dir, "Travel Time", "google_tt_data.Rds")) %>%
+tt_df <- readRDS(file.path(analysis_data_dir, "google_routes.Rds")) %>%
+  dplyr::select(uid, datetime,
                 duration_s, distance_m, 
                 duration_in_traffic_s, 
-                speed_kmh, speed_in_traffic_kmh) %>%
+                speed_kmh, speed_in_traffic_kmh,
+                delay_factor_od) %>%
   dplyr::mutate(minute = datetime %>% minute()) %>%
   dplyr::filter(minute == 0) %>%
-  dplyr::select(-minute)
+  dplyr::select(-minute) %>%
+  dplyr::rename(segment_id = uid)
 
 tt_crash_df <- route_crash_df %>%
   left_join(tt_df, by = c("segment_id"))
@@ -38,6 +41,7 @@ tt_crash_agg_df <- tt_crash_df %>%
   group_by(crash_id, datetime) %>%
   dplyr::summarise(speed_in_traffic_kmh = weighted.mean(speed_in_traffic_kmh, road_length_near_crash_m, na.rm = T),
                    duration_in_traffic_s = weighted.mean(duration_in_traffic_s, road_length_near_crash_m, na.rm = T),
+                   delay_factor_od = weighted.mean(delay_factor_od, road_length_near_crash_m, na.rm = T),
                    distance_m_weighted = weighted.mean(distance_m, road_length_near_crash_m, na.rm = T),
                    distance_m = mean(distance_m)) %>%
   ungroup()

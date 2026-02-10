@@ -135,3 +135,40 @@ esttex(lm_prop_1, lm_prop_1_sq, lm_prop_2, lm_prop_3, lm_prop_4,
        ),
        file = file.path(tables_dir, "ols_calibration.tex"))
 
+# Elasticites ------------------------------------------------------------------
+library(tidyverse)
+
+beta <- c(
+  tl2 = 1.307,
+  tl3 = 3.338,
+  tl4 = 6.308
+)
+
+tt_table <- expand_grid(
+  prop = seq(0, 1, by = 0.1),
+  traffic_level = names(beta)
+) %>%
+  mutate(
+    tt_multiplier = exp(beta[traffic_level] * prop)
+  ) %>%
+  pivot_wider(
+    names_from = traffic_level,
+    values_from = tt_multiplier
+  ) %>%
+  mutate(
+    across(-prop, ~ round(.x, 2))
+  ) %>%
+  mutate(tex = paste(prop, " & ", tl2, " & ", tl3, " & ", tl4, " \\\\ \n"))
+
+sink(file.path(tables_dir, "prop_tl_ttincrease.tex"))
+cat("\\begin{tabular}{l | lll} \n")
+cat("\\hline \n")
+cat(" & \\multicolumn{3}{c}{Delay factor when proportion} \\\\ \n")
+cat(" & \\multicolumn{3}{c}{of road is at specified traffic level} \\\\ \n")
+cat("Proportion & 2 (Medium) & 3 (High) & 4 (Severe) \\\\ \n")
+cat("\\hline \n")
+tt_table$tex %>% cat()
+cat("\\hline \n")
+cat("\\end{tabular} ")
+sink()
+

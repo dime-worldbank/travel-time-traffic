@@ -133,7 +133,7 @@ lm_delayfactor_df <- feols(
   cluster = ~crash_id
 ) %>%
   lm_to_df() %>%
-  dplyr::mutate(dv = paste0("Traffic Level: Delay Factor\n[N Crashes = ", n_crash_tl, "]"))
+  dplyr::mutate(dv = paste0("Delay Factor\n(Traffic Level Data)\n[N Crashes = ", n_crash_tl, "]"))
 
 lm_delayfactor_ttsample_df <- feols(
   delay_factor_ttsample ~ i(hour_of_day_since_crash, crash_day, ref = -1) | crash_id + hour + dow,
@@ -141,15 +141,16 @@ lm_delayfactor_ttsample_df <- feols(
   cluster = ~crash_id
 ) %>%
   lm_to_df() %>%
-  dplyr::mutate(dv = paste0("Traffic Level: Delay Factor\n[N Crashes = ", n_crash_tt, "]"))
+  dplyr::mutate(dv = paste0("Delay Factor\n(Traffic Level Data)\n[N Crashes = ", n_crash_tt, "]"))
 
+# duration_in_traffic_min_ln
 lm_duration_df <- feols(
-  duration_in_traffic_min_ln ~ i(hour_of_day_since_crash, crash_day, ref = -1) | crash_id + hour + dow,
+  delay_factor_od ~ i(hour_of_day_since_crash, crash_day, ref = -1) | crash_id + hour + dow,
   data = crash_df,
   cluster = ~crash_id
 ) %>%
   lm_to_df() %>%
-  dplyr::mutate(dv = paste0("Duration, Logged\n[N Crashes = ", n_crash_tt, "]"))
+  dplyr::mutate(dv = paste0("Delay Factor\n(O-D Data)\n[N Crashes = ", n_crash_tt, "]"))
 
 lm_all_df <- bind_rows(lm_delayfactor_df,
                        lm_delayfactor_ttsample_df,
@@ -162,7 +163,7 @@ lm_delayfactor_1_df <- feols(
   cluster = ~crash_id
 ) %>%
   lm_to_df() %>%
-  dplyr::mutate(dv = paste0("Trunk Roads\nTraffic Level: Delay Factor\n[N Crashes = ", n_crash_tl_type1, "]"),
+  dplyr::mutate(dv = paste0("Trunk Roads\nDelay Factor\n(Traffic Level Data)\n[N Crashes = ", n_crash_tl_type1, "]"),
                 type = 1)
 
 lm_delayfactor_2_df <- feols(
@@ -171,7 +172,7 @@ lm_delayfactor_2_df <- feols(
   cluster = ~crash_id
 ) %>%
   lm_to_df() %>%
-  dplyr::mutate(dv = paste0("Primary & Secondary Roads\nTraffic Level: Delay Factor\n[N Crashes = ", n_crash_tl_type2, "]"),
+  dplyr::mutate(dv = paste0("Primary & Secondary Roads\nDelay Factor\n(Traffic Level Data)\n[N Crashes = ", n_crash_tl_type2, "]"),
                 type = 2)
 
 lm_delayfactor_3_df <- feols(
@@ -180,7 +181,7 @@ lm_delayfactor_3_df <- feols(
   cluster = ~crash_id
 ) %>%
   lm_to_df() %>%
-  dplyr::mutate(dv = paste0("Tertiary & Unclassified Roads\nTraffic Level: Delay Factor\n[N Crashes = ", n_crash_tl_type3, "]"),
+  dplyr::mutate(dv = paste0("Tertiary & Unclassified Roads\nDelay Factor\n(Traffic Level Data)\n[N Crashes = ", n_crash_tl_type3, "]"),
                 type = 3)
 
 

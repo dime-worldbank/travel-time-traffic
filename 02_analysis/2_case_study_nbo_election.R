@@ -14,20 +14,6 @@ route_df <- route_df %>%
   mk_traffic_indicators(beta) %>%
   dplyr::mutate(type = "Route")
 
-# route_daily_df <- route_df %>%
-#   dplyr::mutate(datetime = datetime %>% floor_date(unit = "day")) %>%
-#   group_by(datetime) %>%
-#   dplyr::summarise(tl_prop_234 = mean(tl_prop_234, na.rm = T),
-#                    tl_prop_34 = mean(tl_prop_34, na.rm = T),
-#                    tl_prop_4 = mean(tl_prop_4, na.rm = T),
-#                    duration_in_traffic_min = mean(duration_in_traffic_min, na.rm = T),
-#                    distance_km = mean(distance_km, na.rm = T),
-#                    speed_in_traffic_kmh = mean(speed_in_traffic_kmh, na.rm = T)) %>%
-#   ungroup() %>%
-#   pivot_longer(cols = -datetime) %>%
-#   dplyr::mutate(type = "Route") %>%
-#   mk_traffic_indicators(beta)
-
 nbo_df <- nbo_df %>%
   mk_traffic_indicators(beta) %>%
   dplyr::mutate(type = "City")
@@ -39,7 +25,7 @@ estates_df <- estates_df %>%
 cong_df <- bind_rows(route_df,
                      nbo_df) %>%
   pivot_longer(cols = -c(uid, date, datetime, type)) %>%
-  dplyr::filter(name %in% c("distance_km", "duration_in_traffic_min", "speed_in_traffic_kmh", "delay_factor")) %>%
+  dplyr::filter(name %in% c("distance_km", "duration_in_traffic_min", "speed_in_traffic_kmh", "delay_factor", "delay_factor_od")) %>%
   group_by(date, type, name) %>%
   dplyr::summarise(value = mean(value)) %>%
   ungroup() %>%
@@ -52,16 +38,18 @@ cong_df <- bind_rows(route_df,
     name == "duration_in_traffic_min" ~ "Duration (min)",
     name == "distance_km" ~ "Distance (km)",
     name == "speed_in_traffic_kmh" ~ "Speed (km/h)",
-    name == "delay_factor" ~ "Delay Factor"
+    name == "delay_factor" ~ "Delay Factor (Traffic Level Data)",
+    name == "delay_factor_od" ~ "Delay Factor (O-D Data)"
   )) %>%
   mutate(name_clean = paste0(name_clean, "\n[", type , "]")) %>%
   mutate(name_clean = name_clean %>%
-           factor(levels = c("Distance (km)\n[Route]",
-                             "Duration (min)\n[Route]",
+           factor(levels = c("Duration (min)\n[Route]",
                              "Speed (km/h)\n[Route]",
+                             "Distance (km)\n[Route]",
                              
-                             "Delay Factor\n[Route]",
-                             "Delay Factor\n[City]"))) %>%
+                             "Delay Factor (O-D Data)\n[Route]",
+                             "Delay Factor (Traffic Level Data)\n[Route]",
+                             "Delay Factor (Traffic Level Data)\n[City]"))) %>%
   dplyr::filter(!is.na(name_clean))
 
 cong_df %>%
@@ -114,9 +102,10 @@ nbo_df <- nbo_df %>%
 lm1 <- feols(speed_in_traffic_kmh    ~ period | uid + dow + hour, data = route_df)
 lm2 <- feols(duration_in_traffic_min ~ period | uid + dow + hour, data = route_df)
 lm3 <- feols(distance_km             ~ period | uid + dow + hour, data = route_df)
+lm4 <- feols(delay_factor_od         ~ period | uid + dow + hour, data = route_df)
 
-lm4 <- feols(delay_factor             ~ period | uid + dow + hour, data = route_df)
-lm5 <- feols(delay_factor             ~ period | dow + hour, data = nbo_df, vcov = "hetero")
+lm5 <- feols(delay_factor             ~ period | uid + dow + hour, data = route_df)
+lm6 <- feols(delay_factor             ~ period | dow + hour, data = nbo_df, vcov = "hetero")
 
 #### Table Settings
 my_style = style.tex(tpt = TRUE, 
@@ -126,7 +115,8 @@ setFixest_etable(style.tex = my_style)
 dict = c(speed_in_traffic_kmh = "Speed (km)",
          duration_in_traffic_min = "Duration (min)",
          distance_km = "Distance (km)",
-         delay_factor = "Delay Factor",
+         delay_factor = "Delay Factor (TL Data)",
+         delay_factor_od = "Delay Factor (OD Data)",
          tl_prop_234 = "Prop 2-4 Traffic",
          tl_prop_34 = "Prop 3-4 Traffic",
          tl_prop_4 = "Prop 4 Traffic",
@@ -138,26 +128,21 @@ dict = c(speed_in_traffic_kmh = "Speed (km)",
          hour = "Hour")
 setFixest_dict(dict)
 
-#### Table
-# file.remove(file.path(tables_dir, "nbo_elec.tex"))
-# esttex(lm1, lm2, lm3, lm4, lm5,
-#        lm6, lm7, lm8, lm9, lm10,
-#        lm11, lm12, lm13,
-#        float = F,
-#        file = file.path(tables_dir,
-#                         "nbo_elec.tex"))
-
-
-modelsummary_tab(list(lm1, lm2, lm3, lm4, lm5),
+modelsummary_tab(list("Duration (min)"          = lm2,
+                      "Speed (km)"              = lm1,
+                      "Distance (km)"           = lm3,
+                      "Delay Factor, OD Data"  = lm4,
+                      "Delay Factor, TL Data"  = lm5,
+                      "Delay Factor, TL Data"     = lm6),
                  stars = c('*' = .1, '**' = .05, "***" = 0.01),
                  coef_map = c("period" = "Election Week"),
                  gof_map = c("nobs", "adj.r.squared"),
                  escape = FALSE,
-                 add_rows = tribble(~term, ~V1, ~V2, ~V3, ~V4, ~V5,
-                                    'Unit', "Route", "Route", "Route", "Route", "City",
-                                    'Route FE', "Y", "Y", "Y", "Y", "N/A",
-                                    'Hour FE',  "Y", "Y", "Y", "Y", "Y", 
-                                    'Day of Week FE', "Y", "Y", "Y", "Y", "Y"),
+                 add_rows = tribble(~term, ~V1, ~V2, ~V3, ~V4, ~V5, ~V6,
+                                    'Unit', "Route", "Route", "Route", "Route", "Route", "City",
+                                    'Route FE', "Y", "Y", "Y", "Y", "Y", "N/A",
+                                    'Hour FE',  "Y", "Y", "Y", "Y", "Y", "Y",
+                                    'Day of Week FE', "Y", "Y", "Y", "Y", "Y", "Y"),
                  output = file.path(tables_dir,
                                     "nbo_elec.tex"))
 

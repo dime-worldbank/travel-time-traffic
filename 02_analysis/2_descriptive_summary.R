@@ -50,20 +50,21 @@ osm_df     <- osm_df %>% prep_datetime
 gadm1_df   <- gadm1_df %>% prep_datetime
 
 ## Extra cleaning
-route_df <- route_df %>%
-  group_by(uid) %>%
-  #dplyr::mutate(duration_in_traffic_s_minimum = min(duration_in_traffic_s, na.rm = T)) %>%
-  dplyr::mutate(duration_in_traffic_s_minimum = duration_in_traffic_s %>%
-                  quantile(0.05, na.rm = T) %>%
-                  as.numeric()) %>%
-  ungroup() %>%
-  dplyr::mutate(duration_pc = (duration_in_traffic_s - duration_in_traffic_s_minimum)/duration_in_traffic_s_minimum)
+# route_df <- route_df %>%
+#   group_by(uid) %>%
+#   #dplyr::mutate(duration_in_traffic_s_minimum = min(duration_in_traffic_s, na.rm = T)) %>%
+#   dplyr::mutate(duration_in_traffic_s_minimum = duration_in_traffic_s %>%
+#                   quantile(0.05, na.rm = T) %>%
+#                   as.numeric()) %>%
+#   ungroup() %>%
+#   dplyr::mutate(duration_pc = (duration_in_traffic_s - duration_in_traffic_s_minimum)/duration_in_traffic_s_minimum)
 
 ## To hour
 route_hr_df <- route_df %>%
   group_by(hour, dow_group) %>%
   dplyr::summarise(delay_factor = mean(delay_factor),
-                   duration_pc = mean(duration_pc)) %>%
+                   duration_pc = mean(duration_pc),
+                   delay_factor_od = mean(delay_factor_od)) %>%
   ungroup()
 
 estates_hr_df <- estates_df %>%
@@ -81,11 +82,145 @@ osm_hr_class_df <- osm_df %>%
   dplyr::summarise(delay_factor = mean(delay_factor, na.rm = T)) %>%
   ungroup()
 
+# Top roads --------------------------------------------------------------------
+osm_length_df <- readRDS(file.path(data_dir, "OSM", "FinalData", "osm_nbo_line.Rds")) %>%
+  dplyr::mutate(length_km = as.numeric(st_length(geometry)/1000)) %>%
+  st_drop_geometry() %>%
+  dplyr::select(uid, length_km)
+
+# osm_df %>%
+#   dplyr::filter(dow_group %in% "Mon - Fri") %>%
+#   group_by(hour) %>%
+#   dplyr::summarise(delay_factor = mean(delay_factor, na.rm = T)) %>%
+#   ungroup() %>%
+#   arrange(-delay_factor)
+
+osm_l <- osm_df %>%
+  left_join(osm_length_df, by = "uid") %>%
+  dplyr::filter(hour %in% 18,
+                dow_group %in% "Mon - Fri") %>%
+  group_by(name, length_km) %>%
+  dplyr::summarise(delay_factor = mean(delay_factor, na.rm = T),
+                   tl_prop_2 = mean(tl_prop_2, na.rm = T),
+                   tl_prop_3 = mean(tl_prop_3, na.rm = T),
+                   tl_prop_4 = mean(tl_prop_4, na.rm = T)) %>%
+  ungroup() %>%
+  dplyr::filter(!is.na(delay_factor)) %>%
+  dplyr::filter(length_km >= 0.5) %>%
+  arrange(-delay_factor)
+
+bin_width <- 0.25
+bin_max   <- 8
+
+binned_df <- osm_l %>%
+  mutate(
+    delay_bin = cut(
+      delay_factor,
+      breaks = seq(0, bin_max, by = bin_width),
+      right  = FALSE,        # [a, b)
+      include.lowest = TRUE
+    )
+  ) %>%
+  count(delay_bin) %>%
+  filter(!is.na(delay_bin))
+
+ggplot(binned_df, aes(x = delay_bin, y = n)) +
+  geom_col(fill = "grey70", color = "white") +
+  geom_text(
+    aes(label = n),
+    vjust = -0.3,
+    size = 3
+  ) +
+  labs(
+    x = "Delay factor",
+    y = "N Roads",
+    title = "Distribution of delay factors across roads",
+    subtitle = "Figure uses all roads from OpenStreetMap that are over 500 meters in length"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    plot.title = element_text(face = "bold")
+  )
+
+ggsave(filename = file.path(figures_dir, "delay_factor_roads.png"),
+       height = 4,
+       width = 7)
+
+## Distribution of variables - - - - - 
+osm_l <- osm_df %>%
+  left_join(osm_length_df, by = "uid") %>%
+  dplyr::filter(hour %in% 18,
+                dow_group %in% "Mon - Fri") %>%
+  dplyr::filter(!is.na(delay_factor)) %>%
+  dplyr::filter(length_km >= 0.5) %>%
+  dplyr::select(delay_factor, tl_prop_2, tl_prop_3, tl_prop_4)
+
+osm_df %>%
+  dplyr::filter(!is.na(delay_factor),
+                !is.na(tl_prop_2)) %>%
+  pull(name) %>%
+  unique() %>%
+  length()
+
+osm_df$date %>% summary()
+
+summ_all <- osm_l %>%
+  #select(where(is.numeric), -length_km) %>%   # keep numeric, drop delay_factor
+  pivot_longer(everything(), names_to = "variable", values_to = "value") %>%
+  group_by(variable) %>%
+  summarise(
+    min = min(value, na.rm = TRUE),
+    p01 = quantile(value, 0.01, na.rm = TRUE, names = FALSE),
+    p10 = quantile(value, 0.10, na.rm = TRUE, names = FALSE),
+    p25 = quantile(value, 0.25, na.rm = TRUE, names = FALSE),
+    p50 = quantile(value, 0.50, na.rm = TRUE, names = FALSE),
+    p75 = quantile(value, 0.75, na.rm = TRUE, names = FALSE),
+    p90 = quantile(value, 0.90, na.rm = TRUE, names = FALSE),
+    p99 = quantile(value, 0.99, na.rm = TRUE, names = FALSE),
+    max = max(value, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+dict <- c(
+  delay_factor  = "Delay Factor",
+  tl_prop_2  = "Prop. Traffic Level 2 (Medium)",
+  tl_prop_3  = "Prop. Traffic Level 3 (High)",
+  tl_prop_4  = "Prop. Traffic Level 4 (Severe)"
+)
+
+summ_all <- summ_all %>%
+  mutate(variable = recode(variable, !!!dict))
+
+digits <- 3
+
+summ_tex <- summ_all %>%
+  mutate(across(where(is.numeric), ~ formatC(.x, format = "f", digits = digits))) %>%
+  mutate(
+    tex = paste(
+      variable, min, p01, p10, p25, p50, p75, p90, p99, max,
+      sep = " & "
+    ) %>% paste0(" \\\\")
+  )
+
+sink(file.path(tables_dir, "osm_summary_stats.tex"))
+
+cat("\\begin{tabular}{l | rrrrrrrrr} \n")
+cat("\\hline \n")
+cat("Variable & Min & P01 & P10 & P25 & P50 & P75 & P90 & P99 & Max \\\\ \n")
+cat("\\hline \n")
+cat(paste(summ_tex$tex, collapse = "\n"))
+cat("\n\\hline \n")
+cat("\\end{tabular}\n")
+
+sink()
+
+
 # Time of Day: 26 Routes and city wide -----------------------------------------
 p_route_tt <- route_hr_df %>%
   ggplot() +
   geom_line(aes(x = hour,
-                y = duration_pc,
+                y = delay_factor_od,
                 color = dow_group),
             linewidth = 1) +
   scale_color_manual(values = c("darkorange",
@@ -94,12 +229,11 @@ p_route_tt <- route_hr_df %>%
   labs(x = "Hour of day",
        y = "Duration (% change)",
        color = NULL,
-       title = "A. Travel Duration\n% Change from Free-Flow\nRoutes [N=26]") +
-  scale_y_continuous(limits = c(0, 1.03)) +
+       title = "A. Delay Factor\n(O-D Data)\nRoutes [N=26]") +
+  scale_y_continuous(limits = c(1, 2.1)) +
   theme_classic2() +
   theme(strip.background = element_blank(),
         plot.title = element_text(face = "bold", hjust = 0.5, size = 10))
-p_route_tt
 
 p_route_tl <- route_hr_df %>%
   ggplot() +
@@ -113,8 +247,8 @@ p_route_tl <- route_hr_df %>%
   labs(x = "Hour of day",
        y = "Delay factor",
        color = NULL,
-       title = "B. Delay Factor\nRoutes [N=26]") +
-  scale_y_continuous(limits = c(1, 2.03)) +
+       title = "B. Delay Factor\n(Traffic Level Data)\nRoutes [N=26]") +
+  scale_y_continuous(limits = c(1, 2.1)) +
   theme_classic2() +
   theme(strip.background = element_blank(),
         plot.title = element_text(face = "bold", hjust = 0.5, size = 10))
@@ -133,8 +267,8 @@ p_nbo <- gadm1_hr_df %>%
   labs(x = "Hour of day",
        y = "Delay factor",
        color = NULL,
-       title = "C. Delay Factor\n[All Nairobi]") +
-  scale_y_continuous(limits = c(1, 2.03)) +
+       title = "C. Delay Factor\n(Traffic Level Data)\n[All Nairobi]") +
+  scale_y_continuous(limits = c(1, 2.1)) +
   theme_classic2() +
   theme(strip.background = element_blank(),
         plot.title = element_text(face = "bold", hjust = 0.5, size = 10))
@@ -162,11 +296,11 @@ p_osm <- osm_hr_class_df %>%
        y = "Delay factor",
        color = NULL,
        title = "D. OpenStreetMap Road Classes",
-       subtitle = "Average delay across roads by class, considering all roads in Nairobi with available data") +
+       subtitle = "Average delay across roads by class, considering all roads in Nairobi with available data, using traffic level data") +
   theme_classic2() +
   theme(strip.background = element_blank(),
-        plot.title = element_text(face = "bold"),
-        plot.subtitle = element_text(face = "italic"))
+        plot.title = element_text(face = "bold", size = 11),
+        plot.subtitle = element_text(face = "italic", size = 10))
 
 # Time of Day: Arrange/Export --------------------------------------------------
 p_top <- ggarrange(p_route_tt + theme(legend.position = "none"),

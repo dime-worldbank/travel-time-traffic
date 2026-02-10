@@ -83,6 +83,7 @@ if(Sys.info()[["user"]] == "rmarty"){
 library(tidyverse)
 library(dplyr)
 library(aws.s3)
+library(ggrepel)
 library(lubridate)
 library(stringr)
 library(sf)
@@ -165,6 +166,12 @@ Mode <- function(x, na.rm = TRUE) {
   if (na.rm) x <- x[!is.na(x)]
   ux <- unique(x)
   ux[which.max(tabulate(match(x, ux)))]
+}
+
+# https://www.tutorialspoint.com/r/r_mean_median_mode.htm
+getmode <- function(v) {
+  uniqv <- unique(v)
+  uniqv[which.max(tabulate(match(v, uniqv)))]
 }
 
 mk_traffic_indicators <- function(data_df, beta){

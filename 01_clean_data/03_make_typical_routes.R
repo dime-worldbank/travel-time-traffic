@@ -7,12 +7,6 @@ tt_df <- tt_sf
 tt_df$geometry <- NULL
 
 # Common route -----------------------------------------------------------------
-# https://www.tutorialspoint.com/r/r_mean_median_mode.htm
-getmode <- function(v) {
-  uniqv <- unique(v)
-  uniqv[which.max(tabulate(match(v, uniqv)))]
-}
-
 mode_df <- tt_df %>%
   group_by(segment_id) %>%
   dplyr::mutate(distance_mode = getmode(distance_m)) %>%

@@ -15,6 +15,25 @@ tt_df <- tt_df %>%
                 distance_m = distance_m) %>%
   dplyr::rename(uid = segment_id)
 
+## Modal route
+tt_df <- tt_df %>%
+  group_by(uid) %>%
+  dplyr::mutate(distance_mode = getmode(distance_m)) %>%
+  ungroup()
+
+## Make percent change duration
+tt_df <- tt_df %>%
+  dplyr::mutate(hour = datetime %>% hour()) %>%
+  group_by(uid, distance_mode) %>%
+  #dplyr::mutate(duration_in_traffic_s_minimum = min(duration_in_traffic_s, na.rm = T)) %>%
+  dplyr::mutate(duration_in_traffic_s_minimum = duration_in_traffic_s %>%
+                  quantile(0.05, na.rm = T) %>%
+                  as.numeric()) %>%
+  ungroup() %>%
+  dplyr::mutate(duration_pc = (duration_in_traffic_s - duration_in_traffic_s_minimum)/duration_in_traffic_s_minimum,
+                delay_factor_od = duration_pc + 1)
+
+
 tt_df <- tt_df %>%
   group_by(uid) %>%
   dplyr::mutate(distance_m_mode = Mode(distance_m)) %>%
@@ -22,7 +41,7 @@ tt_df <- tt_df %>%
   dplyr::mutate(modal_route = distance_m_mode == distance_m)
 
 # Append traffic data
-tl_df <- file.path(extracted_data_dir, polygon_i, "google_traffic_levels") %>%
+tl_df <- file.path(extracted_data_dir, "google_typical_route_10m", "google_traffic_levels") %>%
   list.files(full.names = T,
              pattern = "*.Rds") %>%
   map_df(readRDS) %>%
