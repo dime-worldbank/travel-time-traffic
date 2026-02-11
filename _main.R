@@ -119,6 +119,10 @@ library(osrm)
 library(h3jsr)
 library(lwgeom)
 library(tidyterra)
+library(dplyr)
+library(fixest)
+library(purrr)
+library(broom)
 
 source("https://raw.githubusercontent.com/ramarty/fast-functions/refs/heads/master/R/functions_in_chunks.R")
 

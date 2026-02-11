@@ -17,7 +17,7 @@ plot_data <- df %>%
   dplyr::mutate(duration_min = duration_in_traffic_s/60,
                 distance_km = distance_m / 1000) %>%
   dplyr::select(uid,
-                speed_kmh, duration_min, distance_km,
+                speed_kmh, duration_min, distance_km, delay_factor_od,
                 tl_prop_2, tl_prop_3, tl_prop_4,
                 delay_factor) %>%
   
@@ -38,20 +38,22 @@ placeholder_data <- plot_data %>%
   tidyr::crossing(name = c("A. Prop. Route Traffic Level 2",
                            "B. Prop. Route Traffic Level 3",
                            "C. Prop. Route Traffic Level 4",
-                           "D. Delay Factor",
+                           "D. Delay Factor\n(Traffic level data)",
                            "E. Traffic Speed (km/h)",
-                           "F. Travel Duration (min)",
-                           "G. Travel Distance (km)"
+                           "F. Travel Time (min)",
+                           "G. Travel Distance (km)",
+                           "H. Delay Factor\n(O-D data)"
   )) %>%
   dplyr::mutate(value = 0.5) %>% # Force the x-value to be 0.5
   dplyr::mutate(name = name %>%
                   factor(levels = c("A. Prop. Route Traffic Level 2",
                                     "B. Prop. Route Traffic Level 3",
                                     "C. Prop. Route Traffic Level 4",
-                                    "D. Delay Factor",
+                                    "D. Delay Factor\n(Traffic level data)",
                                     "E. Traffic Speed (km/h)",
-                                    "F. Travel Duration (min)",
-                                    "G. Travel Distance (km)")))
+                                    "F. Travel Time (min)",
+                                    "G. Travel Distance (km)",
+                                    "H. Delay Factor\n(O-D data)")))
 
 # --- Step 3: Reshape the main data for plotting ---
 long_data <- plot_data %>%
@@ -64,19 +66,21 @@ long_data <- plot_data %>%
     name == "tl_prop_2" ~ "A. Prop. Route Traffic Level 2",
     name == "tl_prop_3" ~ "B. Prop. Route Traffic Level 3",
     name == "tl_prop_4" ~ "C. Prop. Route Traffic Level 4",
-    name == "delay_factor" ~ "D. Delay Factor",
+    name == "delay_factor" ~ "D. Delay Factor\n(Traffic level data)",
     name == "speed_kmh" ~ "E. Traffic Speed (km/h)",
-    name == "duration_min" ~ "F. Travel Duration (min)", 
-    name == "distance_km" ~ "G. Travel Distance (km)"
+    name == "duration_min" ~ "F. Travel Time (min)", 
+    name == "distance_km" ~ "G. Travel Distance (km)",
+    name == "delay_factor_od" ~ "H. Delay Factor\n(O-D data)",
   ),
   name = name %>%
     factor(levels = c("A. Prop. Route Traffic Level 2",
                       "B. Prop. Route Traffic Level 3",
                       "C. Prop. Route Traffic Level 4",
-                      "D. Delay Factor",
+                      "D. Delay Factor\n(Traffic level data)",
                       "E. Traffic Speed (km/h)",
-                      "F. Travel Duration (min)",
-                      "G. Travel Distance (km)"
+                      "F. Travel Time (min)",
+                      "G. Travel Distance (km)",
+                      "H. Delay Factor\n(O-D data)"
     )))
 
 

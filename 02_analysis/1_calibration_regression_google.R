@@ -135,6 +135,56 @@ esttex(lm_prop_1, lm_prop_1_sq, lm_prop_2, lm_prop_3, lm_prop_4,
        ),
        file = file.path(tables_dir, "ols_calibration.tex"))
 
+# Regression each route --------------------------------------------------------
+
+coef_df <- route_df %>%
+  group_by(uid) %>%
+  group_modify(~ {
+    m <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4, data = .x)
+    tidy(m, conf.int = TRUE)
+  }) %>%
+  ungroup() %>%
+  filter(term %in% c("tl_prop_2", "tl_prop_3", "tl_prop_4")) %>%
+  mutate(
+    traffic_level = recode(term,
+                           tl_prop_2 = "Level 2",
+                           tl_prop_3 = "Level 3",
+                           tl_prop_4 = "Level 4"
+    )
+  )
+
+# Create ordering based on Level 2 coefficient magnitude
+uid_order <- coef_df %>%
+  filter(traffic_level == "Level 2") %>%
+  arrange(desc(abs(estimate))) %>%
+  pull(uid)
+
+# Apply ordering to full dataframe
+coef_df <- coef_df %>%
+  mutate(uid = factor(uid, levels = uid_order))
+
+ggplot(coef_df, aes(x = estimate, y = uid)) +
+  geom_point(size = 0.5) +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0) +
+  facet_wrap(~ traffic_level) +
+  geom_vline(xintercept = 0, linetype = "solid") +   # solid zero line
+  labs(
+    x = "Coefficient (+/- 95% CI)",
+    y = "Route ID",
+    title = "Heterogeneity in regression coefficients across routes"
+  ) +
+  theme_minimal() +
+  theme(
+    panel.background = element_rect(fill = "gray95", color = NA),  # light gray panel
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.text.y = element_text(size = 7),
+    plot.title = element_text(face = "bold", size = 10)
+  )
+
+ggsave(filename = file.path(figures_dir, "reg_coef_hetero.png"),
+       height = 3, width = 7)
+
 # Elasticites ------------------------------------------------------------------
 library(tidyverse)
 

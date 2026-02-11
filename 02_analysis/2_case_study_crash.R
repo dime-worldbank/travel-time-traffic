@@ -2,6 +2,9 @@
 
 # Load data --------------------------------------------------------------------
 crash_df <- readRDS(file.path(analysis_data_dir, "google_twitter_100m.Rds"))
+
+crash_df$crash_id %>% unique() %>% length()
+
 crash_attr_df <- readRDS(file.path(data_dir, "Twitter Crashes", "FinalData", 
                                    "crashes_twitter_attributes.Rds"))
 
