@@ -47,6 +47,11 @@ iso_cong_poly_wdays_df <- iso_cong_poly_sf %>%
 h3_data_sf <- h3_sf %>%
   left_join(iso_cong_poly_wdays_df, by = "uid")
 
+h3_data_sf <- h3_data_sf %>%
+  dplyr::mutate(hour = paste0(hour, ":00"),
+                hour = hour %>%
+                  factor(levels = seq(0, 21, 3) %>% paste0(":00")))
+
 # Figure -----------------------------------------------------------------------
 p1 <- ggplot() +
   geom_sf(data = osm_main_sf, color = "gray40") +

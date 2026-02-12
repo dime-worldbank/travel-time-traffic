@@ -21,6 +21,49 @@ nbo_df <- nbo_df %>%
 estates_df <- estates_df %>%
   mk_traffic_indicators(beta)
 
+# Proportion trends ------------------------------------------------------------
+route_df %>%
+  dplyr::select(uid, datetime, tl_prop_2, tl_prop_3, tl_prop_4) %>%
+  dplyr::mutate(date = datetime %>% date()) %>%
+  dplyr::filter(date <= ymd("2022-09-01")) %>%
+  group_by(uid, date) %>%
+  dplyr::summarise(tl_prop_2 = mean(tl_prop_2),
+                   tl_prop_3 = mean(tl_prop_3),
+                   tl_prop_4 = mean(tl_prop_4)) %>%
+  ungroup() %>%
+  pivot_longer(cols = -c(uid, date)) %>%
+  dplyr::mutate(name = case_when(
+    name == "tl_prop_2" ~ "Traffic level: 2",
+    name == "tl_prop_3" ~ "Traffic level: 3",
+    name == "tl_prop_4" ~ "Traffic level: 4"
+  )) %>%
+  dplyr::mutate(name = name %>% fct_rev(),
+                uid = paste0("Route ID: ", uid)) %>%
+  ggplot() +
+  geom_vline(xintercept = ymd("2022-08-09"),
+             color = "black") + 
+  geom_vline(xintercept = ymd("2022-08-15"),
+             color = "gray") + 
+  geom_col(aes(x = date,
+               y = value,
+               fill = name)) +
+  scale_fill_manual(values = rev(c("orange", "red", "#660000"))) +
+  labs(fill = NULL,
+       x = NULL,
+       y = "Proportion",
+       title = "Average daily proportion of traffic levels",
+       subtitle = "Black vertical lines indicates election; gray indicates winner announced",
+       caption = "Daily averages computed from hourly observations") +
+  facet_wrap(~uid, scales = "free_y") +
+  theme_classic2() +
+  theme(strip.background = element_blank(),
+        plot.title = element_text(face = "bold"),
+        plot.subtitle = element_text(face = "italic"),
+        axis.text.x = element_text(size = 8, angle = 45, vjust = 0.7))
+
+ggsave(filename = file.path(figures_dir, "nbo_election_trends_tl_prop.png"),
+       height = 6, width = 10)
+
 # Trends figure ----------------------------------------------------------------
 cong_df <- bind_rows(route_df,
                      nbo_df) %>%

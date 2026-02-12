@@ -35,6 +35,11 @@ osm_main_sf <- osm_sf %>%
 osm_other_sf <- osm_sf %>%
   dplyr::filter(!(fclass %in% c("trunk", "primary", "secondary")))
 
+iso_cong_poly_sf <- iso_cong_poly_sf %>%
+  dplyr::mutate(hour = paste0(hour, ":00"),
+                hour = hour %>%
+                  factor(levels = seq(0, 22, 2) %>% paste0(":00")))
+
 # Figure -----------------------------------------------------------------------
 ggplot() +
   geom_sf(data = osm_main_sf, color = "gray40") +
