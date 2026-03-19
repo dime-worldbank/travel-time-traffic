@@ -38,22 +38,24 @@ placeholder_data <- plot_data %>%
   tidyr::crossing(name = c("A. Prop. Route Traffic Level 2",
                            "B. Prop. Route Traffic Level 3",
                            "C. Prop. Route Traffic Level 4",
-                           "D. Delay Factor\n(Traffic level data)",
-                           "E. Traffic Speed (km/h)",
-                           "F. Travel Time (min)",
-                           "G. Travel Distance (km)",
-                           "H. Delay Factor\n(O-D data)"
+                           #"D. Delay Factor\n(Traffic level data)",
+                           "D. Travel Time (min)",
+                           "E. Travel Distance (km)",
+                           "F. Traffic Speed (km/h)"#
+                           
+                           #,
+                           #"H. Delay Factor\n(O-D data)"
   )) %>%
   dplyr::mutate(value = 0.5) %>% # Force the x-value to be 0.5
   dplyr::mutate(name = name %>%
                   factor(levels = c("A. Prop. Route Traffic Level 2",
                                     "B. Prop. Route Traffic Level 3",
                                     "C. Prop. Route Traffic Level 4",
-                                    "D. Delay Factor\n(Traffic level data)",
-                                    "E. Traffic Speed (km/h)",
-                                    "F. Travel Time (min)",
-                                    "G. Travel Distance (km)",
-                                    "H. Delay Factor\n(O-D data)")))
+                                    #"D. Delay Factor\n(Traffic level data)",
+                                    "D. Travel Time (min)",
+                                    "E. Travel Distance (km)",
+                                    "F. Traffic Speed (km/h)")))
+                                    #"H. Delay Factor\n(O-D data)")))
 
 # --- Step 3: Reshape the main data for plotting ---
 long_data <- plot_data %>%
@@ -66,26 +68,37 @@ long_data <- plot_data %>%
     name == "tl_prop_2" ~ "A. Prop. Route Traffic Level 2",
     name == "tl_prop_3" ~ "B. Prop. Route Traffic Level 3",
     name == "tl_prop_4" ~ "C. Prop. Route Traffic Level 4",
-    name == "delay_factor" ~ "D. Delay Factor\n(Traffic level data)",
-    name == "speed_kmh" ~ "E. Traffic Speed (km/h)",
-    name == "duration_min" ~ "F. Travel Time (min)", 
-    name == "distance_km" ~ "G. Travel Distance (km)",
-    name == "delay_factor_od" ~ "H. Delay Factor\n(O-D data)",
+    name == "duration_min" ~ "D. Travel Time (min)", 
+    name == "distance_km" ~ "E. Travel Distance (km)",
+    name == "speed_kmh" ~ "F. Traffic Speed (km/h)",
+    name == "delay_factor" ~ "A. Delay Factor\n(Traffic level data)",
+    name == "delay_factor_od" ~ "B. Delay Factor\n(O-D data)",
   ),
   name = name %>%
     factor(levels = c("A. Prop. Route Traffic Level 2",
                       "B. Prop. Route Traffic Level 3",
                       "C. Prop. Route Traffic Level 4",
-                      "D. Delay Factor\n(Traffic level data)",
-                      "E. Traffic Speed (km/h)",
-                      "F. Travel Time (min)",
-                      "G. Travel Distance (km)",
-                      "H. Delay Factor\n(O-D data)"
+                      "D. Travel Time (min)",
+                      "E. Travel Distance (km)",
+                      "F. Traffic Speed (km/h)",
+                      "A. Delay Factor\n(Traffic level data)",
+                      "B. Delay Factor\n(O-D data)"
     )))
 
+# long_data <- long_data %>%
+#   dplyr::mutate(
+#     value = dplyr::if_else(
+#       name %in% c("D. Delay Factor\n(Traffic level data)",
+#                   "H. Delay Factor\n(O-D data)") & value > 10,
+#       10,
+#       value
+#     )
+#   )
 
 # --- Step 4: Create the plot by combining the layers ---
 long_data %>%
+  dplyr::filter(!(name %in% c("A. Delay Factor\n(Traffic level data)",
+                            "B. Delay Factor\n(O-D data)"))) %>%
   ggplot(aes(y = uid, x = value)) +
   
   # Layer 1: The invisible points to set the scale range (data = placeholder_data)
@@ -111,10 +124,10 @@ long_data %>%
   theme_classic2() +
   theme(strip.background = element_blank(),
         strip.text = element_text(face = "bold"),
-        axis.text.y = element_text(size = 8))
+        axis.text.y = element_text(size = 7))
 
 ggsave(filename = file.path(figures_dir, "summary_boxplots.png"),
-       height = 6, width = 10)
+       height = 5, width = 10)
 
 
 # #### Stats

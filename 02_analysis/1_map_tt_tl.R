@@ -71,13 +71,13 @@ se_sf <- map_df(1:nrow(gg_tt_df), function(i){
 })
 
 p_tt <- ggplot() +
-  geom_sf(data = nbo_sf, fill = "gray10") +
+  geom_sf(data = nbo_sf, color = "black", fill = "gray95") +
   geom_sf(data = gg_tt_df,
           color = "black",
-          linewidth = 0.8) +
+          linewidth = 1.2) +
   geom_sf(data = gg_tt_df,
           aes(color = speed_in_traffic_kmh),
-          linewidth = 0.6) +
+          linewidth = 1) +
   geom_sf(data = se_sf,
           aes(fill = "Origin/Destination\nLocation"),
           color = "gray90",
@@ -85,12 +85,15 @@ p_tt <- ggplot() +
   labs(color = "Traffic\nSpeed\n(km/h)",
        fill = NULL,
        title = "A. Traffic speeds between select O-D pairs") +
-  scale_color_distiller(palette = "Spectral") +
+  #scale_color_distiller(palette = "Spectral") +
+  scale_color_viridis_c(option = "plasma", begin = 0, end = 1) +
   scale_fill_manual(values = "dodgerblue") +
   theme_void() +
   theme(legend.position = "bottom",
         strip.text = element_text(face = "bold", hjust = 0.5),
         plot.title = element_text(face = "bold", hjust = 0.5, size = 12))
+
+p_tt
 
 # Google Traffic figure --------------------------------------------------------
 google_tl_r <- aggregate(google_tl_r, fact=12, fun=max)

@@ -95,7 +95,9 @@ cong_df <- bind_rows(route_df,
                              "Delay Factor (Traffic Level Data)\n[City]"))) %>%
   dplyr::filter(!is.na(name_clean))
 
+
 cong_df %>%
+  dplyr::filter(!(name %in% c("duration_in_traffic_min", "distance_km", "speed_in_traffic_kmh"))) %>%
   dplyr::filter(date <= ymd("2022-09-01")) %>%
   ggplot() +
   geom_vline(xintercept = ymd("2022-08-09"),
@@ -104,8 +106,7 @@ cong_df %>%
              color = "forestgreen") + 
   geom_line(aes(x = date,
                 y = value)) +
-  facet_wrap(~name_clean,
-             scales = "free_y") +
+  facet_wrap(~name_clean) +
   labs(x = NULL,
        y = NULL) +
   theme_classic2() +
@@ -113,7 +114,7 @@ cong_df %>%
         strip.text = element_text(face = "bold"))
 
 ggsave(filename = file.path(figures_dir, "nbo_election_trends.png"),
-       height = 4, width = 10)
+       height = 3, width = 10)
 
 # Regression -------------------------------------------------------------------
 ymd("2022-08-09") + 7*4 - 1
