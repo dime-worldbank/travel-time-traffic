@@ -150,3 +150,10 @@ ggsave(p,
        filename = file.path(figures_dir, "isochrone_methods.png"),
        height = 11,
        width = 9.5)
+
+# Arrange/export ---------------------------------------------------------------
+p <- ggarrange(p1, p2, p3, p4, p5, p6, ncol = 3, nrow = 2)
+ggsave(p,
+       filename = file.path(figures_dir, "isochrone_methods_small.png"),
+       height = 6.5,
+       width = 14)
