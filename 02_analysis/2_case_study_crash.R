@@ -193,7 +193,7 @@ lm_type_df <- bind_rows(lm_delayfactor_1_df,
                         lm_delayfactor_3_df)
 
 # Figures ----------------------------------------------------------------------
-lm_all_df %>%
+p1 <- lm_all_df %>%
   dplyr::mutate(dv = dv %>% fct_rev()) %>%
   ggplot(aes(x = hour_of_day_since_crash,
              y = b,
@@ -205,17 +205,19 @@ lm_all_df %>%
   geom_point() +
   facet_wrap(~dv) +
   labs(x = "Hours Since Crash",
-       y = "Coef (+/- 95% CI)") +
+       y = "Coef (+/- 95% CI)",
+       title = "A. Impact of crashes on congestion") +
   theme_classic2() +
   theme(strip.text = element_text(face = "bold"),
         panel.background = element_rect(fill = "gray95", color = NA),
-        strip.background = element_blank())
+        strip.background = element_blank(),
+        plot.title = element_text(face = "bold", size = 11))
 
-ggsave(filename = file.path(figures_dir, "lm_crash.png"),
+ggsave(p1, filename = file.path(figures_dir, "lm_crash.png"),
        height = 3,
        width = 9)
 
-lm_type_df %>%
+p2 <- lm_type_df %>%
   dplyr::mutate(dv = fct_reorder(dv, type)) %>%
   ggplot(aes(x = hour_of_day_since_crash,
              y = b,
@@ -227,13 +229,24 @@ lm_type_df %>%
   geom_point() +
   facet_wrap(~dv) +
   labs(x = "Hours Since Crash",
-       y = "Coef (+/- 95% CI)") +
+       y = "Coef (+/- 95% CI)",
+       title = "B. Impact of crashes on congestion by road type") +
   theme_classic2() +
   theme(strip.text = element_text(face = "bold"),
         panel.background = element_rect(fill = "gray95", color = NA),
-        strip.background = element_blank())
+        strip.background = element_blank(),
+        plot.title = element_text(face = "bold", size = 11))
 
-ggsave(filename = file.path(figures_dir, "lm_crash_type.png"),
+ggsave(p2, filename = file.path(figures_dir, "lm_crash_type.png"),
        height = 3,
        width = 9)
+
+#### All
+p <- ggarrange(p1, p2, ncol = 1)
+
+ggsave(p, filename = file.path(figures_dir, "lm_crash_all.png"),
+       height = 6,
+       width = 9)
+
+
 

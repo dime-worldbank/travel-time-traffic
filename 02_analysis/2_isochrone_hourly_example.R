@@ -22,7 +22,7 @@ iso_cong_poly_sf <- iso_cong_poly_sf %>%
     dow_weekday %in% T ~ "Weekdays",
     dow_weekday %in% F ~ "Weekends"
   )) %>%
-  dplyr::filter(hour %in% seq(0, 22, 2))
+  dplyr::filter(hour %in% seq(5, 22, 3))
 
 h3_sf <- h3_sf %>% dplyr::filter(uid %in% UID_I)
 
@@ -38,7 +38,7 @@ osm_other_sf <- osm_sf %>%
 iso_cong_poly_sf <- iso_cong_poly_sf %>%
   dplyr::mutate(hour = paste0(hour, ":00"),
                 hour = hour %>%
-                  factor(levels = seq(0, 22, 2) %>% paste0(":00")))
+                  factor(levels = seq(5, 22, 3) %>% paste0(":00")))
 
 # Figure -----------------------------------------------------------------------
 ggplot() +
@@ -59,5 +59,7 @@ ggplot() +
         legend.position = "right")
 
 ggsave(filename = file.path(figures_dir, "isochrone_hourly.png"),
-       height = 10,
+       height = 6,
        width = 11)
+
+
