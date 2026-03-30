@@ -95,6 +95,14 @@ long_data <- plot_data %>%
 #     )
 #   )
 
+long_data <- long_data %>%
+  mutate(value = if_else(
+    name %in% c("D. Delay Factor\n(Traffic level data)",
+                "H. Delay Factor\n(O-D data)"),
+    pmin(value, 10),
+    value
+  ))
+
 # --- Step 4: Create the plot by combining the layers ---
 long_data %>%
   dplyr::filter(!(name %in% c("A. Delay Factor\n(Traffic level data)",
