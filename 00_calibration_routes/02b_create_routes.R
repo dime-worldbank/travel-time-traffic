@@ -95,10 +95,13 @@ manual_fixes <- tribble(
   "kirinyaga road",      "tertiary",       -1.2822295614358443,   36.831700405341934,   -1.2793174837405163,    36.821981271988456,
   "kwaheri road",        "residential",    -1.2114077625101152,   36.8242315447232,     -1.2148328625254368,    36.83403499745209,
   "mbale road",          "residential",    -1.2891573,            36.854771899999996,   -1.2898101330121916,    36.85788303525734,
+  "old mombasa road",    "primary",         -1.3624980968607232, 36.90874950549743,     -1.3893898987868702, 36.93621569224909, 
   "shimo la tewa road",  "unclassified",   -1.3046089504190594, 36.829608755044966,    -1.3080404376103487, 36.829542906202626,
   "thika road",          "trunk",          -1.2590721665354896,   36.84554600444856,    -1.2310006638148878,    36.877667771834616,
   "two rivers road",     "unclassified",   -1.2125789235343083,   36.79224617899866,    -1.2079971975881627,    36.79614800528328,
-  "wakaba drive",        "residential",    -1.3502363476384782,   36.66170711346427,    -1.345345694414074,     36.665999227312284
+  "wakaba drive",        "residential",    -1.34847045990388, 36.66318016611682,        -1.345345694414074,     36.665999227312284,
+  "kamiti road",         "secondary",      -1.2177983001128863, 36.89132945854417,      -1.200169240673459, 36.900027150298506,
+  "kiambu road",         "trunk",          -1.2164361057065665, 36.83557008961405,      -1.2588781247299698, 36.842603720739596,
 ) %>%
   mutate(uid = paste(name, fclass))
 
@@ -114,16 +117,12 @@ saveRDS(roads_routes_df, file.path(data_dir, "Travel Time Routes 2026",
 write_csv(roads_routes_df %>%
             dplyr::select(uid, origin_lat, origin_lon, dest_lat, dest_lon), "~/Downloads/od_pairs.csv")
 
-
+# 
 # leaflet() %>%
 #   addTiles() %>%
 #   addPolylines(data = osm_sf %>%
-#                  dplyr::filter(name == "airport south road"))
-
-
-
-
-
+#                  dplyr::filter(name == "kamiti road"))
+# 
 
 
 
