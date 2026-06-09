@@ -128,17 +128,26 @@ ggsave(p,
        filename = file.path(figures_dir, "map_tt_tl.png"),
        height = 4, width = 10)
 
+ggsave(p,
+       filename = file.path(figures_dir, "figure_1.png"),
+       height = 4, width = 10)
+
 # All routes -------------------------------------------------------------------
 #### Roads
-roads_sf <- opq(st_bbox(nbo_sf), timeout = 999) %>%
-  add_osm_feature(key = "highway", value = c("motorway",
-                                             "trunk",
-                                             "primary",
-                                             "secondary",
-                                             "tertiary",
-                                             "unclassified")) %>%
-  osmdata_sf()
-roads_sf <- roads_sf$osm_lines
+if(!file.exists(file.path(data_dir, "OSM", "FinalData", "osm_key_roads.Rds"))){
+  roads_sf <- opq(st_bbox(nbo_sf), timeout = 999) %>%
+    add_osm_feature(key = "highway", value = c("motorway",
+                                               "trunk",
+                                               "primary",
+                                               "secondary",
+                                               "tertiary",
+                                               "unclassified")) %>%
+    osmdata_sf()
+  roads_sf <- roads_sf$osm_lines
+  saveRDS(roads_sf, file.path(data_dir, "OSM", "FinalData", "osm_key_roads.Rds"))
+} else{
+  roads_sf <- readRDS(file.path(data_dir, "OSM", "FinalData", "osm_key_roads.Rds"))
+}
 
 roads_sf <- roads_sf %>%
   st_intersection(nbo_sf)

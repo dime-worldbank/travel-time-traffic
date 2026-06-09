@@ -116,6 +116,9 @@ cong_df %>%
 ggsave(filename = file.path(figures_dir, "nbo_election_trends.png"),
        height = 3, width = 10)
 
+ggsave(filename = file.path(figures_dir, "figure_3.png"),
+       height = 3, width = 10)
+
 # Regression -------------------------------------------------------------------
 ymd("2022-08-09") + 7*4 - 1
 length(ymd("2022-08-09"):ymd("2022-09-05"))
@@ -257,3 +260,5 @@ estates_sf_var %>%
 ggsave(filename = file.path(figures_dir, "nbo_elec_adm3.png"),
        height = 5, width = 6)
 
+ggsave(filename = file.path(figures_dir, "figure_4.png"),
+       height = 5, width = 6)

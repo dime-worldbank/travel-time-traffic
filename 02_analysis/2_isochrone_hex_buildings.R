@@ -117,4 +117,6 @@ ggsave(p, filename = file.path(figures_dir, "isochrone_hex_changes.png"),
        height = 10,
        width = 9)
 
-
+ggsave(p, filename = file.path(figures_dir, "figure_7.png"),
+       height = 10,
+       width = 9)

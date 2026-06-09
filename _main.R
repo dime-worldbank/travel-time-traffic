@@ -23,7 +23,6 @@ POLYGONS_ALL <- "twitter_crashes_50m"
 POLYGONS_ALL <- "h3_iso_routes"
 POLYGONS_ALL <- "osm_10m"
 
-
 DELETE_OUTPUT <- F
 RUN_CODE      <- F
 
@@ -92,6 +91,7 @@ library(tidyr)
 library(labelled)
 library(readr)
 library(foreach)
+library(googletraffic)
 library(doParallel)
 library(raster)
 library(leaflet)

@@ -62,4 +62,6 @@ ggsave(filename = file.path(figures_dir, "isochrone_hourly.png"),
        height = 6,
        width = 11)
 
-
+ggsave(filename = file.path(figures_dir, "figure_6.png"),
+       height = 6,
+       width = 11)
