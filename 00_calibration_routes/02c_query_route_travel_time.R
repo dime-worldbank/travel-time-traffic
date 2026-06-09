@@ -118,13 +118,4 @@ dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 saveRDS(routes_results, file.path(out_dir, out_name))
 
-# 5. Preview results -----------------------------------------------------------
-
-routes_results %>%
-  select(name, fclass, toward_cbd,
-         distance_km,
-         duration_typical_min,
-         duration_in_traffic_min,
-         speed_in_traffic_kmh,
-         api_error) %>%
-  print(n = Inf)
+quit(save="no")

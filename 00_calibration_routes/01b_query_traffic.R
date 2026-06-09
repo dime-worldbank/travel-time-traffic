@@ -69,3 +69,5 @@ if(F){
     theme(plot.background = element_rect(fill = "white", color="white"))
   
 }
+
+quit(save="no")
