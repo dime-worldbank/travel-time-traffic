@@ -1,8 +1,7 @@
 # Regression
 
 # Load data --------------------------------------------------------------------
-#route_df <- readRDS(file.path(analysis_data_dir, "google_routes.Rds"))
-route_df <- readRDS(file.path(extracted_data_dir, "routes_for_calibration", "google_traffic_tt.Rds"))
+route_df <- readRDS(file.path(analysis_data_dir, "google_routes.Rds"))
 
 # Clean data -------------------------------------------------------------------
 route_df <- route_df %>%
@@ -41,17 +40,9 @@ route_df <- route_df %>%
 
 # Pooled regressions -----------------------------------------------------------
 #### Proportions
-route_df2 <- route_df %>%
-  dplyr::filter(speed_in_traffic_kmh_uid_sd > 5)
-
-route_df %>%
-  distinct(uid, speed_in_traffic_kmh_uid_mean, speed_in_traffic_kmh_uid_sd)
-
 lm_prop_1 <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid, 
                    vcov = ~ uid,
-                   data = route_df2)
-
-lm_prop_1
+                   data = route_df)
 
 route_omed_df <- route_df %>% dplyr::filter(speed_kmh_uid_over_med %in% T)
 lm_prop_2 <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid, 
@@ -70,9 +61,9 @@ lm_prop_4 <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 +
 
 #### Proportions: Squared
 lm_prop_1_sq <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 +
-                        tl_prop_2_sq + tl_prop_3_sq + tl_prop_4_sq | uid, 
-                      vcov = ~ uid,
-                      data = route_df)
+                     tl_prop_2_sq + tl_prop_3_sq + tl_prop_4_sq | uid, 
+                   vcov = ~ uid,
+                   data = route_df)
 
 #### N Routes
 n_routes      <- route_df$uid      %>% unique() %>% length()

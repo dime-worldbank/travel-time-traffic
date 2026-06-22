@@ -89,3 +89,8 @@ password.*
 passwords.*
 password/
 passwords/
+
+#######################
+# Claude Code project files (local-only context, not for version control)
+CLAUDE.md
+.claude/

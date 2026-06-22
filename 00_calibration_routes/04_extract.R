@@ -26,7 +26,10 @@ tt_files_df <- tibble(
   select(-datetime_eat)
 
 files_df <- gt_files_df %>%
- full_join(tt_files_df, by = c("date", "hour"))
+  full_join(tt_files_df, by = c("date", "hour"))
+
+# Buffer typical routes --------------------------------------------------------
+typical_routes_sf <- typical_routes_sf %>% st_buffer(dist = 10)
 
 # Extract traffic to typical route ---------------------------------------------
 for(i in 1:nrow(gt_files_df)){
@@ -67,6 +70,40 @@ all_df <- inner_join(traffic_df,
                      by = c("name", "fclass", "uid", "date", "hour"))
 
 # Clean data -------------------------------------------------------------------
+#### Create variables
+all_df <- all_df %>%
+  dplyr::mutate(count_all = count_1 + count_2 + count_3 + count_4) %>%
+  
+  group_by(uid) %>%
+  dplyr::mutate(count_all_max = max(count_all, na.rm = T)) %>%
+  ungroup() %>%
+  
+  dplyr::mutate(tl_prop_2   = count_2 / count_all_max,
+                tl_prop_3   = count_3 / count_all_max,
+                tl_prop_234 = (count_2 + count_3 + count_4) / count_all_max,
+                tl_prop_34  = (          count_3 + count_4) / count_all_max,
+                tl_prop_4   = (                    count_4) / count_all_max) %>%
+  
+  dplyr::rename(gg_tl_count_all_max = count_all_max) %>%
+  dplyr::select(-c(count_0, count_1, count_2, count_3, count_4, count_all))
+
+all_df <- all_df %>%
+  dplyr::mutate(datetime = query_datetime_eat)
+
+#### Filter variables
+## If traffic levels are NA
+all_df <- all_df %>%
+  dplyr::filter(!is.na(tl_prop_4))
+
+## If no variation in speed
+all_df <- all_df %>%
+  group_by(uid) %>%
+  dplyr::mutate(speed_in_traffic_kmh_uid_mean = mean(speed_in_traffic_kmh),
+                speed_in_traffic_kmh_uid_sd = sd(speed_in_traffic_kmh)) %>%
+  ungroup()
+
+all_df <- all_df %>%
+  dplyr::filter(speed_in_traffic_kmh_uid_sd > 0)
 
 # Export -----------------------------------------------------------------------
 saveRDS(all_df, file.path(extracted_data_dir, "routes_for_calibration", "google_traffic_tt.Rds"))
