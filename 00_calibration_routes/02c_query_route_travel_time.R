@@ -5,10 +5,25 @@ library(tidyverse)
 library(httr2)
 source("~/Documents/github/travel-time-traffic/_main.R")
 
-GOOGLE_API_KEY <- read_csv("~/Dropbox/World Bank/Webscraping/Files for Server/api_keys.csv") %>%
-  dplyr::filter(Account == "robmarty3@gmail.com",
-                Service == "Google Routes API") %>%
-  pull(Key)
+api_keys <- read.csv("~/Dropbox/World Bank/Webscraping/Files for Server/api_keys.csv")
+
+hr_now <- hour(Sys.time())
+
+EVEN_HOURS <- seq(from = 0, to = 23, by = 2)
+
+if(hr_now %in% EVEN_HOURS){
+  GOOGLE_API_KEY <- api_keys %>%
+    dplyr::filter(Service == "Google Routes API",
+                  Account == "randrewm039@gmail.com") %>%
+    pull(Key) %>%
+    as.character()
+} else{
+  GOOGLE_API_KEY <- api_keys %>%
+    dplyr::filter(Service == "Google Routes API",
+                  Account == "robmarty3@gmail.com") %>%
+    pull(Key) %>%
+    as.character()
+}
 
 # 1. Load OD pairs from 02b ----------------------------------------------------
 

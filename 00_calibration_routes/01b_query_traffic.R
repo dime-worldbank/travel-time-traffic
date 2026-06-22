@@ -8,11 +8,23 @@ grid_df <- readRDS(file.path(data_dir, "Google Traffic 2026", "Grid", "grid_para
 # Setup ------------------------------------------------------------------------
 api_keys <- read.csv("~/Dropbox/World Bank/Webscraping/Files for Server/api_keys.csv")
 
-google_key <- api_keys %>%
-  dplyr::filter(Service == "Google Routes API",
-                Account == "robmarty3@gmail.com") %>%
-  pull(Key) %>%
-  as.character()
+hr_now <- hour(Sys.time())
+
+EVEN_HOURS <- seq(from = 0, to = 23, by = 2)
+
+if(hr_now %in% EVEN_HOURS){
+  google_key <- api_keys %>%
+    dplyr::filter(Service == "Google Routes API",
+                  Account == "randrewm039@gmail.com") %>%
+    pull(Key) %>%
+    as.character()
+} else{
+  google_key <- api_keys %>%
+    dplyr::filter(Service == "Google Routes API",
+                  Account == "robmarty3@gmail.com") %>%
+    pull(Key) %>%
+    as.character()
+}
 
 Sys.setenv("AWS_ACCESS_KEY_ID" = as.character(api_keys$Key[(api_keys$Service %in% "AWS_ACCESS_KEY_ID") & (api_keys$Account %in% "robmarty3@gmail.com")]),
            "AWS_SECRET_ACCESS_KEY" = as.character(api_keys$Key[(api_keys$Service %in% "AWS_SECRET_ACCESS_KEY") & (api_keys$Account %in% "robmarty3@gmail.com")]),
