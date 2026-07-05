@@ -2,7 +2,12 @@
 
 # Load data --------------------------------------------------------------------
 #route_df <- readRDS(file.path(analysis_data_dir, "google_routes.Rds"))
-route_df <- readRDS(file.path(extracted_data_dir, "routes_for_calibration", "google_traffic_tt.Rds"))
+route_df <- readRDS(file.path(extracted_data_dir, "data_for_calibration", "google_traffic_tt.Rds"))
+
+# route_df %>%
+#   distinct(uid, .keep_all = T) %>%
+#   pull(fclass) %>%
+#   table()
 
 # Clean data -------------------------------------------------------------------
 route_df <- route_df %>%
@@ -18,66 +23,169 @@ route_df <- route_df %>%
                 dow = datetime %>% lubridate::wday(),
                 date = datetime %>% date()) %>%
   group_by(uid) %>%
-  dplyr::mutate(speed_kmh_uid_max = quantile(speed_kmh, prob = 0.95, na.rm = T) %>% as.numeric()) %>%
+  dplyr::mutate(speed_kmh_uid_max = quantile(speed_kmh, prob = 0.95, na.rm = T) %>% as.numeric(),
+                tl_prop_4_max = quantile(tl_prop_4, prob = 0.95, na.rm = T) %>% as.numeric(),
+                tl_prop_4_sd = sd(tl_prop_4, na.rm = T) %>% as.numeric()) %>%
   ungroup() 
 
-speed_df <- route_df %>%
-  distinct(uid, speed_kmh_uid_max) %>%
-  arrange(speed_kmh_uid_max)
+### Check medians
+uid_df <- route_df %>%
+  distinct(uid, .keep_all = T) 
 
-median(speed_df$speed_kmh_uid_max)
-table(speed_df$speed_kmh_uid_max >= 53.4)
+median(uid_df$speed_kmh_uid_max)
+table(uid_df$speed_kmh_uid_max >= 33)
 
+median(uid_df$tl_prop_4_max)
+table(uid_df$tl_prop_4_max >= 0.1)
+table(uid_df$tl_prop_4_max >= 0.2)
+
+median(uid_df$tl_prop_4_sd)
+table(uid_df$tl_prop_4_sd >= 0.025)
+
+### Create variables
 route_df <- route_df %>%
-  dplyr::mutate(speed_kmh_uid_over_med = (speed_kmh_uid_max >= 55)) %>%
+  dplyr::mutate(speed_kmh_uid_over_med = (speed_kmh_uid_max >= 33),
+                tl_prop_4_max_over_0_1 = (tl_prop_4_max >= 0.1),
+                tl_prop_4_max_over_0_2 = (tl_prop_4_max >= 0.2),
+                tl_prop_4_sd_over_med = (tl_prop_4_sd >= 0.025)) %>%
   dplyr::mutate(tl_prop_2_omed = tl_prop_2 * speed_kmh_uid_over_med,
                 tl_prop_3_omed = tl_prop_3 * speed_kmh_uid_over_med,
-                tl_prop_4_omed = tl_prop_4 * speed_kmh_uid_over_med)
-
-route_df <- route_df %>%
+                tl_prop_4_omed = tl_prop_4 * speed_kmh_uid_over_med) %>%
   dplyr::mutate(tl_prop_2_sq = tl_prop_2^2,
                 tl_prop_3_sq = tl_prop_3^2,
                 tl_prop_4_sq = tl_prop_4^2)
 
+# Regressions by uid -----------------------------------------------------------
+reg_uid_df <- map_df(unique(route_df$uid), function(uid_i){
+  
+  route_df_i <- route_df[route_df$uid %in% uid_i,]
+  
+  df_out <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4, 
+        data = route_df_i) %>%
+    confint() %>%
+    as.data.frame() %>%
+    clean_names() %>%
+    rownames_to_column(var = "variable") %>%
+    dplyr::filter(variable %in% c("tl_prop_2", "tl_prop_3", "tl_prop_4")) %>%
+    dplyr::mutate(uid = uid_i,
+                  b = (x2_5_percent + x97_5_percent) / 2)
+  
+  df_out$prop_obs_2_nonzero <- mean(route_df_i$tl_prop_2 > 0)
+  df_out$prop_obs_3_nonzero <- mean(route_df_i$tl_prop_3 > 0)
+  df_out$prop_obs_4_nonzero <- mean(route_df_i$tl_prop_4 > 0)
+  
+  return(df_out)
+})
+
+reg_uid_df <- reg_uid_df %>%
+  dplyr::filter(prop_obs_2_nonzero > 0.01,
+                prop_obs_3_nonzero > 0.01,
+                prop_obs_4_nonzero > 0.01)
+
+reg_uid_df$uid %>% unique() %>% length()
+
+reg_uid_df %>%
+  ggplot(aes(xmin = x2_5_percent, 
+             xmax = x97_5_percent, 
+             x = b,
+             y = uid)) +
+  geom_point() +
+  geom_linerange() +
+  facet_wrap(~ variable)
+
 # Pooled regressions -----------------------------------------------------------
-#### Proportions
-route_df2 <- route_df %>%
-  dplyr::filter(speed_in_traffic_kmh_uid_sd > 5)
-
-route_df %>%
-  distinct(uid, speed_in_traffic_kmh_uid_mean, speed_in_traffic_kmh_uid_sd)
-
+## Base
 lm_prop_1 <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid, 
                    vcov = ~ uid,
-                   data = route_df2)
+                   data = route_df)
 
-lm_prop_1
+feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | fclass, 
+                   vcov = ~ uid,
+                   data = route_df)
 
+lm_prop_2 <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 +
+                     tl_prop_2_sq + tl_prop_3_sq + tl_prop_4_sq | uid, 
+                   vcov = ~ uid,
+                   data = route_df)
+
+## By speed
 route_omed_df <- route_df %>% dplyr::filter(speed_kmh_uid_over_med %in% T)
-lm_prop_2 <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid, 
+lm_prop_3 <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid, 
                    vcov = ~ uid,
                    data = route_omed_df)
 
 route_umed_df <- route_df %>% dplyr::filter(speed_kmh_uid_over_med %in% F)
-lm_prop_3 <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid, 
+lm_prop_4 <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid, 
                    vcov = ~ uid,
                    data = route_umed_df)
 
-lm_prop_4 <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 +
-                     tl_prop_2_omed + tl_prop_3_omed + tl_prop_4_omed | uid, 
-                   vcov = ~ uid,
-                   data = route_df)
 
-#### Proportions: Squared
-lm_prop_1_sq <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 +
-                        tl_prop_2_sq + tl_prop_3_sq + tl_prop_4_sq | uid, 
-                      vcov = ~ uid,
-                      data = route_df)
+
+## By proportion severe traffic
+route_oprop4_0_2_df <- route_df %>% dplyr::filter(tl_prop_4_sd_over_med %in% T)
+lm_prop_3 <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid, 
+                   vcov = ~ uid,
+                   data = route_oprop4_0_2_df)
+lm_prop_3
+
+route_oprop4_0_1_df <- route_df %>% dplyr::filter(tl_prop_4_max_over_0_1 %in% T)
+lm_prop_3 <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid, 
+                   vcov = ~ uid,
+                   data = route_oprop4_0_1_df)
+
+route_uprop4_0_1_df <- route_df %>% dplyr::filter(tl_prop_4_max_over_0_1 %in% F)
+lm_prop_4 <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid, 
+                   vcov = ~ uid,
+                   data = route_uprop4_0_1_df)
+
+# lm_prop_5 <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 +
+#                      tl_prop_2_omed + tl_prop_3_omed + tl_prop_4_omed | uid, 
+#                    vcov = ~ uid,
+#                    data = route_df)
 
 #### N Routes
 n_routes      <- route_df$uid      %>% unique() %>% length()
 n_routes_omed <- route_omed_df$uid %>% unique() %>% length()
 n_routes_umed <- route_umed_df$uid %>% unique() %>% length()
+
+# Regressions by class ---------------------------------------------------------
+## By class
+route_trunk_df <- route_df[route_df$fclass %in% "trunk",]
+lm_trunk <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid, 
+                  vcov = ~ uid,
+                  data = route_trunk_df)
+
+route_primary_df <- route_df[route_df$fclass %in% "primary",]
+lm_primary <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid, 
+                    vcov = ~ uid,
+                    data = route_primary_df)
+
+route_secondary_df <- route_df[route_df$fclass %in% "secondary",]
+lm_secondary <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid, 
+                      vcov = ~ uid,
+                      data = route_df[route_df$fclass %in% "secondary",])
+
+route_tertiary_df <- route_df[route_df$fclass %in% "tertiary",]
+lm_tertiary <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid, 
+                     vcov = ~ uid,
+                     data = route_df[route_df$fclass %in% "tertiary",])
+
+route_residential_df <- route_df[route_df$fclass %in% "residential",]
+lm_residential <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid, 
+                        vcov = ~ uid,
+                        data = route_df[route_df$fclass %in% "residential",])
+
+route_unclassified_df <- route_df[route_df$fclass %in% "unclassified",]
+lm_unclassified <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid, 
+                         vcov = ~ uid,
+                         data = route_df[route_df$fclass %in% "unclassified",])
+
+n_routes_trunk <- route_trunk_df$uid %>% unique() %>% length()
+n_routes_primary <- route_primary_df$uid %>% unique() %>% length()
+n_routes_secondary <- route_secondary_df$uid %>% unique() %>% length()
+n_routes_tertiary <- route_tertiary_df$uid %>% unique() %>% length()
+n_routes_residential <- route_residential_df$uid %>% unique() %>% length()
+n_routes_unclassified <- route_unclassified_df$uid %>% unique() %>% length()
 
 # Export coefficients ----------------------------------------------------------
 beta <- coef(lm_prop_1)

@@ -106,7 +106,7 @@ all_df <- all_df %>%
   dplyr::filter(speed_in_traffic_kmh_uid_sd > 0)
 
 # Export -----------------------------------------------------------------------
-saveRDS(all_df, file.path(extracted_data_dir, "routes_for_calibration", "google_traffic_tt.Rds"))
+saveRDS(all_df, file.path(extracted_data_dir, "data_for_calibration", "google_traffic_tt.Rds"))
 
 
 
