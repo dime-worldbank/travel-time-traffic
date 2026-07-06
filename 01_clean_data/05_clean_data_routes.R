@@ -77,10 +77,10 @@ route_df <- route_df %>%
 rt_typ_google_sf      <- readRDS(file.path(tt_dir, "google_typical_route.Rds"))
 rt_typ_google_10buff_sf <- st_buffer(rt_typ_google_sf, dist = 10)
 
-length_df <- map_df(unique(rt_typ_google_10buff_sf$uid), function(uid_i){
+length_df <- map_df(unique(rt_typ_google_10buff_sf$segment_id), function(uid_i){
   message(uid_i)
   
-  rt_typ_google_10buff_sf_i <- rt_typ_google_10buff_sf[rt_typ_google_10buff_sf$uid %in% uid_i,]
+  rt_typ_google_10buff_sf_i <- rt_typ_google_10buff_sf[rt_typ_google_10buff_sf$segment_id %in% uid_i,]
   
   osm_sf_i <- st_intersection(osm_sf, rt_typ_google_10buff_sf_i) %>%
     st_drop_geometry() %>%
@@ -107,6 +107,11 @@ route_df <- route_df %>%
 # Export
 saveRDS(route_df, file.path(analysis_data_dir, "google_routes.Rds"))
 
+if(F){
+  route_df <- route_df %>%
+    dplyr::mutate(prop_all = prop_trunk + prop_primary + prop_secondary + prop_tertiary + prop_residential + prop_unclassified)
+  route_df$prop_all %>% summary()
+}
 
 
 

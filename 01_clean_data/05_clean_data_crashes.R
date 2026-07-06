@@ -1,6 +1,6 @@
 # Clean Data: Crashes
 
-unit <- "50m"
+unit <- "100m"
 
 # Load crashes -----------------------------------------------------------------
 twitter_sf <- readRDS(file.path(data_dir, "Twitter Crashes", "RawData", "crashes_twitter.Rds"))
@@ -114,7 +114,7 @@ twitter_data_df <- twitter_data_df %>%
 
 #### Merge OSM length ----------------------------------------------------------
 twitter_data_df <- twitter_data_df %>%
-  left_join(length_df, crash_id)
+  left_join(length_df, by = "crash_id")
 
 #### Export --------------------------------------------------------------------
 saveRDS(twitter_data_df, file.path(analysis_data_dir, paste0("google_twitter_",unit,".Rds")))
@@ -124,5 +124,3 @@ if(F){
     dplyr::mutate(prop_all = prop_trunk + prop_primary + prop_secondary + prop_tertiary + prop_residential + prop_unclassified)
   twitter_data_df$prop_all %>% summary()
 }
-
-# CHECK ALL HAVE SOME NONZERO TOTAL LENGTH FOR ROADS !!!

@@ -12,6 +12,16 @@ osm_sf     <- osm_sf %>% st_intersection(estates_sf)
 
 beta <- readRDS(file.path(data_dir, "Calibration Coefficients", "coefs.Rds"))
 
+# Add prop_[road] to OSM -------------------------------------------------------
+osm_df <- osm_df %>%
+  dplyr::mutate(prop_trunk_fast = ifelse(fclass == "trunk_fast", 1, 0),
+                prop_trunk = ifelse(fclass == "trunk", 1, 0),
+                prop_primary = ifelse(fclass == "primary", 1, 0),
+                prop_secondary = ifelse(fclass == "secondary", 1, 0),
+                prop_tertiary = ifelse(fclass == "tertiary", 1, 0),
+                prop_residential = ifelse(fclass == "residential", 1, 0),
+                prop_unclassified = ifelse(fclass == "unclassified", 1, 0))
+
 # Restrict date/time -----------------------------------------------------------
 route_df <- route_df %>%
   dplyr::filter(!is.na(speed_kmh),

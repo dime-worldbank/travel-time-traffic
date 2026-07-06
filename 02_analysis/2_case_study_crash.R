@@ -12,18 +12,7 @@ beta <- readRDS(file.path(data_dir, "Calibration Coefficients", "coefs.Rds"))
 
 # Clean data -------------------------------------------------------------------
 crash_df <- crash_df %>%
-  mutate(
-    # Linear predictor: log(delay per km)
-    CI = beta["tl_prop_2"] * tl_prop_2 +
-      beta["tl_prop_3"] * tl_prop_3 +
-      beta["tl_prop_4"] * tl_prop_4,
-    
-    # Delay factor relative to green
-    delay_factor = exp(CI),
-    
-    # Speed as a fraction of green speed
-    speed_multiplier = exp(-CI)
-  ) %>%
+  mk_traffic_indicators(beta) %>%
   dplyr::mutate(date = datetime %>% hour(),
                 hour = datetime %>% hour(),
                 dow = datetime %>% lubridate::wday(),

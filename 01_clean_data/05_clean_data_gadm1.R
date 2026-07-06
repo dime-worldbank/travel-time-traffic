@@ -1,5 +1,5 @@
 
-# Traffic levels [aggregate from estates]
+# Traffic levels [aggregate from estates] --------------------------------------
 tl_df <- file.path(extracted_data_dir, "estates", "google_traffic_levels") %>%
   list.files(full.names = T,
              pattern = "*.Rds") %>%
@@ -30,5 +30,41 @@ tl_df <- file.path(extracted_data_dir, "estates", "google_traffic_levels") %>%
   dplyr::filter(date < ymd("2023-08-17")) %>%
   dplyr::filter( ! ((date >= ymd("2023-02-23")) & (date <= ymd("2023-03-16"))) )
 
-# Export
+# Add roads --------------------------------------------------------------------
+# Add roads
+osm_sf <- readRDS(file.path(data_dir, "OSM", "FinalData", "osm_nbo_line.Rds")) %>%
+  dplyr::select(fclass) %>%
+  dplyr::mutate(length = geometry %>% st_length() %>% as.numeric())
+nbo_sf <- readRDS(file.path(data_dir, "GADM", "RawData", "gadm41_KEN_1_pk.rds")) %>%
+  dplyr::mutate(uid = 1) %>%
+  dplyr::select(uid)
+
+length_df <- map_df(unique(nbo_sf$uid), function(uid_i){
+  message(uid_i)
+  
+  nbo_sf_i <- nbo_sf[nbo_sf$uid %in% uid_i,]
+  
+  osm_sf_i <- st_intersection(osm_sf, nbo_sf_i) %>%
+    st_drop_geometry() %>%
+    group_by(fclass) %>%
+    dplyr::summarise(length = sum(length, na.rm = T)) %>%
+    ungroup() %>%
+    dplyr::mutate(length_total = sum(length),
+                  prop = length / length_total) %>%
+    dplyr::select(fclass, prop) %>%
+    pivot_wider(names_from = fclass,
+                values_from = prop) %>%
+    dplyr::mutate(uid = uid_i)
+  
+  return(osm_sf_i)
+})
+
+length_df <- length_df %>%
+  mutate(across(everything(), ~ tidyr::replace_na(., 0))) %>%
+  rename_with(~ paste0("prop_", .x), -uid)
+
+tl_df <- tl_df %>%
+  left_join(length_df, by = "uid")
+
+# Export -----------------------------------------------------------------------
 saveRDS(tl_df, file.path(analysis_data_dir, "google_gadm1.Rds"))

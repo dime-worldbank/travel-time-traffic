@@ -4,6 +4,7 @@ route_df    <- readRDS(file.path(extracted_data_dir, "data_for_calibration", "go
 route_df_v2 <- readRDS(file.path(analysis_data_dir, "google_routes.Rds"))
 # Compute 99th percentile speed per route (uid) -------------------------------------
 route_p99_speed_byclass <- route_df %>%
+  dplyr::filter(hour %in% 1:4) %>%
   group_by(uid) %>%
   summarise(
     fclass = first(fclass),
@@ -13,6 +14,7 @@ route_p99_speed_byclass <- route_df %>%
   mutate(uid = as.character(uid))
 
 route_p99_speed_v2 <- route_df_v2 %>%
+  dplyr::filter(hour %in% 1:4) %>%
   group_by(uid) %>%
   summarise(
     fclass = "Long panel of\n26 routes",
@@ -65,3 +67,16 @@ ggplot(combined_p99, aes(x = fclass_label, y = p99_speed, fill = fclass_label)) 
 ggsave(filename = file.path(figures_dir, "p99_speed_boxplot_byclass_and_v2.png"),
        height = 4, width = 8)
 #       title = "Distribution of free-flow speeds across routes"
+
+#### Stats
+combined_p99 %>%
+  group_by(fclass_label) %>%
+  dplyr::summarise(p99_speed = mean(p99_speed)) %>%
+  ungroup()
+
+
+osm_sf <- readRDS(file.path(data_dir, "OSM", "FinalData", "osm_nbo_line.Rds"))
+osm_sf %>%
+  st_drop_geometry() %>%
+  dplyr::filter(fclass %in% "trunk") %>%
+  pull(name)

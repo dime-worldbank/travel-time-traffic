@@ -31,10 +31,12 @@ iso_poly_sf_i  <- iso_poly_sf %>% dplyr::filter(uid == UID_I)
 iso_cong_route_sf_i <- iso_cong_route_sf %>% dplyr::filter(uid == UID_I)
 iso_cong_poly_sf_i  <- iso_cong_poly_sf %>% dplyr::filter(uid == UID_I)
 
-leaflet() %>%
-  addTiles() %>%
-  addPolylines(data = iso_cong_route_sf_i) %>%
-  addPolygons(data = iso_cong_poly_sf_i)
+if(F){
+  leaflet() %>%
+    addTiles() %>%
+    addPolylines(data = iso_cong_route_sf_i) %>%
+    addPolygons(data = iso_cong_poly_sf_i)
+}
 
 h3_sf_c_i <- h3_sf_i %>% st_centroid()
 

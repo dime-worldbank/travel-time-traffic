@@ -244,9 +244,9 @@ estates_sf_var %>%
   ggplot() +
   geom_sf(aes(fill = estimate,
               color = "p > 0.05")) +
-  scale_fill_gradient2(low = "green2",
+  scale_fill_gradient2(low = "dodgerblue",
                        mid = "white",
-                       high = "firebrick",
+                       high = "darkorange",
                        limits = c(-max_v, max_v),
                        na.value = "gray80") +
   scale_color_manual(values = "black") +

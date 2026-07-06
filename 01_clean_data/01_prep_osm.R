@@ -46,7 +46,21 @@ osm_sf <- osm_sf %>%
 
 #osm_sf <- osm_sf %>% st_intersection(nbo_sf)
 
+## Change class
+# https://eastleighvoice.co.ke/infographics/311186/ntsas-speed-limits-on-city-highways
+osm_sf <- osm_sf %>%
+  dplyr::mutate(fclass = case_when(
+    name == "southern bypass" ~ "trunk_fast",
+    name == "eastern bypass" ~ "trunk_fast",
+    name == "northern bypass" ~ "trunk_fast",
+    name == "thika rd" ~ "trunk_fast",
+    name == "thika road" ~ "trunk_fast",
+    name == "mombasa road" ~ "trunk_fast",
+    TRUE ~ fclass
+  ))
+
 osm_10m_sf <- osm_sf %>% st_buffer_chunks(dist = 10, chunk_size = 50)
 
 saveRDS(osm_10m_sf, file.path(data_dir, "OSM", "FinalData", "osm_nbo_10m.Rds"))
 saveRDS(osm_sf, file.path(data_dir, "OSM", "FinalData", "osm_nbo_line.Rds"))
+

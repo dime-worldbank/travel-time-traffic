@@ -61,7 +61,7 @@ waze_bq_dir <- file.path(sm_db_dir, "Data", "Waze - BigQuery", "FinalData")
 tomtom_raw_dir <- file.path(sm_db_dir, "Data", "TomTom", "RawData")
 
 git_clean_dir <- file.path(git_dir, "01_clean_data")
-git_analysis_dir <- file.path(git_dir, "02_analysis_v2")
+git_analysis_dir <- file.path(git_dir, "02_analysis")
 
 # Remove tables/figures --------------------------------------------------------
 if(DELETE_OUTPUT){
@@ -178,21 +178,45 @@ getmode <- function(v) {
   uniqv[which.max(tabulate(match(v, uniqv)))]
 }
 
-mk_traffic_indicators <- function(data_df, beta){
+mk_traffic_indicators <- function(data_df, 
+                                  beta,
+                                  # speed_trunk = 52.9,
+                                  # speed_primary = 42.2,
+                                  # speed_secondary = 34.7,
+                                  # speed_tertiary = 27.7,
+                                  # speed_unclassified = 26.7,
+                                  # speed_residential = 21.6
+                                  speed_trunk_fast = 85,
+                                  speed_trunk = 55,
+                                  speed_primary = 50,
+                                  speed_secondary = 35,
+                                  speed_tertiary = 30,
+                                  speed_unclassified = 25,
+                                  speed_residential = 20){
   
-  data_df %>%
-    mutate(
+  data_df <- data_df %>%
+    dplyr::mutate(speed_avg = 
+                    speed_trunk_fast * prop_trunk_fast + 
+                    speed_trunk * prop_trunk + 
+                    speed_primary * prop_primary + 
+                    speed_secondary * prop_secondary + 
+                    speed_tertiary * prop_tertiary + 
+                    speed_unclassified * prop_unclassified +
+                    speed_residential * prop_residential) %>%
+    dplyr::mutate(
       # Linear predictor: log(delay per km)
-      CI = beta["tl_prop_2"] * tl_prop_2 +
-        beta["tl_prop_3"] * tl_prop_3 +
-        beta["tl_prop_4"] * tl_prop_4,
+      # Each traffic-level coefficient is now itself a function of speed_avg,
+      # combining the main effect and the speed interaction term
+      CI = (beta["tl_prop_2"] + beta["tl_prop_2_speed"] * speed_avg) * tl_prop_2 +
+        (beta["tl_prop_3"] + beta["tl_prop_3_speed"] * speed_avg) * tl_prop_3 +
+        (beta["tl_prop_4"] + beta["tl_prop_4_speed"] * speed_avg) * tl_prop_4,
       
-      # Delay factor relative to green
+      # Delay factor relative to free-flow
       delay_factor = exp(CI),
       
-      # Speed as a fraction of green speed
+      # Speed as a fraction of free-flow speed
       speed_multiplier = exp(-CI)
-    ) 
+    )
 }
 
 # Code -------------------------------------------------------------------------
@@ -216,29 +240,33 @@ if(F){
   source(file.path(git_clean_dir, "05_clean_data.R"))
   
   # Analysis -------------------------------------------------------------------
+  ### Calibration
   source(file.path(git_analysis_dir, "1_calibration_regression.R"))
+  
+  ### Summary figures
+  source(file.path(git_analysis_dir, "1_map_tt_tl.R"))
+  source(file.path(git_analysis_dir, "1_speed_boxplots.R"))
+  source(file.path(git_analysis_dir, "1_summary_boxplots.R"))
+  source(file.path(git_analysis_dir, "1_route_summary.R"))
+  source(file.path(git_analysis_dir, "1_mapbox_map_example.R"))
+  source(file.path(git_analysis_dir, "1_deviation_example_1.R"))
+  source(file.path(git_analysis_dir, "1_deviation_example_2.R"))
+  source(file.path(git_analysis_dir, "1_extract_traffic_example.R"))
+  
+  ### Case Studies
   source(file.path(git_analysis_dir, "2_case_study_crash.R"))
-  source(file.path(git_analysis_dir, "2_case_study_crash_buffers.R"))
   
-  # source(file.path(git_analysis_dir, "amount_route_deviates_overall.R"))
-  # source(file.path(git_analysis_dir, "amount_route_deviates_veh_level.R"))
-  # source(file.path(git_analysis_dir, "case_study_crash_analysis.R"))
-  # source(file.path(git_analysis_dir, "case_study_nbo_election.R"))
-  # source(file.path(git_analysis_dir, "case_study_congestion_analysis.R"))
-  # source(file.path(git_analysis_dir, "correlation_between_vars.R"))
-  # source(file.path(git_analysis_dir, "deviation_example_1.R"))
-  # source(file.path(git_analysis_dir, "deviation_example_2.R"))
-  # source(file.path(git_analysis_dir, "extract_traffic_example.R"))
-  # source(file.path(git_analysis_dir, "map_levels_and_speed.R"))
-  # source(file.path(git_analysis_dir, "percent_time_route_deviates.R"))
-  # source(file.path(git_analysis_dir, "reg_explain_diff_route.R"))
-  # source(file.path(git_analysis_dir, "reg_levels_explain_speed.R"))
-  # source(file.path(git_analysis_dir, "route_summary.R"))
-  # source(file.path(git_analysis_dir, "scatterplots_od_levels.R"))
-  # 
-  # source(file.path(git_analysis_dir, "summary_boxplots.R"))
+  source(file.path(git_analysis_dir, "2_case_study_nbo_election.R"))
   
+  source(file.path(git_analysis_dir, "2_isochrone_methods.R"))
+  source(file.path(git_analysis_dir, "2_isochrone_hourly_example.R"))
+  source(file.path(git_analysis_dir, "2_isochrone_hex_buildings.R"))
   
+  ### Additional analysis
+  source(file.path(git_analysis_dir, "2_percent_route_deviate.R"))
+  source(file.path(git_analysis_dir, "2_route_distance_over_time.R"))
+  
+  source(file.path(git_analysis_dir, "2_descriptive_summary.R"))
   
 }
 

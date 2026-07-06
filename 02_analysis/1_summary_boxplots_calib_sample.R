@@ -1,9 +1,25 @@
 # Summary Boxplots
 
 # Load data --------------------------------------------------------------------
-df <- readRDS(file.path(analysis_data_dir, "google_routes.Rds"))
+df <- readRDS(file.path(extracted_data_dir, "data_for_calibration", "google_traffic_tt.Rds"))
+df <- df %>%
+  dplyr::mutate(prop_trunk = ifelse(fclass == "trunk", 1, 0),
+                prop_primary = ifelse(fclass == "primary", 1, 0),
+                prop_secondary = ifelse(fclass == "secondary", 1, 0),
+                prop_tertiary = ifelse(fclass == "tertiary", 1, 0),
+                prop_residential = ifelse(fclass == "residential", 1, 0),
+                prop_unclassified = ifelse(fclass == "unclassified", 1, 0)) %>%
+  dplyr::mutate(                uid = uid %>% factor() %>% as.numeric()) %>%
+  dplyr::rename(speed_kmh = speed_in_traffic_kmh)
 
 beta <- readRDS(file.path(data_dir, "Calibration Coefficients", "coefs.Rds"))
+
+df <- df %>%
+  group_by(uid) %>%
+  dplyr::mutate(duration_in_traffic_s_minimum = quantile(duration_in_traffic_s, 0.05, na.rm = TRUE) %>% as.numeric()) %>%
+  ungroup() %>%
+  dplyr::mutate(duration_pc      = (duration_in_traffic_s - duration_in_traffic_s_minimum) / duration_in_traffic_s_minimum,
+                delay_factor_od  = duration_pc + 1)
 
 df <- df %>%
   mk_traffic_indicators(beta)
@@ -55,7 +71,7 @@ placeholder_data <- plot_data %>%
                                     "D. Travel Time (min)",
                                     "E. Travel Distance (km)",
                                     "F. Traffic Speed (km/h)")))
-                                    #"H. Delay Factor\n(O-D data)")))
+#"H. Delay Factor\n(O-D data)")))
 
 # --- Step 3: Reshape the main data for plotting ---
 long_data <- plot_data %>%
@@ -106,7 +122,7 @@ long_data <- long_data %>%
 # --- Step 4: Create the plot by combining the layers ---
 long_data %>%
   dplyr::filter(!(name %in% c("A. Delay Factor\n(Traffic level data)",
-                            "B. Delay Factor\n(O-D data)"))) %>%
+                              "B. Delay Factor\n(O-D data)"))) %>%
   ggplot(aes(y = uid, x = value)) +
   
   # Layer 1: The invisible points to set the scale range (data = placeholder_data)
@@ -134,32 +150,7 @@ long_data %>%
         strip.text = element_text(face = "bold"),
         axis.text.y = element_text(size = 7))
 
-ggsave(filename = file.path(figures_dir, "summary_boxplots.png"),
-       height = 5, width = 10)
+ggsave(filename = file.path(figures_dir, "summary_boxplots_calib_sample.png"),
+       height = 10, width = 10)
 
 
-# #### Stats
-# q_df <- df %>%
-#   dplyr::select(uid,
-#                 gg_speed_in_traffic_kmh,
-#                 gg_tl_prop_2, gg_tl_prop_3, gg_tl_prop_4) %>%
-#   pivot_longer(-uid) %>%
-#   group_by(name, uid) %>%
-#   dplyr::summarise(q25 = quantile(value, 0.25, na.rm = T),
-#                    q50 = quantile(value, 0.5, na.rm = T)) %>%
-#   ungroup() %>%
-#   pivot_wider(id_cols = uid,
-#               names_from = name,
-#               values_from = c(q25, q50))
-# 
-# mean(q_df$q50_gg_tl_prop_2)
-# mean(q_df$q50_gg_tl_prop_3)
-# mean(q_df$q50_gg_tl_prop_4)
-# 
-# table(q_df$q25_gg_tl_prop_2 > 0)
-# table(q_df$q25_gg_tl_prop_3 == 0)
-# table(q_df$q25_gg_tl_prop_4 == 0)
-# 
-# mean(q_df$q25_gg_tl_prop_2 > 0)
-# mean(q_df$q25_gg_tl_prop_3 == 0)
-# mean(q_df$q25_gg_tl_prop_4 == 0)
