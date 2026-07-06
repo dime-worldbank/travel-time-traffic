@@ -100,7 +100,7 @@ iso_traffic_agg_df <- iso_traffic_df %>%
                 tl_prop_3 = count_3 / length_total,
                 tl_prop_4 = count_4 / length_total) %>%
   group_by(route_id, hour, dow_weekday,
-           prop_trunk, prop_primary, prop_secondary,
+           prop_trunk_fast, prop_trunk, prop_primary, prop_secondary,
            prop_tertiary, prop_residential, prop_unclassified) %>%
   dplyr::summarise(tl_prop_2 = mean(tl_prop_2, na.rm = T),
                    tl_prop_3 = mean(tl_prop_3, na.rm = T),
