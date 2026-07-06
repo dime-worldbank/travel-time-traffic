@@ -1,10 +1,51 @@
 # Clean Data: Crashes
 
-unit <- "100m"
+unit <- "50m"
 
 # Load crashes -----------------------------------------------------------------
-twitter_df <- readRDS(file.path(data_dir, "Twitter Crashes", "RawData", "crashes_twitter.Rds")) %>%
+twitter_sf <- readRDS(file.path(data_dir, "Twitter Crashes", "RawData", "crashes_twitter.Rds"))
+
+twitter_df <- twitter_sf %>%
   st_drop_geometry()
+
+# Add OSM ----------------------------------------------------------------------
+osm_sf <- readRDS(file.path(data_dir, "OSM", "FinalData", "osm_nbo_line.Rds")) %>%
+  dplyr::select(fclass) %>%
+  dplyr::mutate(length = geometry %>% st_length() %>% as.numeric())
+
+if(unit == "50m"){
+  buffer_dist <- 50
+}
+
+if(unit == "100m"){
+  buffer_dist <- 100
+}
+
+twitter_buff_sf  <- st_buffer(twitter_sf, dist = buffer_dist)
+
+length_df <- map_df(unique(twitter_buff_sf$crash_id), function(crash_id_i){
+  message(crash_id_i)
+  
+  twitter_buff_sf_i <- twitter_buff_sf[twitter_buff_sf$crash_id %in% crash_id_i,]
+  
+  osm_sf_i <- st_intersection(osm_sf, twitter_buff_sf_i) %>%
+    st_drop_geometry() %>%
+    group_by(fclass) %>%
+    dplyr::summarise(length = sum(length, na.rm = T)) %>%
+    ungroup() %>%
+    dplyr::mutate(length_total = sum(length),
+                  prop = length / length_total) %>%
+    dplyr::select(fclass, prop) %>%
+    pivot_wider(names_from = fclass,
+                values_from = prop) %>%
+    dplyr::mutate(crash_id = crash_id_i)
+  
+  return(osm_sf_i)
+})
+
+length_df <- length_df %>%
+  mutate(across(everything(), ~ tidyr::replace_na(., 0))) %>%
+  rename_with(~ paste0("prop_", .x), -crash_id)
 
 # Traffic levels ---------------------------------------------------------------
 tl_df <- file.path(data_dir, "extracted-data", 
@@ -71,7 +112,17 @@ twitter_data_df <- twitter_data_df %>%
                 tl_prop_3 = count_3/count_all_max,
                 tl_prop_4 = count_4/count_all_max)
 
+#### Merge OSM length ----------------------------------------------------------
+twitter_data_df <- twitter_data_df %>%
+  left_join(length_df, crash_id)
+
 #### Export --------------------------------------------------------------------
 saveRDS(twitter_data_df, file.path(analysis_data_dir, paste0("google_twitter_",unit,".Rds")))
 
+if(F){
+  twitter_data_df <- twitter_data_df %>%
+    dplyr::mutate(prop_all = prop_trunk + prop_primary + prop_secondary + prop_tertiary + prop_residential + prop_unclassified)
+  twitter_data_df$prop_all %>% summary()
+}
 
+# CHECK ALL HAVE SOME NONZERO TOTAL LENGTH FOR ROADS !!!

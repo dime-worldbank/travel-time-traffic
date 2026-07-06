@@ -73,6 +73,37 @@ route_df <- route_df %>%
   dplyr::filter(date < ymd("2023-08-17")) %>%
   dplyr::filter( ! ((date >= ymd("2023-02-23")) & (date <= ymd("2023-03-16"))) )
 
+#### Add OSM
+rt_typ_google_sf      <- readRDS(file.path(tt_dir, "google_typical_route.Rds"))
+rt_typ_google_10buff_sf <- st_buffer(rt_typ_google_sf, dist = 10)
+
+length_df <- map_df(unique(rt_typ_google_10buff_sf$uid), function(uid_i){
+  message(uid_i)
+  
+  rt_typ_google_10buff_sf_i <- rt_typ_google_10buff_sf[rt_typ_google_10buff_sf$uid %in% uid_i,]
+  
+  osm_sf_i <- st_intersection(osm_sf, rt_typ_google_10buff_sf_i) %>%
+    st_drop_geometry() %>%
+    group_by(fclass) %>%
+    dplyr::summarise(length = sum(length, na.rm = T)) %>%
+    ungroup() %>%
+    dplyr::mutate(length_total = sum(length),
+                  prop = length / length_total) %>%
+    dplyr::select(fclass, prop) %>%
+    pivot_wider(names_from = fclass,
+                values_from = prop) %>%
+    dplyr::mutate(uid = uid_i)
+  
+  return(osm_sf_i)
+})
+
+length_df <- length_df %>%
+  mutate(across(everything(), ~ tidyr::replace_na(., 0))) %>%
+  rename_with(~ paste0("prop_", .x), -uid)
+
+route_df <- route_df %>%
+  left_join(length_df, by = "uid")
+
 # Export
 saveRDS(route_df, file.path(analysis_data_dir, "google_routes.Rds"))
 
