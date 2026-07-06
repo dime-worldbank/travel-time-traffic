@@ -9,10 +9,10 @@ iso_route_sf <- readRDS(file.path(data_dir, "Isochrone Routes", "appended_routes
 iso_poly_sf <- readRDS(file.path(data_dir, "Isochrone Routes", "iso_poly.Rds"))
 
 iso_cong_route_sf <- readRDS(file.path(data_dir, "Isochrone Routes", "iso_congestion_routes.Rds")) %>%
-  dplyr::filter(hour %in% 19,
+  dplyr::filter(hour %in% 18,
                 dow_weekday %in% T)
 iso_cong_poly_sf <- readRDS(file.path(data_dir, "Isochrone Routes", "iso_congestion_poly.Rds")) %>%
-  dplyr::filter(hour %in% 19,
+  dplyr::filter(hour %in% 18,
                 dow_weekday %in% T)
 
 tiff_vec <- file.path(traffic_gg_raw_dir) %>%
