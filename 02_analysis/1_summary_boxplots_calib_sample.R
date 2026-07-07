@@ -3,12 +3,13 @@
 # Load data --------------------------------------------------------------------
 df <- readRDS(file.path(extracted_data_dir, "data_for_calibration", "google_traffic_tt.Rds"))
 df <- df %>%
-  dplyr::mutate(prop_trunk = ifelse(fclass == "trunk", 1, 0),
-                prop_primary = ifelse(fclass == "primary", 1, 0),
-                prop_secondary = ifelse(fclass == "secondary", 1, 0),
-                prop_tertiary = ifelse(fclass == "tertiary", 1, 0),
-                prop_residential = ifelse(fclass == "residential", 1, 0),
-                prop_unclassified = ifelse(fclass == "unclassified", 1, 0)) %>%
+  dplyr::mutate(prop_trunk_fast    = ifelse(fclass == "trunk_fast",    1, 0),
+                prop_trunk        = ifelse(fclass == "trunk",         1, 0),
+                prop_primary      = ifelse(fclass == "primary",       1, 0),
+                prop_secondary    = ifelse(fclass == "secondary",     1, 0),
+                prop_tertiary     = ifelse(fclass == "tertiary",      1, 0),
+                prop_residential  = ifelse(fclass == "residential",   1, 0),
+                prop_unclassified = ifelse(fclass == "unclassified",  1, 0)) %>%
   dplyr::mutate(                uid = uid %>% factor() %>% as.numeric()) %>%
   dplyr::rename(speed_kmh = speed_in_traffic_kmh)
 

@@ -342,7 +342,7 @@ ggsave(filename = file.path(figures_dir, "coef_by_speed_col6_vs_col7.png"),
 # Delay factor for trunk roads as proportion in each traffic level varies 0 -> 1
 # ==================================================================================
 trunk_base <- tibble(
-  prop_trunk = 1, prop_primary = 0, prop_secondary = 0,
+  prop_trunk_fast = 0, prop_trunk = 1, prop_primary = 0, prop_secondary = 0,
   prop_tertiary = 0, prop_residential = 0, prop_unclassified = 0
 )
 
@@ -378,6 +378,7 @@ library(sf)
 
 osm_df_sum <- readRDS(file.path(analysis_data_dir, "google_osm_10m.Rds")) %>%
   dplyr::mutate(
+    prop_trunk_fast   = ifelse(fclass == "trunk_fast",    1, 0),
     prop_trunk        = ifelse(fclass == "trunk",         1, 0),
     prop_primary      = ifelse(fclass == "primary",       1, 0),
     prop_secondary    = ifelse(fclass == "secondary",     1, 0),
@@ -442,3 +443,70 @@ cat(paste(summ_tex$tex, collapse = "\n"))
 cat("\n\\hline \n")
 cat("\\end{tabular}\n")
 sink()
+
+
+# ==================================================================================
+# Table: calibration_by_fclass.tex
+# Plain regression (no speed interaction, no threshold) estimated per fclass
+# ==================================================================================
+fclasses        <- c("trunk", "primary", "secondary", "tertiary", "residential", "unclassified")
+fclasses_labels <- c("Trunk", "Primary", "Secondary", "Tertiary", "Residential", "Unclassified")
+
+n_routes_fclass <- sapply(fclasses, function(fc)
+  n_distinct(route_df$uid[route_df$fclass == fc]))
+names(n_routes_fclass) <- fclasses_labels
+
+models_by_fclass <- purrr::map(fclasses, function(fc) {
+  df_sub <- route_df %>% dplyr::filter(fclass == fc)
+  if (n_distinct(df_sub$uid) < 2) return(NULL)
+  feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid,
+        vcov = ~uid, data = df_sub)
+}) %>% purrr::set_names(fclasses_labels) %>% purrr::compact()
+
+valid_fclasses_labels <- fclasses_labels[fclasses_labels %in% names(models_by_fclass)]
+
+etable(models_by_fclass,
+       headers = list(":_:" = valid_fclasses_labels),
+       extralines = list("-N Routes" = n_routes_fclass[valid_fclasses_labels]),
+       replace = TRUE,
+       float = FALSE,
+       file = file.path(tables_dir, "calibration_by_fclass.tex"))
+
+
+# ==================================================================================
+# Table: calibration_by_speed.tex
+# Plain regression (no speed interaction, no threshold) by 6 equal-frequency speed bins
+# Bins defined on unique routes so each bin has equal number of routes
+# ==================================================================================
+route_speeds <- route_df %>%
+  distinct(uid, speed_kmh_uid_max) %>%
+  mutate(speed_bin = ntile(speed_kmh_uid_max, 6))
+
+bin_labels <- route_speeds %>%
+  group_by(speed_bin) %>%
+  summarise(min_s = round(min(speed_kmh_uid_max), 1),
+            max_s = round(max(speed_kmh_uid_max), 1),
+            n_routes = n(),
+            .groups = "drop") %>%
+  mutate(label = paste0("[", min_s, " - ", max_s, "]")) %>%
+  arrange(speed_bin)
+
+route_df_speed <- route_df %>%
+  left_join(route_speeds %>% select(uid, speed_bin), by = "uid")
+
+models_by_speed <- purrr::map(1:6, function(b) {
+  df_sub <- route_df_speed %>% dplyr::filter(speed_bin == b)
+  if (n_distinct(df_sub$uid) < 2) return(NULL)
+  feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid,
+        vcov = ~uid, data = df_sub)
+}) %>% purrr::set_names(bin_labels$label) %>% purrr::compact()
+
+valid_labels   <- bin_labels$label[bin_labels$label %in% names(models_by_speed)]
+n_routes_speed <- bin_labels$n_routes[bin_labels$label %in% names(models_by_speed)]
+
+etable(models_by_speed,
+       headers = list(":_:" = valid_labels),
+       extralines = list("-N Routes" = n_routes_speed),
+       replace = TRUE,
+       float = FALSE,
+       file = file.path(tables_dir, "calibration_by_speed.tex"))

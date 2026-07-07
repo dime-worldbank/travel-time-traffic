@@ -122,17 +122,28 @@ ggsave(filename = file.path(figures_dir, "figure_3.png"),
 # Regression -------------------------------------------------------------------
 ymd("2022-08-09") + 7*4 - 1
 length(ymd("2022-08-09"):ymd("2022-09-05"))
+length(ymd("2022-08-09"):ymd("2022-08-15"))
+length(ymd("2022-08-02"):ymd("2022-08-08"))
 
 add_period <- function(df){
+  
+  # df %>%
+  #   dplyr::mutate(period = case_when(
+  #     (datetime >= ymd("2022-08-09", tz = "Africa/Nairobi")) & 
+  #       (datetime <= ymd("2022-08-15", tz = "Africa/Nairobi")) ~ 1,
+  #     (datetime >= ymd("2022-08-16", tz = "Africa/Nairobi")) & 
+  #       (datetime <= ymd("2022-09-05", tz = "Africa/Nairobi")) ~ 0
+  #   )) %>%
+  #   filter(!is.na(period))
   
   df %>%
     dplyr::mutate(period = case_when(
       (datetime >= ymd("2022-08-09", tz = "Africa/Nairobi")) & 
         (datetime <= ymd("2022-08-15", tz = "Africa/Nairobi")) ~ 1,
-      (datetime >= ymd("2022-08-16", tz = "Africa/Nairobi")) & 
-        (datetime <= ymd("2022-09-05", tz = "Africa/Nairobi")) ~ 0
+      (datetime >= ymd("2022-08-02", tz = "Africa/Nairobi")) & 
+        (datetime <= ymd("2022-08-08", tz = "Africa/Nairobi")) ~ 0
     )) %>%
-    filter(!is.na(period))
+    dplyr::filter(!is.na(period))
   
 }
 
@@ -141,17 +152,22 @@ route_df <- route_df %>%
   dplyr::mutate(dow = datetime %>% wday(),
                 hour = datetime %>% hour())
 
+route_df$datetime %>% summary()
+
 nbo_df <- nbo_df %>% 
   add_period() %>%
   dplyr::mutate(dow = datetime %>% wday(),
                 hour = datetime %>% hour())
 
-lm1 <- feols(speed_in_traffic_kmh    ~ period | uid + dow + hour, data = route_df)
-lm2 <- feols(duration_in_traffic_min ~ period | uid + dow + hour, data = route_df)
-lm3 <- feols(distance_km             ~ period | uid + dow + hour, data = route_df)
-lm4 <- feols(delay_factor_od         ~ period | uid + dow + hour, data = route_df)
+route_df <- route_df %>% dplyr::filter(datetime <= ymd("2022-09-05", tz = "Africa/Nairobi"))
+nbo_df   <- nbo_df   %>% dplyr::filter(datetime <= ymd("2022-09-05", tz = "Africa/Nairobi"))
 
-lm5 <- feols(delay_factor             ~ period | uid + dow + hour, data = route_df)
+lm1 <- feols(speed_in_traffic_kmh    ~ period | uid + dow + hour, data = route_df, vcov = "hetero")
+lm2 <- feols(duration_in_traffic_min ~ period | uid + dow + hour, data = route_df, vcov = "hetero")
+lm3 <- feols(distance_km             ~ period | uid + dow + hour, data = route_df, vcov = "hetero")
+lm4 <- feols(delay_factor_od         ~ period | uid + dow + hour, data = route_df, vcov = "hetero")
+
+lm5 <- feols(delay_factor             ~ period | uid + dow + hour, data = route_df, vcov = "hetero")
 lm6 <- feols(delay_factor             ~ period | dow + hour, data = nbo_df, vcov = "hetero")
 
 #### Table Settings

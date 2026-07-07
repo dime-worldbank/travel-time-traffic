@@ -105,8 +105,12 @@ all_df <- all_df %>%
 all_df <- all_df %>%
   dplyr::filter(speed_in_traffic_kmh_uid_sd > 0)
 
+# Filter -----------------------------------------------------------------------
+all_df <- all_df %>%
+  dplyr::filter(date >= ymd("2026-06-11"),
+                date <= ymd("2026-06-18"))
+
 # Export -----------------------------------------------------------------------
 saveRDS(all_df, file.path(extracted_data_dir, "data_for_calibration", "google_traffic_tt.Rds"))
 
-
-
+all_df$datetime %>% table() %>% View()
