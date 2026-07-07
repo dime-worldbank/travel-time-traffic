@@ -27,6 +27,9 @@ route_df <- route_df %>%
   ungroup() %>%
   filter(hour >= 6, hour <= 21)
 
+center_speed_v1 <- route_df %>% distinct(uid, speed_kmh_uid_max) %>% pull(speed_kmh_uid_max) %>% mean(na.rm = TRUE)
+route_df <- route_df %>% dplyr::mutate(speed_kmh_uid_max_c = speed_kmh_uid_max - center_speed_v1)
+
 route_df <- route_df %>%
   group_by(uid) %>%
   dplyr::mutate(tl_prop_3_max = quantile(tl_prop_3, prob = 0.95, na.rm = T) %>% as.numeric(),
@@ -68,6 +71,9 @@ route_df_v2 <- route_df_v2 %>%
   ungroup() %>%
   filter(hour >= 6, hour <= 21)
 
+center_speed_v2 <- route_df_v2 %>% distinct(uid, speed_kmh_uid_max) %>% pull(speed_kmh_uid_max) %>% mean(na.rm = TRUE)
+route_df_v2 <- route_df_v2 %>% dplyr::mutate(speed_kmh_uid_max_c = speed_kmh_uid_max - center_speed_v2)
+
 route_df_v2 <- route_df_v2 %>%
   dplyr::mutate(date_week = floor_date(date, unit = "weeks")) %>%
   group_by(uid) %>%
@@ -91,9 +97,9 @@ route_variation_df_v2 <- route_df_v2 %>%
 # ==================================================================================
 all_classes <- c("trunk", "primary", "secondary", "tertiary", "residential", "unclassified")
 
-joint_f_level <- function(mod, level) {
+joint_f_level <- function(mod, level, speed_var = "speed_kmh_uid_max") {
   main_term <- paste0("tl_prop_", level)
-  interact_term <- paste0("tl_prop_", level, ":speed_kmh_uid_max")
+  interact_term <- paste0("tl_prop_", level, ":", speed_var)
   if (!(interact_term %in% names(coef(mod)))) return(c(stat = NA, p = NA))
   w <- tryCatch(fixest::wald(mod, paste0(main_term, "|", interact_term)),
                 error = function(e) NULL)
@@ -101,29 +107,24 @@ joint_f_level <- function(mod, level) {
   c(stat = unname(w$stat), p = unname(w$p))
 }
 
-fit_pair <- function(df_sub, long_panel = FALSE) {
-  if (long_panel) {
-    mod_plain <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid + date_week,
-                       vcov = ~uid + date_week, data = df_sub)
-    mod_speed <- feols(
-      tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 +
-        tl_prop_2:speed_kmh_uid_max + tl_prop_3:speed_kmh_uid_max + tl_prop_4:speed_kmh_uid_max | uid + date_week,
-      vcov = ~uid + date_week, data = df_sub)
-  } else {
-    mod_plain <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid,
-                       vcov = ~uid, data = df_sub)
-    mod_speed <- feols(
-      tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 +
-        tl_prop_2:speed_kmh_uid_max + tl_prop_3:speed_kmh_uid_max + tl_prop_4:speed_kmh_uid_max | uid,
-      vcov = ~uid, data = df_sub)
-  }
+fit_pair <- function(df_sub, long_panel = FALSE, speed_var = "speed_kmh_uid_max") {
+  fe_str   <- if (long_panel) "uid + date_week" else "uid"
+  vcov_fml <- if (long_panel) ~uid + date_week else ~uid
+  fml_plain <- as.formula(paste("tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 |", fe_str))
+  fml_speed <- as.formula(paste0(
+    "tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 + ",
+    "tl_prop_2:", speed_var, " + tl_prop_3:", speed_var, " + tl_prop_4:", speed_var,
+    " | ", fe_str
+  ))
+  mod_plain <- feols(fml_plain, vcov = vcov_fml, data = df_sub)
+  mod_speed <- feols(fml_speed, vcov = vcov_fml, data = df_sub)
   list(plain = mod_plain, speed = mod_speed)
 }
 
-compute_stats <- function(mod, df_sub, has_class = TRUE) {
-  fw2 <- joint_f_level(mod, 2)
-  fw3 <- joint_f_level(mod, 3)
-  fw4 <- joint_f_level(mod, 4)
+compute_stats <- function(mod, df_sub, has_class = TRUE, speed_var = "speed_kmh_uid_max") {
+  fw2 <- joint_f_level(mod, 2, speed_var)
+  fw3 <- joint_f_level(mod, 3, speed_var)
+  fw4 <- joint_f_level(mod, 4, speed_var)
   
   base_stats <- tibble(
     n_obs = nrow(df_sub),
@@ -215,13 +216,26 @@ write.csv(stats_combined_df, file.path(tables_dir, "traffic_level_combined_diagn
 my_style = style.tex(tpt = TRUE, notes.tpt.intro = "\\footnotesize")
 setFixest_etable(style.tex = my_style)
 
+# Post-process tex: FE rows containing "Yes" may have blank cells; fill with "No".
+# Uses a lookahead so every blank cell is matched independently (not just every other one).
+fill_fe_no <- function(tex_path) {
+  lines <- readLines(tex_path)
+  fe    <- grepl("\\bYes\\b", lines)
+  # Match & with only whitespace before the next & or \\ (end-of-row)
+  lines[fe] <- gsub("&(?=\\s*(?:&|\\\\\\\\))", "& No", lines[fe], perl = TRUE)
+  writeLines(lines, tex_path)
+}
+
 dict = c(tt_hour_per_km_ln = "Travel time (hours) per kilometer, logged",
          tl_prop_2 = "Prop traffic level 2",
          tl_prop_3 = "Prop traffic level 3",
          tl_prop_4 = "Prop traffic level 4",
-         "tl_prop_2:speed_kmh_uid_max" = "Prop traffic level 2 $\\times$ Speed (km/h)",
-         "tl_prop_3:speed_kmh_uid_max" = "Prop traffic level 3 $\\times$ Speed (km/h)",
-         "tl_prop_4:speed_kmh_uid_max" = "Prop traffic level 4 $\\times$ Speed (km/h)",
+         "tl_prop_2:speed_kmh_uid_max"   = "Prop traffic level 2 $\\times$ Speed (km/h)",
+         "tl_prop_3:speed_kmh_uid_max"   = "Prop traffic level 3 $\\times$ Speed (km/h)",
+         "tl_prop_4:speed_kmh_uid_max"   = "Prop traffic level 4 $\\times$ Speed (km/h)",
+         "tl_prop_2:speed_kmh_uid_max_c" = "Prop traffic level 2 $\\times$ Speed (km/h, centered)",
+         "tl_prop_3:speed_kmh_uid_max_c" = "Prop traffic level 3 $\\times$ Speed (km/h, centered)",
+         "tl_prop_4:speed_kmh_uid_max_c" = "Prop traffic level 4 $\\times$ Speed (km/h, centered)",
          uid = "Route",
          date_week = "Week")
 setFixest_dict(dict)
@@ -238,10 +252,10 @@ stat_row_c_pval <- function(varname) {
 dataset_row <- c(rep("Calibration", 6), rep("Long Panel", 2))
 threshold_row <- c(as.character(rep(thresholds, each = 2)), "0.05", "0.05")
 
-esttex(models_combined[[1]], models_combined[[2]], models_combined[[3]], models_combined[[4]],
-       models_combined[[5]], models_combined[[6]], models_combined[[7]], models_combined[[8]],
+etable(models_combined,
        float = F,
        replace = T,
+
        extralines = list(
          
          "_ \\midrule \\emph{Sample}" = rep("", 8),
@@ -261,6 +275,88 @@ esttex(models_combined[[1]], models_combined[[2]], models_combined[[3]], models_
        ),
        notes = "Route-Inclusion Threshold indicates the minimum share of a route's observed hours in which the route shows any exposure to traffic level 3 and any exposure to traffic level 4; routes falling below this threshold on either measure are excluded from the estimation sample. Higher thresholds retain routes with more reliable within-route variation in high-congestion states, at the cost of a smaller sample.",
        file = file.path(tables_dir, "ols_calibration_threshold_x_speed.tex"))
+fill_fe_no(file.path(tables_dir, "ols_calibration_threshold_x_speed.tex"))
+
+
+# ==================================================================================
+# Regression table: ols_calibration_threshold_x_speed_centered.tex
+# Same structure but interactions use mean-centered speed
+# ==================================================================================
+threshold_results_c <- purrr::map(thresholds, function(thresh) {
+  routes_keep <- route_variation_df %>%
+    filter(share_prop3_gt0 >= thresh, share_prop4_gt0 >= thresh) %>%
+    pull(uid)
+  df_sub <- route_df %>% filter(uid %in% routes_keep)
+  mods <- fit_pair(df_sub, speed_var = "speed_kmh_uid_max_c")
+  list(
+    plain = list(model = mods$plain, stats = compute_stats(mods$plain, df_sub, has_class = TRUE,  speed_var = "speed_kmh_uid_max_c")),
+    speed = list(model = mods$speed, stats = compute_stats(mods$speed, df_sub, has_class = TRUE,  speed_var = "speed_kmh_uid_max_c"))
+  )
+})
+names(threshold_results_c) <- paste0("thresh_", thresholds)
+
+mods_v2_05_c       <- fit_pair(df_sub_v2_05, long_panel = TRUE, speed_var = "speed_kmh_uid_max_c")
+stats_v2_05_plain_c <- compute_stats(mods_v2_05_c$plain, df_sub_v2_05, has_class = FALSE, speed_var = "speed_kmh_uid_max_c")
+stats_v2_05_speed_c <- compute_stats(mods_v2_05_c$speed, df_sub_v2_05, has_class = FALSE, speed_var = "speed_kmh_uid_max_c")
+
+models_combined_c <- list(
+  "thresh_0_plain"       = threshold_results_c[["thresh_0"]]$plain$model,
+  "thresh_0_speed"       = threshold_results_c[["thresh_0"]]$speed$model,
+  "thresh_0.02_plain"    = threshold_results_c[["thresh_0.02"]]$plain$model,
+  "thresh_0.02_speed"    = threshold_results_c[["thresh_0.02"]]$speed$model,
+  "thresh_0.05_plain"    = threshold_results_c[["thresh_0.05"]]$plain$model,
+  "thresh_0.05_speed"    = threshold_results_c[["thresh_0.05"]]$speed$model,
+  "v2_thresh_0.05_plain" = mods_v2_05_c$plain,
+  "v2_thresh_0.05_speed" = mods_v2_05_c$speed
+)
+
+stats_combined_c_list <- list(
+  "thresh_0_plain"       = threshold_results_c[["thresh_0"]]$plain$stats,
+  "thresh_0_speed"       = threshold_results_c[["thresh_0"]]$speed$stats,
+  "thresh_0.02_plain"    = threshold_results_c[["thresh_0.02"]]$plain$stats,
+  "thresh_0.02_speed"    = threshold_results_c[["thresh_0.02"]]$speed$stats,
+  "thresh_0.05_plain"    = threshold_results_c[["thresh_0.05"]]$plain$stats,
+  "thresh_0.05_speed"    = threshold_results_c[["thresh_0.05"]]$speed$stats,
+  "v2_thresh_0.05_plain" = stats_v2_05_plain_c,
+  "v2_thresh_0.05_speed" = stats_v2_05_speed_c
+)
+
+stats_combined_c_df <- bind_rows(stats_combined_c_list, .id = "model_id") %>%
+  mutate(model_id = factor(model_id, levels = names(models_combined_c))) %>%
+  arrange(model_id)
+
+stat_row_cc <- function(varname, digits = 3) {
+  vals <- stats_combined_c_df %>% pull(!!sym(varname))
+  ifelse(is.na(vals), "", as.character(round(vals, digits)))
+}
+stat_row_cc_pval <- function(varname) {
+  vals <- stats_combined_c_df %>% pull(!!sym(varname))
+  ifelse(is.na(vals), "", ifelse(vals < 0.001, "<0.001", as.character(round(vals, 3))))
+}
+
+etable(models_combined_c,
+       float = F,
+       replace = T,
+
+       extralines = list(
+
+         "_ \\midrule \\emph{Sample}" = rep("", 8),
+         "_Dataset"                   = dataset_row,
+         "_Route-Inclusion Threshold" = threshold_row,
+         "_N Obs"                     = stat_row_cc("n_obs", 0),
+         "_N Routes"                  = stat_row_cc("n_routes", 0),
+         "_95th Pct. Speed (km/h)"    = stat_row_cc("p95_speed", 1),
+
+         "_ \\midrule \\emph{Model Fit}" = rep("", 8),
+         "_Joint F-stat (Prop2 = Prop2xSpeed = 0)" = stat_row_cc("joint_f_prop2_stat", 1),
+         "_Joint F p-value (Prop2)"   = stat_row_cc_pval("joint_f_prop2_pval"),
+         "_Joint F-stat (Prop3 = Prop3xSpeed = 0)" = stat_row_cc("joint_f_prop3_stat", 1),
+         "_Joint F p-value (Prop3)"   = stat_row_cc_pval("joint_f_prop3_pval"),
+         "_Joint F-stat (Prop4 = Prop4xSpeed = 0)" = stat_row_cc("joint_f_prop4_stat", 1),
+         "_Joint F p-value (Prop4)"   = stat_row_cc_pval("joint_f_prop4_pval")
+       ),
+       file = file.path(tables_dir, "ols_calibration_threshold_x_speed_centered.tex"))
+fill_fe_no(file.path(tables_dir, "ols_calibration_threshold_x_speed_centered.tex"))
 
 
 # ==================================================================================
