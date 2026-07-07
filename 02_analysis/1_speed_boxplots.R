@@ -59,7 +59,7 @@ ggplot(combined_p99, aes(x = fclass_label, y = p99_speed, fill = fclass_label)) 
            size = 3.5, fontface = "italic", hjust = 1) +
   scale_y_continuous(limits = c(0, NA)) +
   coord_flip(clip = "off") +
-  labs(x = NULL, y = "99th percentile speed (km/h)") +
+  labs(x = NULL, y = "Free-flow travel speed (km/h)") +
   theme_minimal() +
   theme(legend.position = "none",
         plot.margin = margin(10, 20, 10, 40),

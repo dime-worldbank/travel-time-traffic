@@ -22,12 +22,14 @@ route_df <- route_df %>%
                 date = datetime %>% date())
 
 route_df <- route_df %>%
+  group_by(uid) %>%
+  dplyr::mutate(speed_kmh_uid_max = quantile(speed_kmh[hour %in% 1:4], prob = 0.99, na.rm = T) %>% as.numeric()) %>%
+  ungroup() %>%
   filter(hour >= 6, hour <= 21)
 
 route_df <- route_df %>%
   group_by(uid) %>%
-  dplyr::mutate(speed_kmh_uid_max = quantile(speed_kmh, prob = 0.99, na.rm = T) %>% as.numeric(),
-                tl_prop_3_max = quantile(tl_prop_3, prob = 0.95, na.rm = T) %>% as.numeric(),
+  dplyr::mutate(tl_prop_3_max = quantile(tl_prop_3, prob = 0.95, na.rm = T) %>% as.numeric(),
                 tl_prop_4_max = quantile(tl_prop_4, prob = 0.95, na.rm = T) %>% as.numeric(),
                 tl_prop_4_sd = sd(tl_prop_4, na.rm = T) %>% as.numeric()) %>%
   ungroup()
@@ -61,12 +63,15 @@ route_df_v2 <- route_df_v2 %>%
                 date = datetime %>% date())
 
 route_df_v2 <- route_df_v2 %>%
+  group_by(uid) %>%
+  dplyr::mutate(speed_kmh_uid_max = quantile(speed_kmh[hour %in% 1:4], prob = 0.99, na.rm = T) %>% as.numeric()) %>%
+  ungroup() %>%
   filter(hour >= 6, hour <= 21)
 
 route_df_v2 <- route_df_v2 %>%
+  dplyr::mutate(date_week = floor_date(date, unit = "weeks")) %>%
   group_by(uid) %>%
-  dplyr::mutate(speed_kmh_uid_max = quantile(speed_kmh, prob = 0.95, na.rm = T) %>% as.numeric(),
-                tl_prop_3_max = quantile(tl_prop_3, prob = 0.95, na.rm = T) %>% as.numeric(),
+  dplyr::mutate(tl_prop_3_max = quantile(tl_prop_3, prob = 0.95, na.rm = T) %>% as.numeric(),
                 tl_prop_4_max = quantile(tl_prop_4, prob = 0.95, na.rm = T) %>% as.numeric(),
                 tl_prop_4_sd = sd(tl_prop_4, na.rm = T) %>% as.numeric()) %>%
   ungroup()
@@ -96,13 +101,22 @@ joint_f_level <- function(mod, level) {
   c(stat = unname(w$stat), p = unname(w$p))
 }
 
-fit_pair <- function(df_sub) {
-  mod_plain <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid,
-                     vcov = ~ uid, data = df_sub)
-  mod_speed <- feols(
-    tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 +
-      tl_prop_2:speed_kmh_uid_max + tl_prop_3:speed_kmh_uid_max + tl_prop_4:speed_kmh_uid_max | uid,
-    vcov = ~ uid, data = df_sub)
+fit_pair <- function(df_sub, long_panel = FALSE) {
+  if (long_panel) {
+    mod_plain <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid + date_week,
+                       vcov = ~uid + date_week, data = df_sub)
+    mod_speed <- feols(
+      tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 +
+        tl_prop_2:speed_kmh_uid_max + tl_prop_3:speed_kmh_uid_max + tl_prop_4:speed_kmh_uid_max | uid + date_week,
+      vcov = ~uid + date_week, data = df_sub)
+  } else {
+    mod_plain <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid,
+                       vcov = ~uid, data = df_sub)
+    mod_speed <- feols(
+      tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 +
+        tl_prop_2:speed_kmh_uid_max + tl_prop_3:speed_kmh_uid_max + tl_prop_4:speed_kmh_uid_max | uid,
+      vcov = ~uid, data = df_sub)
+  }
   list(plain = mod_plain, speed = mod_speed)
 }
 
@@ -162,7 +176,7 @@ routes_keep_v2 <- route_variation_df_v2 %>%
   filter(share_prop3_gt0 >= 0.05, share_prop4_gt0 >= 0.05) %>%
   pull(uid)
 df_sub_v2_05 <- route_df_v2 %>% filter(uid %in% routes_keep_v2)
-mods_v2_05 <- fit_pair(df_sub_v2_05)
+mods_v2_05 <- fit_pair(df_sub_v2_05, long_panel = TRUE)
 stats_v2_05_plain <- compute_stats(mods_v2_05$plain, df_sub_v2_05, has_class = FALSE)
 stats_v2_05_speed <- compute_stats(mods_v2_05$speed, df_sub_v2_05, has_class = FALSE)
 
@@ -208,7 +222,8 @@ dict = c(tt_hour_per_km_ln = "Travel time (hours) per kilometer, logged",
          "tl_prop_2:speed_kmh_uid_max" = "Prop traffic level 2 $\\times$ Speed (km/h)",
          "tl_prop_3:speed_kmh_uid_max" = "Prop traffic level 3 $\\times$ Speed (km/h)",
          "tl_prop_4:speed_kmh_uid_max" = "Prop traffic level 4 $\\times$ Speed (km/h)",
-         uid = "Route")
+         uid = "Route",
+         date_week = "Week")
 setFixest_dict(dict)
 
 stat_row_c <- function(varname, digits = 3) {
@@ -325,7 +340,7 @@ ggplot() +
   annotate("text", x = mean_speed_col7, y = Inf, label = "Long Panel\nmean speed",
            vjust = 1.3, hjust = 1.05, size = 3, color = "gray30", fontface = "italic") +
   facet_wrap(~ traffic_level) +
-  labs(x = "Route 95th-pct. speed (km/h)",
+  labs(x = "Route 99th-pct. speed (km/h)",
        y = "Predicted coefficient",
        title = "Predicted traffic-level coefficients by speed: Calibration (col. 6) vs. Long Panel (col. 7)",
        subtitle = "Solid line + shaded band: Calibration, speed-varying (95% CI).\nDashed line + band: Long Panel, flat (95% CI)",

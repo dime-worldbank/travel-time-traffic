@@ -242,6 +242,7 @@ if(F){
   # Analysis -------------------------------------------------------------------
   ### Calibration
   source(file.path(git_analysis_dir, "1_calibration_regression.R"))
+  source(file.path(git_analysis_dir, "1_calibration_sensitivity_over_time_26routes.R"))
   
   ### Summary figures
   source(file.path(git_analysis_dir, "1_map_tt_tl.R"))
@@ -255,6 +256,7 @@ if(F){
   
   ### Case Studies
   source(file.path(git_analysis_dir, "2_case_study_crash.R"))
+  source(file.path(git_analysis_dir, "2_case_study_crash_50m.R"))
   
   source(file.path(git_analysis_dir, "2_case_study_nbo_election.R"))
   

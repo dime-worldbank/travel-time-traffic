@@ -113,4 +113,3 @@ all_df <- all_df %>%
 # Export -----------------------------------------------------------------------
 saveRDS(all_df, file.path(extracted_data_dir, "data_for_calibration", "google_traffic_tt.Rds"))
 
-all_df$datetime %>% table() %>% View()

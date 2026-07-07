@@ -122,8 +122,11 @@ ggsave(filename = file.path(figures_dir, "figure_3.png"),
 # Regression -------------------------------------------------------------------
 ymd("2022-08-09") + 7*4 - 1
 length(ymd("2022-08-09"):ymd("2022-09-05"))
-length(ymd("2022-08-09"):ymd("2022-08-15"))
+
 length(ymd("2022-08-02"):ymd("2022-08-08"))
+length(ymd("2022-08-09"):ymd("2022-08-15"))
+length(ymd("2022-08-16"):ymd("2022-08-22"))
+
 
 add_period <- function(df){
   
@@ -136,12 +139,23 @@ add_period <- function(df){
   #   )) %>%
   #   filter(!is.na(period))
   
+  # df %>%
+  #   dplyr::mutate(period = case_when(
+  #     (datetime >= ymd("2022-08-09", tz = "Africa/Nairobi")) & 
+  #       (datetime <= ymd("2022-08-15", tz = "Africa/Nairobi")) ~ 1,
+  #     (datetime >= ymd("2022-08-02", tz = "Africa/Nairobi")) & 
+  #       (datetime <= ymd("2022-08-08", tz = "Africa/Nairobi")) ~ 0
+  #   )) %>%
+  #   dplyr::filter(!is.na(period))
+  
   df %>%
     dplyr::mutate(period = case_when(
+      (datetime >= ymd("2022-08-02", tz = "Africa/Nairobi")) & 
+        (datetime <= ymd("2022-08-08", tz = "Africa/Nairobi")) ~ 0,
       (datetime >= ymd("2022-08-09", tz = "Africa/Nairobi")) & 
         (datetime <= ymd("2022-08-15", tz = "Africa/Nairobi")) ~ 1,
-      (datetime >= ymd("2022-08-02", tz = "Africa/Nairobi")) & 
-        (datetime <= ymd("2022-08-08", tz = "Africa/Nairobi")) ~ 0
+      (datetime >= ymd("2022-08-16", tz = "Africa/Nairobi")) & 
+        (datetime <= ymd("2022-08-22", tz = "Africa/Nairobi")) ~ 0
     )) %>%
     dplyr::filter(!is.na(period))
   
