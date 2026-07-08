@@ -107,9 +107,21 @@ all_df <- all_df %>%
 
 # Filter -----------------------------------------------------------------------
 all_df <- all_df %>%
-  dplyr::filter(date >= ymd("2026-06-11"),
-                date <= ymd("2026-06-18"))
+  dplyr::filter( ((date >= ymd("2026-06-11")) & (date <= ymd("2026-06-17"))) |
+                   ((date >= ymd("2026-07-08")) & (date <= ymd("2026-07-14"))) )
+
+all_df <- all_df %>%
+  dplyr::mutate(date_week = as.numeric(date > ymd("2026-06-17")) + 1)
+
+# length(ymd("2026-06-11"):ymd("2026-06-17"))
+# length(ymd("2026-07-08"):ymd("2026-07-14"))
 
 # Export -----------------------------------------------------------------------
 saveRDS(all_df, file.path(extracted_data_dir, "data_for_calibration", "google_traffic_tt.Rds"))
 
+# all_df %>%
+#   group_by(query_datetime_eat) %>%
+#   dplyr::summarise(n = n()) %>%
+#   ungroup()
+# 
+# all_df$date_week %>% table()
