@@ -29,7 +29,7 @@ route_calib_df <- route_calib_df %>%
 # Regressions ------------------------------------------------------------------
 lm_route_calib_df <- map_df(unique(route_calib_df$uid), function(uid_i){
   
-  feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | date_week, 
+  feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4, 
         vcov = "hetero", data = route_calib_df[route_calib_df$uid %in% uid_i,]) %>%
     confint() %>%
     as.data.frame() %>%
@@ -115,7 +115,7 @@ route_26_df <- route_26_df %>%
 # Regressions ------------------------------------------------------------------
 lm_route_26_df <- map_df(unique(route_26_df$uid), function(uid_i){
   
-  feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | date_week, 
+  feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4, 
         vcov = "hetero", data = route_26_df[route_26_df$uid %in% uid_i,]) %>%
     confint() %>%
     as.data.frame() %>%

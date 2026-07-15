@@ -8,8 +8,8 @@ library(webshot2)
 library(googlePolylines)
 
 # Routes to check --------------------------------------------------------------
-tt_dir    <- file.path(data_dir, "Travel Time Routes 2026", "Travel Time Data")
-first_file <- sort(list.files(tt_dir, pattern = "\\.Rds$", full.names = TRUE))[1]
+tt_calib_dir    <- file.path(data_dir, "Travel Time Routes 2026", "Travel Time Data")
+first_file <- sort(list.files(tt_calib_dir, pattern = "\\.Rds$", full.names = TRUE))[1]
 tt_results <- readRDS(first_file) %>% select(uid, encoded_polyline)
 
 routes_check <- readRDS(file.path(data_dir, "Travel Time Routes 2026", "od_pairs.Rds")) %>%

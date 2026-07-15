@@ -108,6 +108,8 @@ library(fixest)
 library(janitor)
 library(osmdata)
 library(DescTools)
+library(ggspatial)
+library(ggpmisc)
 library(fixest)
 library(modelsummary)
 library(lubridate)
@@ -242,17 +244,20 @@ if(F){
   # Analysis -------------------------------------------------------------------
   ### Calibration
   source(file.path(git_analysis_dir, "1_calibration_regression.R"))
-  source(file.path(git_analysis_dir, "1_calibration_sensitivity_over_time_26routes.R"))
+  source(file.path(git_analysis_dir, "1_calibration_sensitivity_by_route.R"))
+  source(file.path(git_analysis_dir, "1_calibration_sensitivity_over_time.R"))
   
   ### Summary figures
   source(file.path(git_analysis_dir, "1_map_tt_tl.R"))
   source(file.path(git_analysis_dir, "1_speed_boxplots.R"))
   source(file.path(git_analysis_dir, "1_summary_boxplots.R"))
   source(file.path(git_analysis_dir, "1_route_summary.R"))
+  source(file.path(git_analysis_dir, "1_route_summary_calib.R"))
   source(file.path(git_analysis_dir, "1_mapbox_map_example.R"))
   source(file.path(git_analysis_dir, "1_deviation_example_1.R"))
   source(file.path(git_analysis_dir, "1_deviation_example_2.R"))
   source(file.path(git_analysis_dir, "1_extract_traffic_example.R"))
+  source(file.path(git_analysis_dir, "1_summary_boxplots_calib_sample.R"))
   
   ### Case Studies
   source(file.path(git_analysis_dir, "2_case_study_crash.R"))

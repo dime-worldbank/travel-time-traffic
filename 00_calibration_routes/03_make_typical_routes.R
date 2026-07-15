@@ -3,11 +3,31 @@ library(sf)
 library(googlePolylines)
 
 # 1. Load all travel time files ------------------------------------------------
-tt_dir <- file.path(data_dir, "Travel Time Routes 2026", "Travel Time Data")
+tt_calib_dir <- file.path(data_dir, "Travel Time Routes 2026", "Travel Time Data")
 
-all_tt <- list.files(tt_dir, pattern = "\\.Rds$", full.names = TRUE) %>%
+all_tt <- list.files(tt_calib_dir, pattern = "\\.Rds$", full.names = TRUE) %>%
   map(readRDS) %>%
   bind_rows()
+
+# Filter -----------------------------------------------------------------------
+all_tt <- all_tt %>%
+  dplyr::mutate(query_date_eat = query_datetime_eat %>% date(),
+                query_hour_eat = query_datetime_eat %>% hour())
+
+all_tt <- all_tt %>%
+  dplyr::filter( ((query_date_eat >= ymd("2026-06-11")) & (query_date_eat <= ymd("2026-06-17"))) |
+                   ((query_date_eat >= ymd("2026-07-08")) & (query_date_eat <= ymd("2026-07-14"))))
+
+# CHECK
+if(F){
+  all_tt %>%
+    dplyr::filter( ((query_date_eat >= ymd("2026-06-11")) & (query_date_eat <= ymd("2026-06-17"))) |
+                     ((query_date_eat >= ymd("2026-07-08")) & (query_date_eat <= ymd("2026-07-14")))) %>%
+    distinct(query_date_eat, query_hour_eat) %>%
+    group_by(query_date_eat) %>%
+    dplyr::summarise(n = n()) %>%
+    ungroup()
+}
 
 # 2. For each uid, restrict to the modal distance ------------------------------
 typical_routes <- all_tt %>%

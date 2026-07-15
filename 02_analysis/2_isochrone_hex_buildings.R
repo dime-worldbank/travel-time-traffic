@@ -73,7 +73,13 @@ for (agg_method in c("mean", "85th_percentile")) {
          title = "A. Proportion of free-flow 15-minute isochrone reachable under traffic conditions,\nby time of day and origin location") +
     theme_void() +
     theme(plot.title = element_text(face = "bold", size = 14),
-          strip.text = element_text(size = 12))
+          strip.text = element_text(size = 12)) +
+    annotation_scale(
+      location = "br",
+      width_hint = 0.15,
+      text_cex = 0.55,
+      line_width = 0.40
+    )
 
   p2 <- ggplot() +
     geom_sf(data = osm_main_sf, color = "gray40") +
@@ -90,7 +96,13 @@ for (agg_method in c("mean", "85th_percentile")) {
          title = "B. Proportion of total building volume within free-flow 15-minute isochrone\nreachable under traffic conditions, by time of day and origin location") +
     theme_void() +
     theme(plot.title = element_text(face = "bold", size = 14),
-          strip.text = element_text(size = 12))
+          strip.text = element_text(size = 12)) +
+    annotation_scale(
+      location = "br",
+      width_hint = 0.15,
+      text_cex = 0.55,
+      line_width = 0.40
+    )
 
   p3 <- ggplot() +
     geom_sf(data = osm_main_sf, color = "gray40") +
@@ -112,7 +124,13 @@ for (agg_method in c("mean", "85th_percentile")) {
     theme_void() +
     theme(plot.title = element_text(face = "bold", size = 14),
           plot.subtitle = element_text(face = "italic"),
-          strip.text = element_text(size = 12))
+          strip.text = element_text(size = 12)) +
+    annotation_scale(
+      location = "br",
+      width_hint = 0.15,
+      text_cex = 0.55,
+      line_width = 0.40
+    )
 
   p_top <- ggarrange(p1, p2, ncol = 1, common.legend = T, legend = "right")
   p <- ggarrange(p_top, p3, ncol = 1, heights = c(0.66, 0.37))

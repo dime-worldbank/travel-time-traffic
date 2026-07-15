@@ -19,8 +19,8 @@ route_df <- route_df %>%
                 tt_hour_per_km_ln = log(tt_hour_per_km)) %>%
   dplyr::mutate(hour = datetime %>% hour(),
                 dow = datetime %>% lubridate::wday(),
-                date = datetime %>% date(),
-                date_week = floor_date(date, unit = "weeks"))
+                date = datetime %>% date())
+#                 date_week = floor_date(date, unit = "weeks")
 
 route_df <- route_df %>%
   group_by(uid) %>%
@@ -64,8 +64,7 @@ route_df_v2 <- route_df_v2 %>%
                 tt_hour_per_km_ln = log(tt_hour_per_km)) %>%
   dplyr::mutate(hour = datetime %>% hour(),
                 dow = datetime %>% lubridate::wday(),
-                date = datetime %>% date(),
-                date_week = date %>% floor_date(unit = "weeks"))
+                date = datetime %>% date())
 
 route_df_v2 <- route_df_v2 %>%
   group_by(uid) %>%
@@ -108,17 +107,15 @@ joint_f_level <- function(mod, level, speed_var = "speed_kmh_uid_max") {
   c(stat = unname(w$stat), p = unname(w$p))
 }
 
-fit_pair <- function(df_sub, long_panel = FALSE, speed_var = "speed_kmh_uid_max") {
-  fe_str   <- if (long_panel) "uid + date_week" else "uid"
-  vcov_fml <- if (long_panel) ~uid + date_week else ~uid
-  fml_plain <- as.formula(paste("tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 |", fe_str))
+fit_pair <- function(df_sub, speed_var = "speed_kmh_uid_max") {
+  fml_plain <- as.formula("tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid")
   fml_speed <- as.formula(paste0(
     "tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 + ",
     "tl_prop_2:", speed_var, " + tl_prop_3:", speed_var, " + tl_prop_4:", speed_var,
-    " | ", fe_str
+    " | uid"
   ))
-  mod_plain <- feols(fml_plain, vcov = vcov_fml, data = df_sub)
-  mod_speed <- feols(fml_speed, vcov = vcov_fml, data = df_sub)
+  mod_plain <- feols(fml_plain, vcov = ~uid, data = df_sub)
+  mod_speed <- feols(fml_speed, vcov = ~uid, data = df_sub)
   list(plain = mod_plain, speed = mod_speed)
 }
 
@@ -166,7 +163,7 @@ threshold_results <- purrr::map(thresholds, function(thresh) {
     filter(share_prop3_gt0 >= thresh, share_prop4_gt0 >= thresh) %>%
     pull(uid)
   df_sub <- route_df %>% filter(uid %in% routes_keep)
-  mods <- fit_pair(df_sub, long_panel = TRUE)
+  mods <- fit_pair(df_sub)
   list(
     plain = list(model = mods$plain, stats = compute_stats(mods$plain, df_sub, has_class = TRUE)),
     speed = list(model = mods$speed, stats = compute_stats(mods$speed, df_sub, has_class = TRUE))
@@ -178,7 +175,7 @@ routes_keep_v2 <- route_variation_df_v2 %>%
   filter(share_prop3_gt0 >= 0.05, share_prop4_gt0 >= 0.05) %>%
   pull(uid)
 df_sub_v2_05 <- route_df_v2 %>% filter(uid %in% routes_keep_v2)
-mods_v2_05 <- fit_pair(df_sub_v2_05, long_panel = TRUE)
+mods_v2_05 <- fit_pair(df_sub_v2_05)
 stats_v2_05_plain <- compute_stats(mods_v2_05$plain, df_sub_v2_05, has_class = FALSE)
 stats_v2_05_speed <- compute_stats(mods_v2_05$speed, df_sub_v2_05, has_class = FALSE)
 
@@ -237,8 +234,7 @@ dict = c(tt_hour_per_km_ln = "Travel time (hours) per kilometer, logged",
          "tl_prop_2:speed_kmh_uid_max_c" = "Prop traffic level 2 $\\times$ Speed (km/h, centered)",
          "tl_prop_3:speed_kmh_uid_max_c" = "Prop traffic level 3 $\\times$ Speed (km/h, centered)",
          "tl_prop_4:speed_kmh_uid_max_c" = "Prop traffic level 4 $\\times$ Speed (km/h, centered)",
-         uid = "Route",
-         date_week = "Week")
+         uid = "Route")
 setFixest_dict(dict)
 
 stat_row_c <- function(varname, digits = 3) {
@@ -288,7 +284,7 @@ threshold_results_c <- purrr::map(thresholds, function(thresh) {
     filter(share_prop3_gt0 >= thresh, share_prop4_gt0 >= thresh) %>%
     pull(uid)
   df_sub <- route_df %>% filter(uid %in% routes_keep)
-  mods <- fit_pair(df_sub, long_panel = TRUE, speed_var = "speed_kmh_uid_max_c")
+  mods <- fit_pair(df_sub, speed_var = "speed_kmh_uid_max_c")
   list(
     plain = list(model = mods$plain, stats = compute_stats(mods$plain, df_sub, has_class = TRUE,  speed_var = "speed_kmh_uid_max_c")),
     speed = list(model = mods$speed, stats = compute_stats(mods$speed, df_sub, has_class = TRUE,  speed_var = "speed_kmh_uid_max_c"))
@@ -296,7 +292,7 @@ threshold_results_c <- purrr::map(thresholds, function(thresh) {
 })
 names(threshold_results_c) <- paste0("thresh_", thresholds)
 
-mods_v2_05_c       <- fit_pair(df_sub_v2_05, long_panel = TRUE, speed_var = "speed_kmh_uid_max_c")
+mods_v2_05_c       <- fit_pair(df_sub_v2_05, speed_var = "speed_kmh_uid_max_c")
 stats_v2_05_plain_c <- compute_stats(mods_v2_05_c$plain, df_sub_v2_05, has_class = FALSE, speed_var = "speed_kmh_uid_max_c")
 stats_v2_05_speed_c <- compute_stats(mods_v2_05_c$speed, df_sub_v2_05, has_class = FALSE, speed_var = "speed_kmh_uid_max_c")
 
@@ -571,8 +567,8 @@ names(n_routes_fclass) <- fclasses_labels
 models_by_fclass <- purrr::map(fclasses, function(fc) {
   df_sub <- route_df %>% dplyr::filter(fclass == fc)
   if (n_distinct(df_sub$uid) < 2) return(NULL)
-  feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid + date_week,
-        vcov = ~uid + date_week, data = df_sub)
+  feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid,
+        vcov = ~uid, data = df_sub)
 }) %>% purrr::set_names(fclasses_labels) %>% purrr::compact()
 
 valid_fclasses_labels <- fclasses_labels[fclasses_labels %in% names(models_by_fclass)]
@@ -609,8 +605,8 @@ route_df_speed <- route_df %>%
 models_by_speed <- purrr::map(1:6, function(b) {
   df_sub <- route_df_speed %>% dplyr::filter(speed_bin == b)
   if (n_distinct(df_sub$uid) < 2) return(NULL)
-  feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid + date_week,
-        vcov = ~uid + date_week, data = df_sub)
+  feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid,
+        vcov = ~uid, data = df_sub)
 }) %>% purrr::set_names(bin_labels$label) %>% purrr::compact()
 
 valid_labels   <- bin_labels$label[bin_labels$label %in% names(models_by_speed)]

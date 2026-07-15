@@ -4,7 +4,8 @@ nbo_sf <- readRDS(file.path(gadm_dir, "RawData", "gadm41_KEN_1_pk.rds"))
 nbo_sf <- nbo_sf[nbo_sf$NAME_1 %in% "Nairobi",]
 
 # Load / prep travel time data -------------------------------------------------
-gg_tt_df <- readRDS(file.path(tt_dir, 
+gg_tt_df <- readRDS(file.path(data_dir,
+                              "Travel Time", 
                               "google_daily_data_nairobi",
                               "google_tt_2023-09-19.Rds"))
 
@@ -176,7 +177,7 @@ p_tt_calib <- ggplot() +
   labs(color = "Traffic\nSpeed\n(km/h)",
        fill = NULL,
        title = "B. Traffic speeds between 60 O-D pairs",
-       subtitle = "Data queried from June 11 - June 18, 2026") +
+       subtitle = "Data queried from\nJune 11 - June 17 and July 8 - July 14, 2026") +
   #scale_color_distiller(palette = "Spectral") +
   scale_color_viridis_c(option = "plasma", begin = 0, end = 1) +
   scale_fill_manual(values = "dodgerblue") +
@@ -209,7 +210,23 @@ p_tl <- ggplot() +
         plot.title = element_text(face = "bold", hjust = 0.5, size = 12),
         legend.position = "bottom",
         legend.text = element_text(size = 12),
-        legend.title = element_text(size = 12))
+        legend.title = element_text(size = 12)) +
+  annotation_scale(
+    location = "bl",
+    width_hint = 0.25,
+    text_cex = 0.8,
+    line_width = 0.8
+  ) +
+  annotation_north_arrow(
+    location = "tr",
+    which_north = "true",
+    style = north_arrow_fancy_orienteering,
+    height = unit(1.2, "cm"),
+    width = unit(1.2, "cm")
+  )
+
+
+
 
 # Arrange and export -----------------------------------------------------------
 p1 <- ggarrange(p_tt,

@@ -38,8 +38,8 @@ routes_keep_calib <- route_variation_calib_df %>%
 route_calib_df <- route_calib_df %>% filter(uid %in% routes_keep_calib)
 
 # Regression - Pooled ----------------------------------------------------------
-lm_pooled_calib_df <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid + date_week,
-                      vcov = ~uid + date_week, data = route_calib_df) %>%
+lm_pooled_calib_df <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid,
+                      vcov = ~uid, data = route_calib_df) %>%
   confint() %>%
   as.data.frame() %>%
   clean_names() %>%
@@ -102,7 +102,7 @@ p_calib <- lm_week_calib_df %>%
   #   date_labels = "%b"   # Jan, Feb, Mar, ...
   # ) +
   xlim(ymd("2026-06-01"), ymd("2026-07-18")) +
-  ylim(-1, 8) +
+  #ylim(-1, 8) +
   labs(x = "Week",
        y = "Coef (+/- 95% CI)",
        title = "A. Calibration sample"
@@ -112,7 +112,7 @@ p_calib <- lm_week_calib_df %>%
         strip.text = element_text(face = "bold"),
         plot.title = element_text(face = "bold"))
 
-#p_calib
+p_calib
 
 # 26 Routes ====================================================================
 
@@ -149,8 +149,8 @@ routes_keep <- route_variation_df %>%
 #route_df <- route_df %>% dplyr::filter(uid %in% routes_keep)
 
 # Regression - Pooled ----------------------------------------------------------
-lm_pooled_df <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid + date_week,
-                      vcov = ~uid + date_week, data = route_df) %>%
+lm_pooled_df <- feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid,
+                      vcov = ~uid, data = route_df) %>%
   confint() %>%
   as.data.frame() %>%
   clean_names() %>%

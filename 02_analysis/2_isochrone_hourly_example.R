@@ -55,7 +55,20 @@ for (agg_method in c("mean", "85th_percentile")) {
     facet_wrap(~hour, ncol = 3) +
     theme_void() +
     theme(plot.title = element_text(face = "bold", hjust = 0.5),
-          legend.position = "right")
+          legend.position = "right") +
+    annotation_scale(
+      location = "br",
+      width_hint = 0.20,
+      text_cex = 0.7,
+      line_width = 0.6
+    ) +
+    annotation_north_arrow(
+      location = "tl",
+      which_north = "true", 
+      style = north_arrow_fancy_orienteering,
+      height = unit(1, "cm"),
+      width = unit(1, "cm")
+    )
 
   ggsave(filename = file.path(figures_dir, paste0("isochrone_hourly_", agg_method, ".png")),
          height = 6,

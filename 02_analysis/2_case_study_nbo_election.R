@@ -285,7 +285,20 @@ estates_sf_var %>%
        title = title_i) +
   theme_void() +
   theme(legend.position = "right",
-        plot.title = element_text(face = "bold", hjust = 0.5))
+        plot.title = element_text(face = "bold", hjust = 0.5)) +
+  annotation_scale(
+    location = "bl",
+    width_hint = 0.25,
+    text_cex = 0.8,
+    line_width = 0.8
+  ) +
+  annotation_north_arrow(
+    location = "tr",
+    which_north = "true",
+    style = north_arrow_fancy_orienteering,
+    height = unit(1.2, "cm"),
+    width = unit(1.2, "cm")
+  )
 
 ggsave(filename = file.path(figures_dir, "nbo_elec_adm3.png"),
        height = 5, width = 6)

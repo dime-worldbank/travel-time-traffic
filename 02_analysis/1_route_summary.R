@@ -1,7 +1,8 @@
 # Route Summary
 
 # Load data --------------------------------------------------------------------
-mode_sf <- readRDS(file.path(tt_dir, "google_typical_route.Rds"))
+mode_sf <- readRDS(file.path(data_dir,
+                             "Travel Time", "google_typical_route.Rds"))
 
 # Prep data --------------------------------------------------------------------
 route_df <- mode_sf %>%

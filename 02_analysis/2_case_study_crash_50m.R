@@ -125,7 +125,8 @@ lm_delayfactor_df <- feols(
   cluster = ~crash_id
 ) %>%
   lm_to_df() %>%
-  dplyr::mutate(dv = paste0("Delay Factor\n(Traffic-Level Data)\n[N Crashes = ", n_crash_tl, "]"))
+  dplyr::mutate(dv = paste0("Delay Factor\n(Traffic-Level Data)\n[N Crashes = ", n_crash_tl, "]"),
+                type = 1)
 
 lm_delayfactor_ttsample_df <- feols(
   delay_factor_ttsample ~ i(hour_of_day_since_crash, crash_day, ref = -1) | crash_id + hour + dow,
@@ -133,7 +134,8 @@ lm_delayfactor_ttsample_df <- feols(
   cluster = ~crash_id
 ) %>%
   lm_to_df() %>%
-  dplyr::mutate(dv = paste0("Delay Factor\n(Traffic-Level Data)\n[N Crashes = ", n_crash_tt, "]"))
+  dplyr::mutate(dv = paste0("Delay Factor\n(Traffic-Level Data)\n[N Crashes = ", n_crash_tt, "]"),
+                type = 2)
 
 # duration_in_traffic_min_ln
 lm_duration_df <- feols(
@@ -142,7 +144,8 @@ lm_duration_df <- feols(
   cluster = ~crash_id
 ) %>%
   lm_to_df() %>%
-  dplyr::mutate(dv = paste0("Delay Factor\n(O-D Data)\n[N Crashes = ", n_crash_tt, "]"))
+  dplyr::mutate(dv = paste0("Delay Factor\n(O-D Data)\n[N Crashes = ", n_crash_tt, "]"),
+                type = 3)
 
 lm_all_df <- bind_rows(lm_delayfactor_df,
                        lm_delayfactor_ttsample_df,
@@ -183,7 +186,7 @@ lm_type_df <- bind_rows(lm_delayfactor_1_df,
 
 # Figures ----------------------------------------------------------------------
 p1 <- lm_all_df %>%
-  dplyr::mutate(dv = dv %>% fct_rev()) %>%
+  dplyr::mutate(dv = fct_reorder(dv, type)) %>%
   ggplot(aes(x = hour_of_day_since_crash,
              y = b,
              ymin = x2_5_percent,

@@ -66,7 +66,20 @@ for (agg_method in c("mean", "85th_percentile")) {
     geom_sf(data = h3_sf_c_i, color = "green2", size = 0.75) +
     labs(title = "Step 1. Make hexagon and centroid") +
     theme_void() +
-    theme(plot.title = element_text(face = "bold", hjust = 0.5))
+    theme(plot.title = element_text(face = "bold", hjust = 0.5)) +
+    annotation_scale(
+      location = "br",
+      width_hint = 0.25,
+      text_cex = 0.8,
+      line_width = 0.8
+    ) +
+    annotation_north_arrow(
+      location = "tl",
+      which_north = "true",
+      style = north_arrow_fancy_orienteering,
+      height = unit(1.2, "cm"),
+      width = unit(1.2, "cm")
+    )
   p1
 
   # Figure B ---------------------------------------------------------------------

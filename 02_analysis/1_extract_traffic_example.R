@@ -40,7 +40,20 @@ p <- ggplot() +
                     na.value = "transparent") +
   scale_color_manual(values = "black") +
   labs(fill = "Traffic\nLevel",
-       color = NULL)
+       color = NULL) +
+  annotation_scale(
+    location = "bl",
+    width_hint = 0.25,
+    text_cex = 0.8,
+    line_width = 0.8
+  ) +
+  annotation_north_arrow(
+    location = "tr",
+    which_north = "true",
+    style = north_arrow_fancy_orienteering,
+    height = unit(1, "cm"),
+    width = unit(1, "cm")
+  )
 
 ggsave(p, 
        filename = file.path(figures_dir, 
