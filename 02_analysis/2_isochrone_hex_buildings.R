@@ -76,9 +76,9 @@ for (agg_method in c("mean", "85th_percentile")) {
           strip.text = element_text(size = 12)) +
     annotation_scale(
       location = "br",
-      width_hint = 0.15,
-      text_cex = 0.55,
-      line_width = 0.40
+      width_hint = 0.12,
+      text_cex = 0.45,
+      line_width = 0.3
     )
 
   p2 <- ggplot() +
@@ -99,9 +99,9 @@ for (agg_method in c("mean", "85th_percentile")) {
           strip.text = element_text(size = 12)) +
     annotation_scale(
       location = "br",
-      width_hint = 0.15,
-      text_cex = 0.55,
-      line_width = 0.40
+      width_hint = 0.12,
+      text_cex = 0.45,
+      line_width = 0.3
     )
 
   p3 <- ggplot() +
@@ -127,9 +127,9 @@ for (agg_method in c("mean", "85th_percentile")) {
           strip.text = element_text(size = 12)) +
     annotation_scale(
       location = "br",
-      width_hint = 0.15,
-      text_cex = 0.55,
-      line_width = 0.40
+      width_hint = 0.12,
+      text_cex = 0.45,
+      line_width = 0.3
     )
 
   p_top <- ggarrange(p1, p2, ncol = 1, common.legend = T, legend = "right")

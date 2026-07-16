@@ -1,7 +1,7 @@
 # Descriptive Summary
 
 # Load data --------------------------------------------------------------------
-route_df   <- readRDS(file.path(analysis_data_dir, "google_routes.Rds"))
+route_df   <- readRDS(file.path(extracted_data_dir, "data_for_calibration", "google_traffic_tt.Rds"))
 osm_df     <- readRDS(file.path(analysis_data_dir, "google_osm_10m.Rds"))
 gadm1_df   <- readRDS(file.path(analysis_data_dir, "google_gadm1.Rds"))
 estates_df <- readRDS(file.path(analysis_data_dir, "google_estates.Rds"))
@@ -22,14 +22,39 @@ osm_df <- osm_df %>%
                 prop_residential = ifelse(fclass == "residential", 1, 0),
                 prop_unclassified = ifelse(fclass == "unclassified", 1, 0))
 
+route_df <- route_df %>%
+  dplyr::mutate(fclass = case_when(
+    name == "thika road" ~ "trunk_fast",
+    name == "southern bypass" ~ "trunk_fast",
+    name == "mombasa road" ~ "trunk_fast",
+    TRUE ~ fclass
+  )) %>%
+  dplyr::mutate(prop_trunk_fast = ifelse(fclass == "trunk_fast", 1, 0),
+                prop_trunk = ifelse(fclass == "trunk", 1, 0),
+                prop_primary = ifelse(fclass == "primary", 1, 0),
+                prop_secondary = ifelse(fclass == "secondary", 1, 0),
+                prop_tertiary = ifelse(fclass == "tertiary", 1, 0),
+                prop_residential = ifelse(fclass == "residential", 1, 0),
+                prop_unclassified = ifelse(fclass == "unclassified", 1, 0))
+
+# OD Delay Factor --------------------------------------------------------------
+route_df <- route_df %>%
+  group_by(uid) %>%
+  dplyr::mutate(duration_in_traffic_s_minimum = duration_in_traffic_s[hour %in% 1:4] %>%
+                  quantile(0.01, na.rm = T) %>%
+                  as.numeric()) %>%
+  ungroup() %>%
+  dplyr::mutate(duration_pc = (duration_in_traffic_s - duration_in_traffic_s_minimum)/duration_in_traffic_s_minimum,
+                delay_factor_od = duration_pc + 1)
+
 # Restrict date/time -----------------------------------------------------------
 route_df <- route_df %>%
-  dplyr::filter(!is.na(speed_kmh),
+  dplyr::filter(!is.na(delay_factor_od),
                 !is.na(tl_prop_2))
 
-gadm1_df   <- gadm1_df[(gadm1_df$datetime     >= min(route_df$datetime)) & (gadm1_df$datetime   <= max(route_df$datetime)),]
-osm_df     <- osm_df[(osm_df$datetime         >= min(route_df$datetime)) & (osm_df$datetime     <= max(route_df$datetime)),]
-estates_df <- estates_df[(estates_df$datetime >= min(route_df$datetime)) & (estates_df$datetime <= max(route_df$datetime)),]
+#gadm1_df   <- gadm1_df[(gadm1_df$datetime     >= min(route_df$datetime)) & (gadm1_df$datetime   <= max(route_df$datetime)),]
+#osm_df     <- osm_df[(osm_df$datetime         >= min(route_df$datetime)) & (osm_df$datetime     <= max(route_df$datetime)),]
+#estates_df <- estates_df[(estates_df$datetime >= min(route_df$datetime)) & (estates_df$datetime <= max(route_df$datetime)),]
 
 # Apply coefs ------------------------------------------------------------------
 route_df   <- mk_traffic_indicators(route_df, beta)
@@ -59,16 +84,6 @@ route_df   <- route_df %>% prep_datetime
 osm_df     <- osm_df %>% prep_datetime
 gadm1_df   <- gadm1_df %>% prep_datetime
 
-## Extra cleaning
-# route_df <- route_df %>%
-#   group_by(uid) %>%
-#   #dplyr::mutate(duration_in_traffic_s_minimum = min(duration_in_traffic_s, na.rm = T)) %>%
-#   dplyr::mutate(duration_in_traffic_s_minimum = duration_in_traffic_s %>%
-#                   quantile(0.05, na.rm = T) %>%
-#                   as.numeric()) %>%
-#   ungroup() %>%
-#   dplyr::mutate(duration_pc = (duration_in_traffic_s - duration_in_traffic_s_minimum)/duration_in_traffic_s_minimum)
-
 ## To hour
 route_hr_df <- route_df %>%
   group_by(hour, dow_group) %>%
@@ -88,6 +103,7 @@ gadm1_hr_df <- gadm1_df %>%
   ungroup()
 
 osm_hr_class_df <- osm_df %>%
+  dplyr::mutate(fclass = ifelse(fclass == "trunk_fast", "trunk", fclass)) %>%
   group_by(hour, dow_group, fclass) %>%
   dplyr::summarise(delay_factor = mean(delay_factor, na.rm = T)) %>%
   ungroup()
@@ -229,11 +245,11 @@ sink()
 # Time of Day: 26 Routes and city wide -----------------------------------------
 p_tod <- bind_rows(
   route_hr_df %>%
-    dplyr::mutate(title = "A. Delay Factor\n(O-D Data)\nRoutes [N=26]",
+    dplyr::mutate(title = "A. Delay Factor\n(O-D Data)\nRoutes [N=60]",
                   var = delay_factor_od),
   
   route_hr_df %>%
-    dplyr::mutate(title = "B. Delay Factor\n(Traffic Level Data)\nRoutes [N=26]",
+    dplyr::mutate(title = "B. Delay Factor\n(Traffic Level Data)\nRoutes [N=60]",
                   var = delay_factor),
   
   gadm1_hr_df %>%
@@ -252,7 +268,7 @@ p_tod <- bind_rows(
        y = "Delay factor",
        color = NULL) +
   facet_wrap(~title) +
-  scale_y_continuous(limits = c(1, 2.1)) +
+  scale_y_continuous(limits = c(1, 1.85)) +
   theme_classic2() +
   theme(strip.background = element_blank(),
         strip.text = element_text(face = "bold", hjust = 0.5, size = 10),
@@ -270,7 +286,7 @@ p_tod <- bind_rows(
 #   labs(x = "Hour of day",
 #        y = "Duration (% change)",
 #        color = NULL,
-#        title = "A. Delay Factor\n(O-D Data)\nRoutes [N=26]") +
+#        title = "A. Delay Factor\n(O-D Data)\nRoutes [N=60]") +
 #   scale_y_continuous(limits = c(1, 2.1)) +
 #   theme_classic2() +
 #   theme(strip.background = element_blank(),
@@ -288,7 +304,7 @@ p_tod <- bind_rows(
 #   labs(x = "Hour of day",
 #        y = "Delay factor",
 #        color = NULL,
-#        title = "B. Delay Factor\n(Traffic Level Data)\nRoutes [N=26]") +
+#        title = "B. Delay Factor\n(Traffic Level Data)\nRoutes [N=60]") +
 #   scale_y_continuous(limits = c(1, 2.1)) +
 #   theme_classic2() +
 #   theme(strip.background = element_blank(),
@@ -360,7 +376,7 @@ p <- ggarrange(p_tod,
 
 ggsave(p,
        filename = file.path(figures_dir, "delay_by_hour.png"),
-       height = 4.5, # 7.5
+       height = 5.5, # 7.5
        width = 11) # 9
 
 # Map --------------------------------------------------------------------------
@@ -437,7 +453,20 @@ p_map_pc <- ggplot() +
        fill = "% Change") +
   theme_void() +
   theme(legend.position = "right",
-        plot.title = element_text(face = "bold", hjust = 0.5, size = 10))
+        plot.title = element_text(face = "bold", hjust = 0.5, size = 10)) +
+  annotation_scale(
+    location = "br",
+    width_hint = 0.15,
+    text_cex = 0.55,
+    line_width = 0.40
+  ) #+
+  # annotation_north_arrow(
+  #   location = "tr",
+  #   which_north = "true",
+  #   style = north_arrow_fancy_orienteering,
+  #   height = unit(0.5, "cm"),
+  #   width = unit(0.5, "cm")
+  # )
 
 # p_map <- ggarrange(p_map_levels,
 #           p_map_pc,

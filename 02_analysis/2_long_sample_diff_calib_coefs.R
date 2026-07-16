@@ -14,31 +14,43 @@ route_df <- route_df %>%
   mk_traffic_indicators(beta) %>%
   dplyr::mutate(
     delay_factor_within =
-      tl_prop_2 * 1.378 +
-      tl_prop_3 * 2.869 +
-      tl_prop_4 * 5.799,
+      exp(tl_prop_2 * 1.378 +
+            tl_prop_3 * 2.869 +
+            tl_prop_4 * 5.799),
     dur_per_km = duration_in_traffic_s / distance_m
   )
 
 # Table: ------------------------------------------------------------------------
 lm1 <- feols(
   delay_factor_within ~ delay_factor,
+  vcov = ~uid,
   data = route_df
 )
 
 lm2 <- feols(
   delay_factor_within ~ delay_factor | uid,
+  vcov = ~uid,
   data = route_df
 )
 
 lm3 <- feols(
   duration_in_traffic_s ~ delay_factor_within | uid,
+  vcov = ~uid,
   data = route_df
 )
 
 lm4 <- feols(
   duration_in_traffic_s ~ delay_factor | uid,
+  vcov = ~uid,
   data = route_df
+)
+
+
+# Register a custom fit statistic for the number of routes
+fixest::fitstat_register(
+  "nroutes",
+  function(x) dplyr::n_distinct(route_df$uid),
+  "N Routes"
 )
 
 etable(
@@ -55,9 +67,11 @@ etable(
     uid = "Route"
   ),
   extralines = list(
-    "Route Fixed Effects" = c("No", "Yes", "Yes", "Yes"),
-    "-N Routes" = rep(dplyr::n_distinct(route_df$uid), 4)
+    "_^Route FEs" = c("No", "Yes", "Yes", "Yes")
   ),
+  # Places N Routes immediately after Observations
+  fitstat = ~ n + nroutes + r2 + ar2,
+  drop.section = "fixef",
   replace = TRUE,
   float = FALSE,
   file = file.path(
@@ -178,12 +192,12 @@ route_stats_duration_df <- dplyr::bind_rows(
 route_plot_duration_df <- dplyr::bind_rows(
   route_plot_df %>%
     dplyr::transmute(uid, dur_per_km,
-                      delay_factor_value = delay_factor,
-                      sample_type = "Calibration Sample"),
+                     delay_factor_value = delay_factor,
+                     sample_type = "Calibration Sample"),
   route_plot_df %>%
     dplyr::transmute(uid, dur_per_km,
-                      delay_factor_value = delay_factor_within,
-                      sample_type = "Within Sample")
+                     delay_factor_value = delay_factor_within,
+                     sample_type = "Within Sample")
 ) %>%
   dplyr::mutate(sample_type = factor(sample_type, levels = names(sample_colors)))
 

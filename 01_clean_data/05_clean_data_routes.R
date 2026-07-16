@@ -25,14 +25,12 @@ tt_df <- tt_df %>%
 tt_df <- tt_df %>%
   dplyr::mutate(hour = datetime %>% hour()) %>%
   group_by(uid, distance_mode) %>%
-  #dplyr::mutate(duration_in_traffic_s_minimum = min(duration_in_traffic_s, na.rm = T)) %>%
-  dplyr::mutate(duration_in_traffic_s_minimum = duration_in_traffic_s %>%
-                  quantile(0.05, na.rm = T) %>%
+  dplyr::mutate(duration_in_traffic_s_minimum = duration_in_traffic_s[hour %in% 1:4] %>%
+                  quantile(0.01, na.rm = T) %>%
                   as.numeric()) %>%
   ungroup() %>%
   dplyr::mutate(duration_pc = (duration_in_traffic_s - duration_in_traffic_s_minimum)/duration_in_traffic_s_minimum,
                 delay_factor_od = duration_pc + 1)
-
 
 tt_df <- tt_df %>%
   group_by(uid) %>%
@@ -83,6 +81,7 @@ length_df <- map_df(unique(rt_typ_google_10buff_sf$segment_id), function(uid_i){
   rt_typ_google_10buff_sf_i <- rt_typ_google_10buff_sf[rt_typ_google_10buff_sf$segment_id %in% uid_i,]
   
   osm_sf_i <- st_intersection(osm_sf, rt_typ_google_10buff_sf_i) %>%
+    dplyr::mutate(length = geometry %>% st_length() %>% as.numeric()) %>%
     st_drop_geometry() %>%
     group_by(fclass) %>%
     dplyr::summarise(length = sum(length, na.rm = T)) %>%
