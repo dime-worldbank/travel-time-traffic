@@ -3,6 +3,16 @@
 nbo_sf <- readRDS(file.path(gadm_dir, "RawData", "gadm41_KEN_1_pk.rds")) 
 nbo_sf <- nbo_sf[nbo_sf$NAME_1 %in% "Nairobi",]
 
+osm_sf <- readRDS(file.path(data_dir, "OSM", "FinalData", "osm_nbo_line.Rds"))
+osm_main_sf <- osm_sf %>%
+  dplyr::filter(fclass %in% c("trunk_fast", "trunk", "primary", "secondary"))
+
+osm_other_sf <- osm_sf %>%
+  dplyr::filter(!(fclass %in% c("trunk", "primary", "secondary")))
+
+osm_main_sf <- st_intersection(osm_main_sf, nbo_sf)
+osm_other_sf <- st_intersection(osm_other_sf, nbo_sf)
+
 # Load / prep travel time data -------------------------------------------------
 gg_tt_df <- readRDS(file.path(data_dir,
                               "Travel Time", 
@@ -102,6 +112,8 @@ se_sf <- map_df(1:nrow(gg_tt_df), function(i){
 
 p_tt <- ggplot() +
   geom_sf(data = nbo_sf, color = "black", fill = "gray95") +
+  geom_sf(data = osm_main_sf, color = "gray70", size = 0.5) +
+  geom_sf(data = osm_other_sf, color = "gray70", size = 0.1) +
   geom_sf(data = gg_tt_df,
           color = "black",
           linewidth = 1.2) +
@@ -164,6 +176,8 @@ se_calib_sf <- map_df(1:nrow(gg_tt_calib_df), function(i){
 
 p_tt_calib <- ggplot() +
   geom_sf(data = nbo_sf, color = "black", fill = "gray95") +
+  geom_sf(data = osm_main_sf, color = "gray70", size = 0.5) +
+  geom_sf(data = osm_other_sf, color = "gray70", size = 0.1) +
   geom_sf(data = gg_tt_calib_df,
           color = "black",
           linewidth = 1.2) +
