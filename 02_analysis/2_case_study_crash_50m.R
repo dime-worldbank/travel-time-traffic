@@ -83,7 +83,7 @@ crash_type2_df <- crash_df %>%
   dplyr::filter((osm_fclass_largest %in% c("primary", "secondary")))
 
 crash_type3_df <- crash_df %>%
-  dplyr::filter((osm_fclass_largest %in% c("tertiary", "residential")))
+  dplyr::filter((osm_fclass_largest %in% c("tertiary", "residential", "unclassified")))
 
 n_crash_tl_type1 <- crash_type1_df %>%
   dplyr::filter(!is.na(delay_factor)) %>%
@@ -176,7 +176,7 @@ lm_delayfactor_3_df <- feols(
   cluster = ~crash_id
 ) %>%
   lm_to_df() %>%
-  dplyr::mutate(dv = paste0("Tertiary & Unclassified Roads\nDelay Factor\n(Traffic-Level Data)\n[N Crashes = ", n_crash_tl_type3, "]"),
+  dplyr::mutate(dv = paste0("Tertiary, Unclass., and Residential Roads\nDelay Factor\n(Traffic-Level Data)\n[N Crashes = ", n_crash_tl_type3, "]"),
                 type = 3)
 
 
