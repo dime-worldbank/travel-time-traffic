@@ -281,8 +281,7 @@ estates_sf_var %>%
                        na.value = "gray80") +
   scale_color_manual(values = "black") +
   labs(fill = "Coefficient",
-       color = "",
-       title = title_i) +
+       color = "") + #        title = title_i
   theme_void() +
   theme(legend.position = "right",
         plot.title = element_text(face = "bold", hjust = 0.5)) +
