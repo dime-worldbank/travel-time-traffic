@@ -127,7 +127,12 @@ compute_stats <- function(mod, df_sub, has_class = TRUE, speed_var = "speed_kmh_
   base_stats <- tibble(
     n_obs = nrow(df_sub),
     n_routes = n_distinct(df_sub$uid),
-    p95_speed = median(df_sub$speed_kmh_uid_max, na.rm = TRUE),
+    # Median free-flow speed across routes, counting each route once (routes
+    # contribute unequal numbers of observations in the long panel)
+    median_ff_speed = df_sub %>%
+      distinct(uid, speed_kmh_uid_max) %>%
+      pull(speed_kmh_uid_max) %>%
+      median(na.rm = TRUE),
     joint_f_prop2_stat = unname(fw2["stat"]),
     joint_f_prop2_pval = unname(fw2["p"]),
     joint_f_prop3_stat = unname(fw3["stat"]),
@@ -260,7 +265,7 @@ etable(models_combined[1:6],
          "_Route-Inclusion Threshold" = threshold_row[1:6],
          "_N Obs"                     = stat_row_c("n_obs", 0)[1:6],
          "_N Routes"                  = stat_row_c("n_routes", 0)[1:6],
-         "_95th Pct. Speed (km/h)"    = stat_row_c("p95_speed", 1)[1:6],
+         "_Median Free-Flow Speed (km/h)"    = stat_row_c("median_ff_speed", 1)[1:6],
 
          "_ \\midrule \\emph{Model Fit}" = rep("", 6),
          "_Joint F-stat (Prop2 = Prop2xSpeed = 0)" = stat_row_c("joint_f_prop2_stat", 1)[1:6],
@@ -341,7 +346,7 @@ etable(models_combined_c,
          "_Route-Inclusion Threshold" = threshold_row,
          "_N Obs"                     = stat_row_cc("n_obs", 0),
          "_N Routes"                  = stat_row_cc("n_routes", 0),
-         "_95th Pct. Speed (km/h)"    = stat_row_cc("p95_speed", 1),
+         "_Median Free-Flow Speed (km/h)"    = stat_row_cc("median_ff_speed", 1),
          
          "_ \\midrule \\emph{Model Fit}" = rep("", 8),
          "_Joint F-stat (Prop2 = Prop2xSpeed = 0)" = stat_row_cc("joint_f_prop2_stat", 1),
@@ -370,7 +375,7 @@ etable(models_combined_c[1:6],
          "_Route-Inclusion Threshold" = threshold_row[1:6],
          "_N Obs"                     = stat_row_cc("n_obs", 0)[1:6],
          "_N Routes"                  = stat_row_cc("n_routes", 0)[1:6],
-         "_95th Pct. Speed (km/h)"    = stat_row_cc("p95_speed", 1)[1:6],
+         "_Median Free-Flow Speed (km/h)"    = stat_row_cc("median_ff_speed", 1)[1:6],
 
          "_ \\midrule \\emph{Model Fit}" = rep("", 6),
          "_Joint F-stat (Prop2 = Prop2xSpeed = 0)" = stat_row_cc("joint_f_prop2_stat", 1)[1:6],
@@ -447,7 +452,7 @@ etable(models_combined_v2c,
          "_Route-Inclusion Threshold" = threshold_row_v2,
          "_N Obs"                     = stat_row_v2c("n_obs", 0),
          "_N Routes"                  = stat_row_v2c("n_routes", 0),
-         "_95th Pct. Speed (km/h)"    = stat_row_v2c("p95_speed", 1),
+         "_Median Free-Flow Speed (km/h)"    = stat_row_v2c("median_ff_speed", 1),
 
          "_ \\midrule \\emph{Model Fit}" = rep("", 6),
          "_Joint F-stat (Prop2 = Prop2xSpeed = 0)" = stat_row_v2c("joint_f_prop2_stat", 1),
@@ -507,7 +512,7 @@ etable(models_combined_cmp,
          "_Route-Inclusion Threshold" = threshold_row_cmp,
          "_N Obs"                     = stat_row_cmp("n_obs", 0),
          "_N Routes"                  = stat_row_cmp("n_routes", 0),
-         "_95th Pct. Speed (km/h)"    = stat_row_cmp("p95_speed", 1),
+         "_Median Free-Flow Speed (km/h)"    = stat_row_cmp("median_ff_speed", 1),
 
          "_ \\midrule \\emph{Model Fit}" = rep("", 4),
          "_Joint F-stat (Prop2 = Prop2xSpeed = 0)" = stat_row_cmp("joint_f_prop2_stat", 1),
@@ -534,8 +539,14 @@ saveRDS(beta, file.path(data_dir, "Calibration Coefficients", "coefs.Rds"))
 # ==================================================================================
 # Figure: Predicted coefficients by speed -- Column (6) vs. Column (7)
 # ==================================================================================
-mean_speed_col7 <- mean(df_sub_v2_05$speed_kmh_uid_max, na.rm = TRUE)
-mean_speed_col7
+# Median across routes, counting each route once; routes contribute unequal
+# numbers of observations in the long panel. Matches the "Median Free-Flow
+# Speed" row reported in the regression tables.
+median_speed_col7 <- df_sub_v2_05 %>%
+  distinct(uid, speed_kmh_uid_max) %>%
+  pull(speed_kmh_uid_max) %>%
+  median(na.rm = TRUE)
+median_speed_col7
 
 # Predicted coefficients from column (6): thresh_0.05_speed (Calibration, w/ interaction)
 mod_col6 <- models_combined[["thresh_0.05_speed"]]
@@ -565,9 +576,9 @@ levels_seq <- c(2, 3, 4)
 col6_curve <- purrr::cross_df(list(level = levels_seq, speed = speed_seq)) %>%
   purrr::pmap_dfr(function(level, speed) predict_coef_at_speed(mod_col6, vcov_col6, level, speed))
 
-# Point where the predicted curve intersects the Long Panel mean speed -----------
-col6_at_mean_speed <- purrr::map_dfr(levels_seq, function(level) {
-  predict_coef_at_speed(mod_col6, vcov_col6, level, mean_speed_col7)
+# Point where the predicted curve intersects the Long Panel median speed ---------
+col6_at_median_speed <- purrr::map_dfr(levels_seq, function(level) {
+  predict_coef_at_speed(mod_col6, vcov_col6, level, median_speed_col7)
 })
 
 # Reference coefficients from column (7): v2_thresh_0.05_plain (Long Panel, no interaction)
@@ -592,10 +603,10 @@ ggplot() +
              linetype = "dashed", linewidth = 0.7) +
   geom_rect(data = col7_ref, aes(ymin = conf.low, ymax = conf.high, xmin = -Inf, xmax = Inf, fill = traffic_level),
             alpha = 0.08) +
-  geom_vline(xintercept = mean_speed_col7, linetype = "dotted", color = "gray30", linewidth = 0.7) +
-  geom_point(data = col6_at_mean_speed, aes(x = speed, y = estimate, color = traffic_level),
+  geom_vline(xintercept = median_speed_col7, linetype = "dotted", color = "gray30", linewidth = 0.7) +
+  geom_point(data = col6_at_median_speed, aes(x = speed, y = estimate, color = traffic_level),
              size = 3) +
-  annotate("text", x = mean_speed_col7, y = Inf, label = "Long Panel\nmean speed",
+  annotate("text", x = median_speed_col7, y = Inf, label = "Long Panel\nmedian speed",
            vjust = 1.3, hjust = 1.05, size = 3, color = "gray30", fontface = "italic") +
   facet_wrap(~ traffic_level) +
   labs(x = "Route 99th-pct. speed (km/h)",

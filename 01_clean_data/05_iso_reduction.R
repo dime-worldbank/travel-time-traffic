@@ -100,32 +100,30 @@ iso_traffic_prepped_df <- iso_traffic_df %>%
                 tl_prop_3 = count_3 / length_total,
                 tl_prop_4 = count_4 / length_total)
 
+# Delay factor for each route x datetime. Aggregation then happens on the delay
+# factor itself, rather than on the traffic-level shares (which were previously
+# aggregated first, with the delay factor computed from the aggregated shares).
+iso_traffic_prepped_df <- iso_traffic_prepped_df %>%
+  mk_traffic_indicators(beta)
+
 for (agg_method in c("mean", "85th_percentile")) {
 
   if (agg_method == "mean") {
     iso_traffic_agg_df <- iso_traffic_prepped_df %>%
-      group_by(route_id, hour, dow_weekday,
-               prop_trunk_fast, prop_trunk, prop_primary, prop_secondary,
-               prop_tertiary, prop_residential, prop_unclassified) %>%
-      dplyr::summarise(tl_prop_2 = mean(tl_prop_2, na.rm = T),
-                       tl_prop_3 = mean(tl_prop_3, na.rm = T),
-                       tl_prop_4 = mean(tl_prop_4, na.rm = T),
+      group_by(route_id, hour, dow_weekday) %>%
+      dplyr::summarise(delay_factor = mean(delay_factor, na.rm = T),
                        .groups = "drop")
   } else {
     iso_traffic_agg_df <- iso_traffic_prepped_df %>%
-      group_by(route_id, hour, dow_weekday,
-               prop_trunk_fast, prop_trunk, prop_primary, prop_secondary,
-               prop_tertiary, prop_residential, prop_unclassified) %>%
-      dplyr::summarise(tl_prop_2 = quantile(tl_prop_2, 0.85, na.rm = T),
-                       tl_prop_3 = quantile(tl_prop_3, 0.85, na.rm = T),
-                       tl_prop_4 = quantile(tl_prop_4, 0.85, na.rm = T),
+      group_by(route_id, hour, dow_weekday) %>%
+      dplyr::summarise(delay_factor = quantile(delay_factor, 0.85, na.rm = T),
                        .groups = "drop")
   }
 
+  # Speed as a fraction of free-flow speed is the inverse of the delay factor
   iso_traffic_agg_df <- iso_traffic_agg_df %>%
     left_join(iso_length_orig_df, by = "route_id") %>%
-    mk_traffic_indicators(beta) %>%
-    dplyr::rename(prop_reduction = speed_multiplier)
+    dplyr::mutate(prop_reduction = 1 / delay_factor)
 
   prop_reduc_df <- iso_traffic_agg_df %>%
     dplyr::select(route_id, prop_reduction, hour, dow_weekday)
