@@ -246,29 +246,29 @@ stat_row_c_pval <- function(varname) {
   ifelse(is.na(vals), "", ifelse(vals < 0.001, "<0.001", as.character(round(vals, 3))))
 }
 
-dataset_row <- c(rep("Calibration", 6), rep("Long Panel", 2))
+dataset_row <- c(rep("60 Route Sample", 6), rep("26 Route Long Panel", 2))
 threshold_row <- c(as.character(rep(thresholds, each = 2)), "0.05", "0.05")
 
-etable(models_combined,
+etable(models_combined[1:6],
        float = F,
        replace = T,
-       
+
        extralines = list(
-         
-         "_ \\midrule \\emph{Sample}" = rep("", 8),
-         "_Dataset"                   = dataset_row,
-         "_Route-Inclusion Threshold" = threshold_row,
-         "_N Obs"                     = stat_row_c("n_obs", 0),
-         "_N Routes"                  = stat_row_c("n_routes", 0),
-         "_95th Pct. Speed (km/h)"    = stat_row_c("p95_speed", 1),
-         
-         "_ \\midrule \\emph{Model Fit}" = rep("", 8),
-         "_Joint F-stat (Prop2 = Prop2xSpeed = 0)" = stat_row_c("joint_f_prop2_stat", 1),
-         "_Joint F p-value (Prop2)"   = stat_row_c_pval("joint_f_prop2_pval"),
-         "_Joint F-stat (Prop3 = Prop3xSpeed = 0)" = stat_row_c("joint_f_prop3_stat", 1),
-         "_Joint F p-value (Prop3)"   = stat_row_c_pval("joint_f_prop3_pval"),
-         "_Joint F-stat (Prop4 = Prop4xSpeed = 0)" = stat_row_c("joint_f_prop4_stat", 1),
-         "_Joint F p-value (Prop4)"   = stat_row_c_pval("joint_f_prop4_pval")
+
+         "_ \\midrule \\emph{Sample}" = rep("", 6),
+         "_Dataset"                   = dataset_row[1:6],
+         "_Route-Inclusion Threshold" = threshold_row[1:6],
+         "_N Obs"                     = stat_row_c("n_obs", 0)[1:6],
+         "_N Routes"                  = stat_row_c("n_routes", 0)[1:6],
+         "_95th Pct. Speed (km/h)"    = stat_row_c("p95_speed", 1)[1:6],
+
+         "_ \\midrule \\emph{Model Fit}" = rep("", 6),
+         "_Joint F-stat (Prop2 = Prop2xSpeed = 0)" = stat_row_c("joint_f_prop2_stat", 1)[1:6],
+         "_Joint F p-value (Prop2)"   = stat_row_c_pval("joint_f_prop2_pval")[1:6],
+         "_Joint F-stat (Prop3 = Prop3xSpeed = 0)" = stat_row_c("joint_f_prop3_stat", 1)[1:6],
+         "_Joint F p-value (Prop3)"   = stat_row_c_pval("joint_f_prop3_pval")[1:6],
+         "_Joint F-stat (Prop4 = Prop4xSpeed = 0)" = stat_row_c("joint_f_prop4_stat", 1)[1:6],
+         "_Joint F p-value (Prop4)"   = stat_row_c_pval("joint_f_prop4_pval")[1:6]
        ) ,
        file = file.path(tables_dir, "ols_calibration_threshold_x_speed.tex"))
 fill_fe_no(file.path(tables_dir, "ols_calibration_threshold_x_speed.tex"))
@@ -433,7 +433,7 @@ stat_row_v2c_pval <- function(varname) {
   ifelse(is.na(vals), "", ifelse(vals < 0.001, "<0.001", as.character(round(vals, 3))))
 }
 
-dataset_row_v2   <- rep("Long Panel", 6)
+dataset_row_v2   <- rep("26 Route Long Panel", 6)
 threshold_row_v2 <- as.character(rep(thresholds, each = 2))
 
 etable(models_combined_v2c,
@@ -459,6 +459,66 @@ etable(models_combined_v2c,
        ),
        file = file.path(tables_dir, "ols_calibration_threshold_x_speed_centered_longpanel.tex"))
 fill_fe_no(file.path(tables_dir, "ols_calibration_threshold_x_speed_centered_longpanel.tex"))
+
+
+# ==================================================================================
+# Regression table: ols_calibration_centered_calib_vs_longpanel.tex
+# Threshold 0.05, centered free-flow-speed interaction, in both samples:
+# cols (1)-(2) calibration sample; cols (3)-(4) long panel (26 routes)
+# ==================================================================================
+models_combined_cmp <- list(
+  "calib_thresh_0.05_plain"     = threshold_results_c[["thresh_0.05"]]$plain$model,
+  "calib_thresh_0.05_speed"     = threshold_results_c[["thresh_0.05"]]$speed$model,
+  "longpanel_thresh_0.05_plain" = threshold_results_v2c[["thresh_0.05"]]$plain$model,
+  "longpanel_thresh_0.05_speed" = threshold_results_v2c[["thresh_0.05"]]$speed$model
+)
+
+stats_combined_cmp_list <- list(
+  "calib_thresh_0.05_plain"     = threshold_results_c[["thresh_0.05"]]$plain$stats,
+  "calib_thresh_0.05_speed"     = threshold_results_c[["thresh_0.05"]]$speed$stats,
+  "longpanel_thresh_0.05_plain" = threshold_results_v2c[["thresh_0.05"]]$plain$stats,
+  "longpanel_thresh_0.05_speed" = threshold_results_v2c[["thresh_0.05"]]$speed$stats
+)
+
+stats_combined_cmp_df <- bind_rows(stats_combined_cmp_list, .id = "model_id") %>%
+  mutate(model_id = factor(model_id, levels = names(models_combined_cmp))) %>%
+  arrange(model_id)
+
+stat_row_cmp <- function(varname, digits = 3) {
+  vals <- stats_combined_cmp_df %>% pull(!!sym(varname))
+  ifelse(is.na(vals), "", as.character(round(vals, digits)))
+}
+stat_row_cmp_pval <- function(varname) {
+  vals <- stats_combined_cmp_df %>% pull(!!sym(varname))
+  ifelse(is.na(vals), "", ifelse(vals < 0.001, "<0.001", as.character(round(vals, 3))))
+}
+
+dataset_row_cmp   <- c("60 Route Sample", "60 Route Sample", "26 Route Long Panel", "26 Route Long Panel")
+threshold_row_cmp <- rep("0.05", 4)
+
+etable(models_combined_cmp,
+       float = F,
+       replace = T,
+
+       extralines = list(
+
+         "_ \\midrule \\emph{Sample}" = rep("", 4),
+         "_Dataset"                   = dataset_row_cmp,
+         "_Route-Inclusion Threshold" = threshold_row_cmp,
+         "_N Obs"                     = stat_row_cmp("n_obs", 0),
+         "_N Routes"                  = stat_row_cmp("n_routes", 0),
+         "_95th Pct. Speed (km/h)"    = stat_row_cmp("p95_speed", 1),
+
+         "_ \\midrule \\emph{Model Fit}" = rep("", 4),
+         "_Joint F-stat (Prop2 = Prop2xSpeed = 0)" = stat_row_cmp("joint_f_prop2_stat", 1),
+         "_Joint F p-value (Prop2)"   = stat_row_cmp_pval("joint_f_prop2_pval"),
+         "_Joint F-stat (Prop3 = Prop3xSpeed = 0)" = stat_row_cmp("joint_f_prop3_stat", 1),
+         "_Joint F p-value (Prop3)"   = stat_row_cmp_pval("joint_f_prop3_pval"),
+         "_Joint F-stat (Prop4 = Prop4xSpeed = 0)" = stat_row_cmp("joint_f_prop4_stat", 1),
+         "_Joint F p-value (Prop4)"   = stat_row_cmp_pval("joint_f_prop4_pval")
+       ),
+       file = file.path(tables_dir, "ols_calibration_centered_calib_vs_longpanel.tex"))
+fill_fe_no(file.path(tables_dir, "ols_calibration_centered_calib_vs_longpanel.tex"))
 
 
 # ==================================================================================
