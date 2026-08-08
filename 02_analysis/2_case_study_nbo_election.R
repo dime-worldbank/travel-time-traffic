@@ -148,14 +148,17 @@ add_period <- function(df){
   #   )) %>%
   #   dplyr::filter(!is.na(period))
   
+  # Upper bounds are exclusive (< midnight of the following day) so that each
+  # period covers seven full days rather than six days plus one midnight hour:
+  # Aug 2-8 (before), Aug 9-15 (election), Aug 16-22 (after).
   df %>%
     dplyr::mutate(period = case_when(
-      (datetime >= ymd("2022-08-02", tz = "Africa/Nairobi")) & 
-        (datetime <= ymd("2022-08-08", tz = "Africa/Nairobi")) ~ 0,
-      (datetime >= ymd("2022-08-09", tz = "Africa/Nairobi")) & 
-        (datetime <= ymd("2022-08-15", tz = "Africa/Nairobi")) ~ 1,
-      (datetime >= ymd("2022-08-16", tz = "Africa/Nairobi")) & 
-        (datetime <= ymd("2022-08-22", tz = "Africa/Nairobi")) ~ 0
+      (datetime >= ymd("2022-08-02", tz = "Africa/Nairobi")) &
+        (datetime < ymd("2022-08-09", tz = "Africa/Nairobi")) ~ 0,
+      (datetime >= ymd("2022-08-09", tz = "Africa/Nairobi")) &
+        (datetime < ymd("2022-08-16", tz = "Africa/Nairobi")) ~ 1,
+      (datetime >= ymd("2022-08-16", tz = "Africa/Nairobi")) &
+        (datetime < ymd("2022-08-23", tz = "Africa/Nairobi")) ~ 0
     )) %>%
     dplyr::filter(!is.na(period))
   
