@@ -64,6 +64,43 @@ route_cal_df <- route_cal_df %>%
   ungroup() %>%
   mutate(uid = fct_reorder(as.factor(uid), delay_factor_max, .desc = TRUE))
 
+# Route-level fit statistics ---------------------------------------------------
+# Within-route regressions of the observed delay factor on the estimated delay
+# factor. Used to flag poorly fitting routes in the regression table below, and
+# for the boxplots further down.
+cal_df <- map_df(unique(route_cal_df$uid), function(uid_i){
+  route_cal_df_i <- route_cal_df[route_cal_df$uid == uid_i,]
+
+  lm1 <- lm(delay_factor_od ~ delay_factor, data = route_cal_df_i)
+  data.frame(uid = uid_i,
+             fclass = route_cal_df_i$fclass[1],
+             delay_factor_sd = route_cal_df_i$delay_factor %>% sd(),
+             delay_factor_od_sd = route_cal_df_i$delay_factor_od %>% sd(),
+             delay_factor_p95 = route_cal_df_i$delay_factor %>% quantile(0.95, na.rm = T) %>% as.numeric(),
+             delay_factor_od_p95 = route_cal_df_i$delay_factor_od %>% quantile(0.95, na.rm = T) %>% as.numeric(),
+             delay_factor_od_iqr = route_cal_df_i$delay_factor_od %>% IQR(na.rm = T) %>% as.numeric(),
+
+             r2 = summary(lm1)$r.squared,
+             rmse = sqrt(mean(residuals(lm1)^2)))
+}) %>%
+  dplyr::mutate(fclass = ifelse(fclass == "trunk_fast", "trunk", fclass),
+                type = "Calibration Sample [60 Routes]")
+
+r26_df <- map_df(unique(route_26_df$uid), function(uid_i){
+  route_26_df_i <- route_26_df[route_26_df$uid == uid_i,]
+
+  lm1 <- lm(delay_factor_od ~ delay_factor, data = route_26_df_i)
+  data.frame(uid = uid_i,
+             delay_factor_sd = route_26_df_i$delay_factor %>% sd(),
+             delay_factor_od_sd = route_26_df_i$delay_factor_od %>% sd(),
+             delay_factor_p95 = route_26_df_i$delay_factor %>% quantile(0.95, na.rm = T) %>% as.numeric(),
+             delay_factor_od_p95 = route_26_df_i$delay_factor_od %>% quantile(0.95, na.rm = T) %>% as.numeric(),
+             delay_factor_od_iqr = route_26_df_i$delay_factor_od %>% IQR(na.rm = T) %>% as.numeric(),
+             r2 = summary(lm1)$r.squared,
+             rmse = sqrt(mean(residuals(lm1)^2)))
+}) %>%
+  dplyr::mutate(type = "Long-Panel Sample [26 Routes]")
+
 # Regression -------------------------------------------------------------------
 lm_cal <- feols(delay_factor ~ delay_factor_od | uid, data = route_cal_df, vcov = ~uid)
 lm_26r <- feols(delay_factor ~ delay_factor_od | uid, data = route_26_df, vcov = ~uid)
@@ -83,7 +120,8 @@ etable(
       format(nobs(lm_cal), big.mark = ","),
       format(nobs(lm_26r), big.mark = ",")
     ),
-    "-N Routes" = c(lm_cal$fixef_sizes[["uid"]], lm_26r$fixef_sizes[["uid"]]),
+    "-N Routes" = c(lm_cal$fixef_sizes[["uid"]],
+                    lm_26r$fixef_sizes[["uid"]]),
     "-_Sample" = c("Calibration", "Long-Panel")
   ),
   fitstat = ~ ar2 + r2 + wr2 + rmse,
@@ -98,40 +136,6 @@ etable(
 
 
 # Boxplots ---------------------------------------------------------------------
-#### Make dataframes
-cal_df <- map_df(unique(route_cal_df$uid), function(uid_i){
-  route_cal_df_i <- route_cal_df[route_cal_df$uid == uid_i,]
-  
-  lm1 <- lm(delay_factor_od ~ delay_factor, data = route_cal_df_i)
-  data.frame(uid = uid_i,
-             fclass = route_cal_df_i$fclass[1],
-             delay_factor_sd = route_cal_df_i$delay_factor %>% sd(),
-             delay_factor_od_sd = route_cal_df_i$delay_factor_od %>% sd(),
-             delay_factor_p95 = route_cal_df_i$delay_factor %>% quantile(0.95, na.rm = T) %>% as.numeric(),
-             delay_factor_od_p95 = route_cal_df_i$delay_factor_od %>% quantile(0.95, na.rm = T) %>% as.numeric(),
-             delay_factor_od_iqr = route_cal_df_i$delay_factor_od %>% IQR(na.rm = T) %>% as.numeric(),
-             
-             r2 = summary(lm1)$r.squared,
-             rmse = sqrt(mean(residuals(lm1)^2)))
-}) %>%
-  dplyr::mutate(fclass = ifelse(fclass == "trunk_fast", "trunk", fclass),
-                type = "Calibration Sample [60 Routes]")
-
-r26_df <- map_df(unique(route_26_df$uid), function(uid_i){
-  route_26_df_i <- route_26_df[route_26_df$uid == uid_i,]
-  
-  lm1 <- lm(delay_factor_od ~ delay_factor, data = route_26_df_i)
-  data.frame(uid = uid_i,
-             delay_factor_sd = route_26_df_i$delay_factor %>% sd(),
-             delay_factor_od_sd = route_26_df_i$delay_factor_od %>% sd(),
-             delay_factor_p95 = route_26_df_i$delay_factor %>% quantile(0.95, na.rm = T) %>% as.numeric(),
-             delay_factor_od_p95 = route_26_df_i$delay_factor_od %>% quantile(0.95, na.rm = T) %>% as.numeric(),
-             delay_factor_od_iqr = route_26_df_i$delay_factor_od %>% IQR(na.rm = T) %>% as.numeric(),
-             r2 = summary(lm1)$r.squared,
-             rmse = sqrt(mean(residuals(lm1)^2)))
-}) %>%
-  dplyr::mutate(type = "Long-Panel Sample [26 Routes]")
-
 #### Make dataframes
 combined_r2 <- bind_rows(cal_df %>% mutate(type = "[Within Sample]\nCalibration sample"),
                          r26_df %>% mutate(type = "[Out of Sample]\nLong panel of\n26 routes"))
