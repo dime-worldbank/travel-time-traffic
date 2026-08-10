@@ -17,7 +17,7 @@ osm_other_sf <- st_intersection(osm_other_sf, nbo_sf)
 gg_tt_df <- readRDS(file.path(data_dir,
                               "Travel Time", 
                               "google_daily_data_nairobi",
-                              "google_tt_2023-09-19.Rds"))
+                              "google_tt_2023-04-19.Rds"))
 
 gg_tt_df <- gg_tt_df[gg_tt_df$locations_segment_id %in% 1:26,]
 
@@ -28,7 +28,7 @@ gg_tt_df <- gg_tt_df %>%
            with_tz(tzone = "Africa/Nairobi") %>% 
            floor_date(unit = "30 minutes"),
          speed_in_traffic_kmh = (distance_m/1000) / (duration_in_traffic_s/60/60)) %>%
-  dplyr::filter(time %in% ymd_hms("2023-09-19 17:00:00", tz = "Africa/Nairobi"))
+  dplyr::filter(time %in% ymd_hms("2023-04-19 17:00:00", tz = "Africa/Nairobi"))
 
 # Load / prep travel time data: calibration ------------------------------------
 gg_tt_calib_df <- readRDS(file.path(data_dir, 
@@ -73,7 +73,7 @@ tiff_datetime <- tiff_vec %>%
   with_tz(tzone = "Africa/Nairobi")
 
 google_tl_r <- raster(file.path(traffic_gg_raw_dir,
-                                tiff_vec[tiff_datetime %in% ymd_hms("2022-09-08 17:00:00", tz = "Africa/Nairobi")]))
+                                tiff_vec[tiff_datetime %in% ymd_hms("2023-04-19 17:00:00", tz = "Africa/Nairobi")]))
 
 # Travel speed figure ----------------------------------------------------------
 gg_tt_df <- gg_tt_df %>%

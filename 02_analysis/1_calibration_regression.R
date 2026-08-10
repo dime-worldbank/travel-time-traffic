@@ -611,7 +611,7 @@ ggplot() +
   facet_wrap(~ traffic_level) +
   labs(x = "Route 99th-pct. speed (km/h)",
        y = "Predicted coefficient",
-       title = "Predicted traffic-level coefficients by speed: Calibration (col. 6) vs. Long Panel (col. 7)",
+       title = "Predicted traffic-level coefficients by speed: Calibration (col. 2) vs. Long Panel (col. 3)",
        subtitle = "Solid line + shaded band: Calibration, speed-varying (95% CI).\nDashed line + band: Long Panel, flat (95% CI)",
        color = "Traffic Level", fill = "Traffic Level") +
   theme_minimal() +

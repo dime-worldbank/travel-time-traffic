@@ -192,7 +192,7 @@ my_style = style.tex(tpt = TRUE,
                      notes.tpt.intro = "\\footnotesize")
 setFixest_etable(style.tex = my_style)
 
-dict = c(speed_in_traffic_kmh = "Speed (km)",
+dict = c(speed_in_traffic_kmh = "Speed (km/h)",
          duration_in_traffic_min = "Duration (min)",
          distance_km = "Distance (km)",
          delay_factor = "Delay Factor (TL Data)",
@@ -208,8 +208,19 @@ dict = c(speed_in_traffic_kmh = "Speed (km)",
          hour = "Hour")
 setFixest_dict(dict)
 
+# The column-number row is placed at position 1 (directly under the header) so
+# that the paper can refer to the estimates by column number; the remaining rows
+# have no position and are appended at the bottom of the table.
+elec_add_rows <- tribble(~term, ~V1, ~V2, ~V3, ~V4, ~V5, ~V6,
+                         '', "(1)", "(2)", "(3)", "(4)", "(5)", "(6)",
+                         'Unit', "Route", "Route", "Route", "Route", "Route", "City",
+                         'Route FE', "Y", "Y", "Y", "Y", "Y", "N/A",
+                         'Hour FE',  "Y", "Y", "Y", "Y", "Y", "Y",
+                         'Day of Week FE', "Y", "Y", "Y", "Y", "Y", "Y")
+attr(elec_add_rows, "position") <- c(1, NA, NA, NA, NA)
+
 modelsummary_tab(list("Duration (min)"          = lm2,
-                      "Speed (km)"              = lm1,
+                      "Speed (km/h)"              = lm1,
                       "Distance (km)"           = lm3,
                       "Delay Factor, OD Data"  = lm4,
                       "Delay Factor, TL Data"  = lm5,
@@ -218,13 +229,23 @@ modelsummary_tab(list("Duration (min)"          = lm2,
                  coef_map = c("period" = "Election Week"),
                  gof_map = c("nobs", "adj.r.squared"),
                  escape = FALSE,
-                 add_rows = tribble(~term, ~V1, ~V2, ~V3, ~V4, ~V5, ~V6,
-                                    'Unit', "Route", "Route", "Route", "Route", "Route", "City",
-                                    'Route FE', "Y", "Y", "Y", "Y", "Y", "N/A",
-                                    'Hour FE',  "Y", "Y", "Y", "Y", "Y", "Y",
-                                    'Day of Week FE', "Y", "Y", "Y", "Y", "Y", "Y"),
+                 add_rows = elec_add_rows,
                  output = file.path(tables_dir,
                                     "nbo_elec.tex"))
+
+# Fix up the horizontal rules. Rows are: dependent variable names (1), column
+# numbers (2), coefficient (3), std. error (4), first fit statistic (5).
+# modelsummary puts its header rule at row 2, which splits the two header rows,
+# so move it to row 3 (below the column numbers). It also drops the rule
+# separating the estimates from the fit statistics when `add_rows` carries a
+# position, so add that back at row 5.
+elec_tex_path <- file.path(tables_dir, "nbo_elec.tex")
+elec_tex <- readLines(elec_tex_path)
+elec_tex <- sub("^hline\\{2\\}", "hline{3}", elec_tex)
+elec_tex <- append(elec_tex,
+                   "hline{5}={1-7}{solid, black, 0.05em},",
+                   after = grep("^hline\\{3\\}", elec_tex)[1])
+writeLines(elec_tex, elec_tex_path)
 
 # ADM3 trends ------------------------------------------------------------------
 #### Prep data
@@ -276,15 +297,15 @@ estates_sf_var <- estates_sf_var %>%
 estates_sf_var %>%
   ggplot() +
   geom_sf(aes(fill = estimate,
-              color = "p > 0.05")) +
+              color = sig)) +
   scale_fill_gradient2(low = "dodgerblue",
                        mid = "white",
                        high = "darkorange",
                        limits = c(-max_v, max_v),
                        na.value = "gray80") +
-  scale_color_manual(values = "black") +
+  scale_color_manual(values = c("red", "black")) +
   labs(fill = "Coefficient",
-       color = "") + #        title = title_i
+       color = "p < 0.05") + #        title = title_i
   theme_void() +
   theme(legend.position = "right",
         plot.title = element_text(face = "bold", hjust = 0.5)) +
