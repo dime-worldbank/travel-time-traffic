@@ -220,29 +220,82 @@ lm_week_26_df <- lm_week_26_df %>%
 lm_week_df <- bind_rows(lm_week_13_df,
                         lm_week_26_df)
 
+# Regressions - Pooled, by period ----------------------------------------------
+#### Date separating the 13 route and 26 route periods
+week_cutoff <- mean(c(max(route_13_df$date_week),
+                      min(route_26_df$date_week)))
+
+lm_pooled_period_df <- list("13 Routes" = route_13_df,
+                            "26 Routes" = route_26_df) %>%
+  imap_dfr(function(df_i, n_routes_i){
+
+    feols(tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 | uid,
+          vcov = ~uid, data = df_i) %>%
+      confint() %>%
+      as.data.frame() %>%
+      clean_names() %>%
+      rownames_to_column(var = "variable") %>%
+      dplyr::mutate(b = (x2_5_percent + x97_5_percent) / 2,
+                    n_routes = n_routes_i)
+
+  })
+
+lm_pooled_period_df <- lm_pooled_period_df %>%
+  dplyr::mutate(var_clean = case_when(
+    variable == "tl_prop_2" ~ "Prop. Traffic Level 2",
+    variable == "tl_prop_3" ~ "Prop. Traffic Level 3",
+    variable == "tl_prop_4" ~ "Prop. Traffic Level 4",
+  )) %>%
+  dplyr::mutate(xmin = case_when(n_routes == "13 Routes" ~ as.Date(-Inf),
+                                 n_routes == "26 Routes" ~ week_cutoff),
+                xmax = case_when(n_routes == "13 Routes" ~ week_cutoff,
+                                 n_routes == "26 Routes" ~ as.Date(Inf)))
+
+lm_pooled_period_df
+
+#### Position of period labels: center of each period
+period_label_df <- expand_grid(
+  var_clean = unique(lm_week_df$var_clean),
+  n_routes  = c("13 Routes", "26 Routes")) %>%
+  dplyr::mutate(label = paste0("Period with\n", n_routes),
+                week = case_when(
+                  n_routes == "13 Routes" ~ mean(c(min(route_13_df$date_week), week_cutoff)),
+                  n_routes == "26 Routes" ~ mean(c(week_cutoff, max(route_26_df$date_week))) + 9
+                ))
+
+n_routes_colors <- c("13 Routes" = "orange",
+                     "26 Routes" = "dodgerblue")
+
 p_26 <- lm_week_df %>%
   ggplot(aes(x = week,
              y = b,
              ymin = x2_5_percent,
              ymax = x97_5_percent,
              color = n_routes)) +
-  geom_rect(data = lm_pooled_df,
+  geom_rect(data = lm_pooled_period_df,
             aes(ymin = x2_5_percent, ymax = x97_5_percent,
-                xmin = as.Date(-Inf), xmax = as.Date(Inf)),
-            fill = "gray50", alpha = 0.2, inherit.aes = FALSE) +
-  geom_hline(data = lm_pooled_df,
-             aes(yintercept = b, linetype = "Pooled estimate"),
-             color = "gray30") +
+                xmin = xmin, xmax = xmax, fill = n_routes),
+            alpha = 0.2, inherit.aes = FALSE) +
+  geom_vline(xintercept = week_cutoff, color = "gray30", linewidth = 0.3) +
+  geom_segment(data = lm_pooled_period_df,
+               aes(x = xmin, xend = xmax, y = b, yend = b,
+                   linetype = "Pooled estimate"),
+               color = "gray30", inherit.aes = FALSE) +
+  geom_text(data = period_label_df,
+            aes(x = week, y = Inf, label = label, color = n_routes),
+            vjust = 1.6, size = 2.6, lineheight = 0.9,
+            show.legend = FALSE, inherit.aes = FALSE) +
   geom_point() +
   geom_linerange() +
   facet_wrap(~var_clean) +
-  scale_color_manual(values = c("orange",
-                                "dodgerblue")) +
+  scale_color_manual(values = n_routes_colors) +
+  scale_fill_manual(values = n_routes_colors, guide = "none") +
   scale_linetype_manual(values = c("Pooled estimate" = "dashed"), name = NULL) +
   scale_x_date(
     date_breaks = "2 month",
     date_labels = "%b"   # Jan, Feb, Mar, ...
   ) +
+  scale_y_continuous(expand = expansion(mult = c(0.05, 0.15))) +
   labs(x = "Week",
        y = "Coef (+/- 95% CI)",
        color = "N Routes",

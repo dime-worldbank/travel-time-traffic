@@ -189,8 +189,8 @@ mk_traffic_indicators <- function(data_df,
                                   # speed_unclassified = 26.7,
                                   # speed_residential = 21.6
                                   speed_trunk_fast = 85,
-                                  speed_trunk = 55,
-                                  speed_primary = 50,
+                                  speed_trunk = 50,
+                                  speed_primary = 45,
                                   speed_secondary = 35,
                                   speed_tertiary = 30,
                                   speed_unclassified = 25,
@@ -246,7 +246,11 @@ if(F){
   source(file.path(git_analysis_dir, "1_calibration_regression.R"))
   source(file.path(git_analysis_dir, "1_calibration_sensitivity_by_route.R"))
   source(file.path(git_analysis_dir, "1_calibration_sensitivity_over_time.R"))
+
   source(file.path(git_analysis_dir, "1_calibration_sensitivity_kfold_60routes.R"))
+
+  source(file.path(git_analysis_dir, "1_free_flow_sensitivity.R"))
+
   
   ### Summary figures
   source(file.path(git_analysis_dir, "1_map_tt_tl.R"))

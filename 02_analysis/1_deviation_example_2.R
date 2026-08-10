@@ -5,12 +5,29 @@
 # TRENDS IN INDICATORS =========================================================
 route_df <- readRDS(file.path(analysis_data_dir, "google_typical_route_10m_wide.Rds"))
 
-p_trends <- route_df %>%
+# Delay factor -----------------------------------------------------------------
+# This route runs entirely along a trunk road, so the free-flow speed used to
+# compute the delay factor is assigned from the trunk road class.
+beta <- readRDS(file.path(data_dir, "Calibration Coefficients", "coefs.Rds"))
+
+route_ex_df <- route_df %>%
   dplyr::mutate(date = datetime %>% date()) %>%
-  #dplyr::filter(date %in% ymd("2023-07-16")) %>%
   dplyr::filter(uid %in% 3) %>%
-  dplyr::select(datetime, gg_speed_in_traffic_kmh, gg_duration_in_traffic_min, gg_distance_km, 
-                gg_tl_prop_234, gg_tl_prop_34, gg_tl_prop_4, gg_tl_mean, gg_tl_max) %>%
+  dplyr::mutate(tl_prop_2 = gg_tl_prop_2,
+                tl_prop_3 = gg_tl_prop_3,
+                tl_prop_4 = gg_tl_prop_4,
+                prop_trunk_fast   = 0,
+                prop_trunk        = 1,
+                prop_primary      = 0,
+                prop_secondary    = 0,
+                prop_tertiary     = 0,
+                prop_residential  = 0,
+                prop_unclassified = 0) %>%
+  mk_traffic_indicators(beta)
+
+p_trends <- route_ex_df %>%
+  dplyr::select(datetime, gg_speed_in_traffic_kmh, gg_duration_in_traffic_min, gg_distance_km,
+                gg_tl_prop_234, gg_tl_prop_34, gg_tl_prop_4, delay_factor) %>%
   pivot_longer(cols = -c(datetime)) %>%
   
   mutate(datetime = floor_date(datetime, unit = "weeks")) %>%
@@ -23,6 +40,7 @@ p_trends <- route_df %>%
   dplyr::mutate(name = case_when(
     name == "Average Speed" ~ "Average Speed (km/h)",
     name == "Duration" ~ "Duration (mins)",
+    name == "delay_factor" ~ "Delay Factor",
     TRUE ~ name
   )) %>%
   dplyr::mutate(name = name %>%
@@ -32,8 +50,7 @@ p_trends <- route_df %>%
                                     "Traffic, Prop 2,3,4",
                                     "Traffic, Prop 3,4",
                                     "Traffic, Prop 4",
-                                    "Traffic, Average",
-                                    "Traffic, Maximum"))) %>%
+                                    "Delay Factor"))) %>%
   ggplot() +
   geom_vline(xintercept = ymd("2023-02-01", tz = "Africa/Nairobi"), color = "red") +
   geom_line(aes(x = datetime,

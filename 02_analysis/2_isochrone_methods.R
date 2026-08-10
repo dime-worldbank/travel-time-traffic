@@ -138,7 +138,7 @@ for (agg_method in c("mean", "85th_percentile")) {
 
     geom_sf(data = h3_sf_i, fill = "red", alpha = 0.7) +
     geom_sf(data = h3_sf_c_i, color = "green2", size = 0.75) +
-    labs(title = "Steps 5-7. Use traffic information to determine\nportion of original route can travel in 15 minutes",
+    labs(title = "Steps 5-7. Use traffic information to determine\nportion of original route traversable in 15 minutes",
          fill = "Traffic\nLevel") +
     theme_void() +
     theme(plot.title = element_text(face = "bold", hjust = 0.5))
@@ -157,7 +157,7 @@ for (agg_method in c("mean", "85th_percentile")) {
 
     geom_sf(data = h3_sf_i, fill = "red", alpha = 0.7) +
     geom_sf(data = h3_sf_c_i, color = "green2", size = 0.75) +
-    labs(title = "Step 8. Construction 15-minute isochrone\nunder traffic conditions",
+    labs(title = "Step 8. Construct 15-minute isochrone\nunder traffic conditions",
          fill = "Traffic\nLevel") +
     theme_void() +
     theme(plot.title = element_text(face = "bold", hjust = 0.5))

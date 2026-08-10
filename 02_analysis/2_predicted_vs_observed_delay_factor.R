@@ -1,5 +1,7 @@
 # Predicted vs Observed Delay Factor
 
+set.seed(42)
+
 # Load data --------------------------------------------------------------------
 route_26_df  <- readRDS(file.path(analysis_data_dir, "google_routes.Rds"))
 route_cal_df <- readRDS(file.path(extracted_data_dir, "data_for_calibration", "google_traffic_tt.Rds"))
@@ -62,6 +64,43 @@ route_cal_df <- route_cal_df %>%
   ungroup() %>%
   mutate(uid = fct_reorder(as.factor(uid), delay_factor_max, .desc = TRUE))
 
+# Route-level fit statistics ---------------------------------------------------
+# Within-route regressions of the observed delay factor on the estimated delay
+# factor. Used to flag poorly fitting routes in the regression table below, and
+# for the boxplots further down.
+cal_df <- map_df(unique(route_cal_df$uid), function(uid_i){
+  route_cal_df_i <- route_cal_df[route_cal_df$uid == uid_i,]
+
+  lm1 <- lm(delay_factor_od ~ delay_factor, data = route_cal_df_i)
+  data.frame(uid = uid_i,
+             fclass = route_cal_df_i$fclass[1],
+             delay_factor_sd = route_cal_df_i$delay_factor %>% sd(),
+             delay_factor_od_sd = route_cal_df_i$delay_factor_od %>% sd(),
+             delay_factor_p95 = route_cal_df_i$delay_factor %>% quantile(0.95, na.rm = T) %>% as.numeric(),
+             delay_factor_od_p95 = route_cal_df_i$delay_factor_od %>% quantile(0.95, na.rm = T) %>% as.numeric(),
+             delay_factor_od_iqr = route_cal_df_i$delay_factor_od %>% IQR(na.rm = T) %>% as.numeric(),
+
+             r2 = summary(lm1)$r.squared,
+             rmse = sqrt(mean(residuals(lm1)^2)))
+}) %>%
+  dplyr::mutate(fclass = ifelse(fclass == "trunk_fast", "trunk", fclass),
+                type = "Calibration Sample [60 Routes]")
+
+r26_df <- map_df(unique(route_26_df$uid), function(uid_i){
+  route_26_df_i <- route_26_df[route_26_df$uid == uid_i,]
+
+  lm1 <- lm(delay_factor_od ~ delay_factor, data = route_26_df_i)
+  data.frame(uid = uid_i,
+             delay_factor_sd = route_26_df_i$delay_factor %>% sd(),
+             delay_factor_od_sd = route_26_df_i$delay_factor_od %>% sd(),
+             delay_factor_p95 = route_26_df_i$delay_factor %>% quantile(0.95, na.rm = T) %>% as.numeric(),
+             delay_factor_od_p95 = route_26_df_i$delay_factor_od %>% quantile(0.95, na.rm = T) %>% as.numeric(),
+             delay_factor_od_iqr = route_26_df_i$delay_factor_od %>% IQR(na.rm = T) %>% as.numeric(),
+             r2 = summary(lm1)$r.squared,
+             rmse = sqrt(mean(residuals(lm1)^2)))
+}) %>%
+  dplyr::mutate(type = "Long-Panel Sample [26 Routes]")
+
 # Regression -------------------------------------------------------------------
 lm_cal <- feols(delay_factor ~ delay_factor_od | uid, data = route_cal_df, vcov = ~uid)
 lm_26r <- feols(delay_factor ~ delay_factor_od | uid, data = route_26_df, vcov = ~uid)
@@ -81,7 +120,8 @@ etable(
       format(nobs(lm_cal), big.mark = ","),
       format(nobs(lm_26r), big.mark = ",")
     ),
-    "-N Routes" = c(lm_cal$fixef_sizes[["uid"]], lm_26r$fixef_sizes[["uid"]]),
+    "-N Routes" = c(lm_cal$fixef_sizes[["uid"]],
+                    lm_26r$fixef_sizes[["uid"]]),
     "-_Sample" = c("Calibration", "Long-Panel")
   ),
   fitstat = ~ ar2 + r2 + wr2 + rmse,
@@ -97,57 +137,129 @@ etable(
 
 # Boxplots ---------------------------------------------------------------------
 #### Make dataframes
-cal_df <- map_df(unique(route_cal_df$uid), function(uid_i){
-  route_cal_df_i <- route_cal_df[route_cal_df$uid == uid_i,]
-  
-  lm1 <- lm(delay_factor_od ~ delay_factor, data = route_cal_df_i)
-  data.frame(uid = uid_i,
-             fclass = route_cal_df_i$fclass[1],
-             delay_factor_sd = route_cal_df_i$delay_factor %>% sd(),
-             delay_factor_od_sd = route_cal_df_i$delay_factor_od %>% sd(),
-             delay_factor_p95 = route_cal_df_i$delay_factor %>% quantile(0.95, na.rm = T) %>% as.numeric(),
-             delay_factor_od_p95 = route_cal_df_i$delay_factor_od %>% quantile(0.95, na.rm = T) %>% as.numeric(),
-             delay_factor_od_iqr = route_cal_df_i$delay_factor_od %>% IQR(na.rm = T) %>% as.numeric(),
-             
-             r2 = summary(lm1)$r.squared,
-             rmse = sqrt(mean(residuals(lm1)^2)))
-}) %>%
-  dplyr::mutate(fclass = ifelse(fclass == "trunk_fast", "trunk", fclass),
-                type = "Calibration Sample [60 Routes]")
+combined_r2 <- bind_rows(cal_df %>% mutate(type = "[Within Sample]\nCalibration sample"),
+                         r26_df %>% mutate(type = "[Out of Sample]\nLong panel of\n26 routes"))
 
-r26_df <- map_df(unique(route_26_df$uid), function(uid_i){
-  route_26_df_i <- route_26_df[route_26_df$uid == uid_i,]
-  
-  lm1 <- lm(delay_factor_od ~ delay_factor, data = route_26_df_i)
-  data.frame(uid = uid_i,
-             delay_factor_sd = route_26_df_i$delay_factor %>% sd(),
-             delay_factor_od_sd = route_26_df_i$delay_factor_od %>% sd(),
-             delay_factor_p95 = route_26_df_i$delay_factor %>% quantile(0.95, na.rm = T) %>% as.numeric(),
-             delay_factor_od_p95 = route_26_df_i$delay_factor_od %>% quantile(0.95, na.rm = T) %>% as.numeric(),
-             delay_factor_od_iqr = route_26_df_i$delay_factor_od %>% IQR(na.rm = T) %>% as.numeric(),
-             r2 = summary(lm1)$r.squared,
-             rmse = sqrt(mean(residuals(lm1)^2)))
-}) %>%
-  dplyr::mutate(type = "Long-Panel Sample [26 Routes]")
+#### Boxplots
+TEXT_NUDGE <- -0.4
 
-#### Make dataframes
-combined_r2 <- bind_rows(cal_df %>% mutate(type = "Calibration sample"),
-                         r26_df %>% mutate(type = "Long panel of\n26 routes"))
+r2_summary <- combined_r2 %>%
+  group_by(type) %>%
+  summarise(
+    p25 = quantile(r2, 0.25, na.rm = TRUE),
+    median = median(r2, na.rm = TRUE),
+    p75 = quantile(r2, 0.75, na.rm = TRUE)
+  )
+
+rmse_summary <- combined_r2 %>%
+  group_by(type) %>%
+  summarise(
+    p25 = quantile(rmse, 0.25, na.rm = TRUE),
+    median = median(rmse, na.rm = TRUE),
+    p75 = quantile(rmse, 0.75, na.rm = TRUE)
+  )
 
 p_box_r2 <- combined_r2 %>%
-  ggplot() +
-  geom_boxplot(aes(x = r2,
-                   y = type))
+  ggplot(aes(x = r2, y = type)) +
+  geom_boxplot(
+    width = 0.5,
+    outlier.shape = NA,
+    fill = "gray90"
+  ) +
+  geom_jitter(
+    height = 0.12,
+    width = 0,
+    alpha = 0.5,
+    size = 1.5,
+    color = "dodgerblue"
+  ) +
+  geom_text(
+    data = r2_summary,
+    aes(x = p25, label = sprintf("%.2f", p25)),
+    color = "red",
+    size = 3,
+    position = position_nudge(y = TEXT_NUDGE)
+  ) +
+  geom_text(
+    data = r2_summary,
+    aes(x = median, label = sprintf("%.2f", median)),
+    color = "red",
+    size = 3,
+    position = position_nudge(y = TEXT_NUDGE)
+  ) +
+  geom_text(
+    data = r2_summary,
+    aes(x = p75, label = sprintf("%.2f", p75)),
+    color = "red",
+    size = 3,
+    position = position_nudge(y = TEXT_NUDGE)
+  ) +
+  labs(
+    x = expression(R^2),
+    y = NULL
+  ) +
+  xlim(0, 1) +
+  theme_classic()
 
 p_box_rmse <- combined_r2 %>%
-  ggplot() +
-  geom_boxplot(aes(x = rmse,
-                   y = type))
+  ggplot(aes(x = rmse, y = type)) +
+  geom_boxplot(
+    width = 0.5,
+    outlier.shape = NA,
+    fill = "gray90"
+  ) +
+  geom_jitter(
+    height = 0.12,
+    width = 0,
+    alpha = 0.5,
+    size = 1.5,
+    color = "dodgerblue"
+  ) +
+  geom_text(
+    data = rmse_summary,
+    aes(x = p25, label = sprintf("%.2f", p25)),
+    color = "red",
+    size = 3,
+    position = position_nudge(y = TEXT_NUDGE,
+                              x = -0.05)
+  ) +
+  geom_text(
+    data = rmse_summary,
+    aes(x = median, label = sprintf("%.2f", median)),
+    color = "red",
+    size = 3,
+    position = position_nudge(y = TEXT_NUDGE)
+  ) +
+  geom_text(
+    data = rmse_summary,
+    aes(x = p75, label = sprintf("%.2f", p75)),
+    color = "red",
+    size = 3,
+    position = position_nudge(y = TEXT_NUDGE)
+  ) +
+  labs(
+    x = "RMSE",
+    y = NULL
+  ) +
+  theme_classic() +
+  xlim(0, 1)
 
-p_bax <- ggarrange(p_box_r2,
-                   p_box_rmse, ncol = 1)
-p_bax
+p_box <- ggarrange(
+  p_box_r2,
+  p_box_rmse,
+  ncol = 1
+)
 
+p_box <- annotate_figure(
+  p_box,
+  top = text_grob(
+    expression(bold("A. Distribution of within-route " * R^2 * " and RMSE")),
+    hjust = 0,
+    x = 0
+  )
+)
+
+# Performance by congestion ----------------------------------------------------
 p_r2 <- ggplot() +
   stat_smooth(
     data = cal_df,
@@ -177,11 +289,12 @@ p_r2 <- ggplot() +
   ) +
   scale_color_manual(values = c("black", "darkorange")) +
   labs(x = "Delay Factor (Observed), 95th Percentile",
-       y = "R^2",
+       y = expression(R^2),
        color = "Data",
-       title = "A. R^2") +
+       title = expression(bold("B."~R^2))) +
   theme_classic2() +
-  theme(plot.title = element_text(face = "bold"))
+  theme(plot.title = element_text(face = "bold", size = 12),
+        axis.title.x = element_text(size = 11))
 
 p_rmse <- ggplot() +
   stat_smooth(
@@ -214,66 +327,40 @@ p_rmse <- ggplot() +
   labs(x = "Delay Factor (Observed), 95th Percentile",
        y = "RMSE",
        color = "Data",
-       title = "B. RMSE") +
+       title = "C. RMSE") +
   theme_classic2() +
-  theme(plot.title = element_text(face = "bold"))
+  theme(plot.title = element_text(face = "bold", size = 12),
+        axis.title.x = element_text(size = 11))
 
 p <- annotate_figure(
-  ggarrange(p_r2, p_rmse,
-            common.legend = TRUE, legend = "right"),
+  ggarrange(
+    p_r2, p_rmse,
+    common.legend = TRUE,
+    legend = "right"
+  ),
   top = text_grob(
-    "Comparing within route R^2 RMSE of observed and estimated delay factor\nwith 95th percentile of observed delay",
-    #face = "bold",
-    size = 14,
+    expression(
+      bolditalic("Comparing within-route " * R^2 * 
+                   " and RMSE of observed and estimated delay factor")
+    ),
+    size = 12,
     hjust = 0,
-    x = 0
+    x = 0,
+    just = "left"
   )
 )
 
-p
+# Arrange: Main ----------------------------------------------------------------
+p_blank <- ggplot() + theme_void()
+p_top <- ggarrange(p_blank, p_box, p_blank, nrow = 1, widths = c(0.1, 0.8, 0.1))
+
+p_main <- ggarrange(p_top, p, ncol = 1)
+
+ggsave(p_main,
+       filename = file.path(figures_dir, "observed_vs_predicted_delay_main.png"),
+       height = 7, width = 9)
 
 # Scatterplots -----------------------------------------------------------------
-AXIS_MAX <- 3
-
-route_cal_df %>%
-  ggplot(aes(x = delay_factor_od, y = delay_factor)) +
-  geom_point() +
-  coord_cartesian(xlim = c(0, AXIS_MAX), ylim = c(0, AXIS_MAX))
-
-route_26_df %>%
-  ggplot(aes(x = delay_factor_od, y = delay_factor)) +
-  geom_point(size = 0.1) +
-  coord_cartesian(xlim = c(0, AXIS_MAX), ylim = c(0, AXIS_MAX))
-
-
-
-
-
-
-
-
-ggplot(combined_r2, aes(x = fclass_label, y = r2, fill = fclass_label)) +
-  geom_boxplot(outlier.shape = 21, alpha = 0.7) +
-  geom_jitter(width = 0.1, size = 1.5, alpha = 0.6) +
-  annotate("segment", x = 0.8, xend = 6.2, y = 0.95, yend = 0.95,
-           linewidth = 0.6, color = "gray40") +
-  annotate("segment", x = 0.8, xend = 0.8, y = 0.95, yend = 1.05,
-           linewidth = 0.6, color = "gray40") +
-  annotate("segment", x = 6.2, xend = 6.2, y = 0.95, yend = 1.05,
-           linewidth = 0.6, color = "gray40") +
-  annotate("text", x = 3.5, y = 1.08, label = "Routes\nused for\ncalibration",
-           size = 3.5, fontface = "italic", hjust = 0) +
-  scale_y_continuous(limits = c(0, 1.2), breaks = c(0, 0.25, 0.5, 0.75, 1)) +
-  coord_flip(clip = "off") +
-  labs(x = NULL, y = expression(R^2*" (Observed vs. Predicted Delay Factor)")) +
-  theme_minimal() +
-  theme(legend.position = "none",
-        plot.margin = margin(10, 40, 10, 10),
-        axis.text = element_text(color = "black", size = 12))
-ggsave(filename = file.path(figures_dir, "r2_boxplot_byclass_and_v2.png"),
-       height = 4, width = 8)
-
-# Figures ----------------------------------------------------------------------
 pcal <- route_cal_df %>%
   ggplot() +
   geom_abline(

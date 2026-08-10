@@ -11,8 +11,7 @@ mode_sf <- mode_sf %>%
 route_df <- mode_sf %>%
   mutate(distance_km = round(distance_m/1000, 2) ) %>%
   st_drop_geometry() %>%
-  dplyr::select(road_name, distance_km) %>%
-  arrange(road_name)
+  dplyr::select(road_name, distance_km)
 
 se_df <- map_df(1:nrow(mode_sf), function(i){
   
@@ -37,7 +36,11 @@ se_df <- map_df(1:nrow(mode_sf), function(i){
   return(se_df)
 })
 
-route_df <- bind_cols(route_df, se_df)
+# Coordinates are built in the source-file row order, so bind them to the route
+# attributes before sorting -- otherwise the coordinate columns end up attached
+# to the wrong road.
+route_df <- bind_cols(route_df, se_df) %>%
+  arrange(road_name)
 
 route_df <- route_df %>%
   dplyr::mutate(
