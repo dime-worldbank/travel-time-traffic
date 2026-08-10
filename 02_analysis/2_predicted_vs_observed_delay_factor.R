@@ -160,6 +160,7 @@ rmse_summary <- combined_r2 %>%
   )
 
 p_box_r2 <- combined_r2 %>%
+  dplyr::filter(r2 >= -10) %>%
   ggplot(aes(x = r2, y = type)) +
   geom_boxplot(
     width = 0.5,
@@ -198,7 +199,7 @@ p_box_r2 <- combined_r2 %>%
     x = expression(R^2),
     y = NULL
   ) +
-  xlim(0, 1) +
+  #xlim(0, 1) +
   theme_classic()
 
 p_box_rmse <- combined_r2 %>%
