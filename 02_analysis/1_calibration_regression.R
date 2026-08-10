@@ -733,8 +733,8 @@ sink()
 # Table: calibration_by_fclass.tex
 # Plain regression (no speed interaction, no threshold) estimated per fclass
 # ==================================================================================
-fclasses        <- c("unclassified", "residential", "tertiary", "secondary", "primary", "trunk")
-fclasses_labels <- c("Unclassified", "Residential", "Tertiary", "Secondary", "Primary", "Trunk")
+fclasses        <- c("residential", "unclassified", "tertiary", "secondary", "primary", "trunk")
+fclasses_labels <- c("Residential", "Unclassified", "Tertiary", "Secondary", "Primary", "Trunk")
 
 n_routes_fclass <- sapply(fclasses, function(fc)
   n_distinct(route_df$uid[route_df$fclass == fc]))

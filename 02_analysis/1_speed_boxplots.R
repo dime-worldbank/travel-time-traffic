@@ -31,7 +31,9 @@ combined_p99 <- combined_p99 %>%
     TRUE ~ str_to_title(fclass)
   ))
 
-fclass_levels <- c("Unclassified", "Residential", "Tertiary", "Secondary",
+# Levels run from the lowest road class up; coord_flip() puts the first level at
+# the bottom of the panel, so Trunk ends up nearest the top.
+fclass_levels <- c("Residential", "Unclassified", "Tertiary", "Secondary",
                    "Primary", "Trunk", "Long panel of\n26 routes")
 combined_p99 <- combined_p99 %>%
   mutate(fclass_label = factor(fclass_label, levels = fclass_levels))
