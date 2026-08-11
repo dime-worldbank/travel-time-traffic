@@ -74,8 +74,10 @@ for (agg_method in c("mean", "85th_percentile")) {
          height = 6,
          width = 11)
 
-  ggsave(filename = file.path(figures_dir, paste0("figure_6_", agg_method, ".png")),
-         height = 6,
-         width = 11)
+  if (agg_method == "85th_percentile") {
+    ggsave(filename = file.path(figures_dir, "figure_8.png"),
+           height = 6,
+           width = 11)
+  }
 
 }

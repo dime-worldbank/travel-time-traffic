@@ -68,6 +68,9 @@ ggplot(combined_p99, aes(x = fclass_label, y = p99_speed, fill = fclass_label)) 
         axis.text = element_text(color = "black", size = 12))
 ggsave(filename = file.path(figures_dir, "p99_speed_boxplot_byclass_and_v2.png"),
        height = 4, width = 8)
+
+ggsave(filename = file.path(figures_dir, "figure_1.png"),
+       height = 4, width = 8)
 #       title = "Distribution of free-flow speeds across routes"
 
 #### Stats

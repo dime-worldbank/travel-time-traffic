@@ -231,9 +231,7 @@ p_fit <- ggplot() +
        title = "Delay factor accuracy: within-sample vs. out-of-sample",
        subtitle = paste0("Each of ", N_DRAWS, " draws refits the calibration equation on a random ",
                           SUBSAMPLE_SHARE * 100, "% stratified (by road class) subsample of routes.\n",
-                          "Gap = Out-of-sample - Within-sample (RMSE or R-squared). In the left column, ",
-                          n_trimmed_left, " out-of-sample R-squared value(s) below ", LEFT_R2_MIN,
-                          " are excluded.")
+                          "Gap = Out-of-sample - Within-sample (RMSE or R-squared).")
   ) +
   theme_classic2() +
   theme(strip.background = element_blank(),
@@ -244,4 +242,4 @@ p_fit <- ggplot() +
 p_fit
 
 ggsave(p_fit, filename = file.path(figures_dir, "delay_factor_fit_by_subsample.png"),
-       height = 6, width = 8)
+       height = 6, width = 9)

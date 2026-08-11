@@ -160,7 +160,7 @@ p_map <- ggplot() +
           aes(color = "New Route"),
           linewidth = 1.75) +
   geom_sf(data = tt_modal_sf,
-          aes(color = "Orignal Route"),
+          aes(color = "Original Route"),
           linewidth = 1) +
   labs(color = NULL,
        title = "A. Original vs new route") +

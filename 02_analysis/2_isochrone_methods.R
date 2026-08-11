@@ -170,10 +170,12 @@ for (agg_method in c("mean", "85th_percentile")) {
          height = 11,
          width = 9.5)
 
-  ggsave(p,
-         filename = file.path(figures_dir, paste0("figure_2_", agg_method, ".png")),
-         height = 11,
-         width = 9.5)
+  if (agg_method == "85th_percentile") {
+    ggsave(p,
+           filename = file.path(figures_dir, "figure_3.png"),
+           height = 11,
+           width = 9.5)
+  }
 
   p <- ggarrange(p1, p2, p3, p4, p5, p6, ncol = 3, nrow = 2)
   ggsave(p,

@@ -255,7 +255,7 @@ ggsave(p,
        height = 8, width = 10)
 
 ggsave(p,
-       filename = file.path(figures_dir, "figure_1.png"),
+       filename = file.path(figures_dir, "figure_2.png"),
        height = 8, width = 10)
 
 # All routes -------------------------------------------------------------------

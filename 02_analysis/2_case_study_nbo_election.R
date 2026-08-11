@@ -52,7 +52,7 @@ route_df %>%
        x = NULL,
        y = "Proportion",
        title = "Average daily proportion of traffic levels",
-       subtitle = "Black vertical lines indicates election; gray indicates winner announced",
+       subtitle = "Black vertical line indicates election; gray indicates winner announced",
        caption = "Daily averages computed from hourly observations") +
   facet_wrap(~uid, scales = "free_y") +
   theme_classic2() +
@@ -116,7 +116,7 @@ cong_df %>%
 ggsave(filename = file.path(figures_dir, "nbo_election_trends.png"),
        height = 3, width = 10)
 
-ggsave(filename = file.path(figures_dir, "figure_3.png"),
+ggsave(filename = file.path(figures_dir, "figure_5.png"),
        height = 3, width = 10)
 
 # Regression -------------------------------------------------------------------
@@ -295,6 +295,10 @@ estates_sf_var <- estates_sf_var %>%
   ))
 
 estates_sf_var %>%
+  dplyr::mutate(sig = case_when(
+    sig %in% T ~ "p < 0.05",
+    TRUE ~ "p > 0.05"
+  )) %>%
   ggplot() +
   geom_sf(aes(fill = estimate,
               color = sig)) +
@@ -303,9 +307,9 @@ estates_sf_var %>%
                        high = "darkorange",
                        limits = c(-max_v, max_v),
                        na.value = "gray80") +
-  scale_color_manual(values = c("red", "black")) +
+  scale_color_manual(values = c("black", "red")) +
   labs(fill = "Coefficient",
-       color = "p < 0.05") + #        title = title_i
+       color = NULL) + #        title = title_i
   theme_void() +
   theme(legend.position = "right",
         plot.title = element_text(face = "bold", hjust = 0.5)) +
@@ -323,8 +327,9 @@ estates_sf_var %>%
     width = unit(1.2, "cm")
   )
 
-ggsave(filename = file.path(figures_dir, "nbo_elec_adm3.png"),
+ggsave(filename = file.path(figures_dir, "nbo_election_map.png"),
        height = 5, width = 6)
 
-ggsave(filename = file.path(figures_dir, "figure_4.png"),
+ggsave(filename = file.path(figures_dir, "figure_6.png"),
        height = 5, width = 6)
+

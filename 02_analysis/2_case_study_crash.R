@@ -237,7 +237,7 @@ ggsave(p, filename = file.path(figures_dir, "lm_crash_all.png"),
        height = 6,
        width = 9)
 
-ggsave(p, filename = file.path(figures_dir, "figure_5.png"),
+ggsave(p, filename = file.path(figures_dir, "figure_7.png"),
        height = 6,
        width = 9)
 

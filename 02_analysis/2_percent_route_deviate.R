@@ -84,7 +84,7 @@ p <- df_sum %>%
   geom_text(aes(y = n + 1,
                 x = gg_diff_mode_round,
                 label = label)) +
-  labs(x = "Percent of time route differs from model route",
+  labs(x = "Percent of time route differs from modal route",
        y = "N routes") +
   theme_classic() +
   theme(axis.text = element_text(color = "black"))
