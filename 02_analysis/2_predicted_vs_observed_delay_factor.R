@@ -413,10 +413,25 @@ p_rep <- rep_scatter_df %>%
   theme(plot.title = element_text(face = "bold"))
 
 # Panel C: distribution of RMSE by observed delay factor bin, across draws -----
-p_bin_rmse <- bin_draws_df %>%
-  dplyr::mutate(delay_bin = factor(delay_bin, levels = bin_labels)) %>%
+bin_draws_plot_df <- bin_draws_df %>%
+  dplyr::mutate(delay_bin = factor(delay_bin, levels = bin_labels))
+
+# Median RMSE across draws, and the (draw-)median number of held-out
+# observations falling in that bin -- labeled above each box.
+bin_summary <- bin_draws_plot_df %>%
+  group_by(delay_bin) %>%
+  summarise(median_rmse = median(rmse, na.rm = TRUE),
+            median_n = median(n, na.rm = TRUE),
+            label = paste0("Med=", sprintf("%.2f", median_rmse), "\nN=", round(median_n)),
+            .groups = "drop")
+
+p_bin_rmse <- bin_draws_plot_df %>%
   ggplot(aes(x = delay_bin, y = rmse)) +
   geom_boxplot(outlier.size = 0.5, fill = "gray90") +
+  geom_text(data = bin_summary, aes(x = delay_bin, y = Inf, label = label),
+            color = "gray20", size = 2.6, vjust = 1.1, lineheight = 0.9,
+            inherit.aes = FALSE) +
+  scale_y_continuous(expand = expansion(mult = c(0.05, 0.18))) +
   labs(x = "Observed Delay Factor Bin",
        y = "RMSE",
        title = "C. Distribution of RMSE by observed delay factor bin\n(500 repeated 50/50 splits, held-out routes only)") +

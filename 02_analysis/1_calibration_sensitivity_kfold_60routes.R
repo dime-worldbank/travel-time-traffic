@@ -24,6 +24,18 @@ route_df <- route_df %>%
   ungroup() %>%
   filter(hour >= 6, hour <= 21)
 
+# Free-flow speed is centered on the full, un-thresholded set of routes -- same
+# as 1_calibration_regression.R (center_speed_v1) -- so that main-effect
+# coefficients here are on the same footing as Table 2 col. 6. Centering after
+# the route-inclusion filter instead would shift the main effects by
+# delta_k * (center_full - center_filtered), since the interaction slope is
+# unchanged but the centering constant it's multiplied against differs.
+center_speed <- route_df %>% distinct(uid, speed_kmh_uid_max) %>% pull(speed_kmh_uid_max) %>% mean(na.rm = TRUE)
+route_df <- route_df %>%
+  dplyr::mutate(speed_kmh_uid_max_c = speed_kmh_uid_max - center_speed,
+                # Observed delay factor: how much slower than free-flow, per observation
+                delay_factor_od = (duration_in_traffic_s - duration_in_traffic_s_minimum) / duration_in_traffic_s_minimum + 1)
+
 # Route-inclusion threshold: match column 6 of Table
 # \ref{tab:ols_calibration_threshold_x_speed_centered_calib} (thresh_0.05_speed in
 # 1_calibration_regression.R), whose coefficients are saved to coefs.Rds and used
@@ -45,12 +57,6 @@ routes_keep <- route_df %>%
   pull(uid)
 
 route_df <- route_df %>% dplyr::filter(uid %in% routes_keep)
-
-center_speed <- route_df %>% distinct(uid, speed_kmh_uid_max) %>% pull(speed_kmh_uid_max) %>% mean(na.rm = TRUE)
-route_df <- route_df %>%
-  dplyr::mutate(speed_kmh_uid_max_c = speed_kmh_uid_max - center_speed,
-                # Observed delay factor: how much slower than free-flow, per observation
-                delay_factor_od = (duration_in_traffic_s - duration_in_traffic_s_minimum) / duration_in_traffic_s_minimum + 1)
 
 # 1. Re-estimate the calibration equation (column 6 of                       --
 #    ols_calibration_threshold_x_speed_centered_calib.tex: threshold = 0.05, --

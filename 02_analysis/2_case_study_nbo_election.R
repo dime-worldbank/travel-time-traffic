@@ -108,7 +108,7 @@ cong_df %>%
                 y = value)) +
   facet_wrap(~name_clean) +
   labs(x = NULL,
-       y = NULL) +
+       y = "Delay Factor") +
   theme_classic2() +
   theme(strip.background = element_blank(),
         strip.text = element_text(face = "bold"))
