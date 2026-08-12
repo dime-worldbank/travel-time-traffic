@@ -52,11 +52,13 @@ route_df <- route_df %>%
                 # Observed delay factor: how much slower than free-flow, per observation
                 delay_factor_od = (duration_in_traffic_s - duration_in_traffic_s_minimum) / duration_in_traffic_s_minimum + 1)
 
-# 1. Re-estimate the calibration equation (column 2 of                       --
-#    ols_calibration_threshold_x_speed_centered_calib.tex: threshold = 0,    --
-#    traffic-level proportions interacted with centered free-flow speed)    --
-#    repeatedly on random subsamples of routes, stratified by road class,   --
-#    to check how stable coefficients are to which routes are included.     --
+# 1. Re-estimate the calibration equation (column 6 of                       --
+#    ols_calibration_threshold_x_speed_centered_calib.tex: threshold = 0.05, --
+#    traffic-level proportions interacted with centered free-flow speed --  --
+#    equivalently column 2 of ols_calibration_centered_calib_vs_longpanel)   --
+#    repeatedly on random subsamples of routes, stratified by road-class     --
+#    group, to check how stable coefficients are to which routes are         --
+#    included.                                                               --
 boot_fml <- as.formula(
   "tt_hour_per_km_ln ~ tl_prop_2 + tl_prop_3 + tl_prop_4 + tl_prop_2:speed_kmh_uid_max_c + tl_prop_3:speed_kmh_uid_max_c + tl_prop_4:speed_kmh_uid_max_c | uid"
 )
