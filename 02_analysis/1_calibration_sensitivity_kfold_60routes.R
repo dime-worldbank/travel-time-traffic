@@ -24,6 +24,28 @@ route_df <- route_df %>%
   ungroup() %>%
   filter(hour >= 6, hour <= 21)
 
+# Route-inclusion threshold: match column 6 of Table
+# \ref{tab:ols_calibration_threshold_x_speed_centered_calib} (thresh_0.05_speed in
+# 1_calibration_regression.R), whose coefficients are saved to coefs.Rds and used
+# to compute the delay factor throughout the paper. A route is retained only if it
+# reaches traffic levels 3 and 4 in at least 5% of its observations; routes that
+# essentially never reach those levels contribute no identifying variation for the
+# level-3 and level-4 coefficients. Keeping this consistent with the main-text
+# figure (2_predicted_vs_observed_delay_factor.R) means both exercises resample
+# from the same estimation sample the deployed calibration uses.
+ROUTE_INCLUSION_THRESHOLD <- 0.05
+
+routes_keep <- route_df %>%
+  group_by(uid) %>%
+  summarise(share_prop3_gt0 = mean(tl_prop_3 > 0, na.rm = TRUE),
+            share_prop4_gt0 = mean(tl_prop_4 > 0, na.rm = TRUE),
+            .groups = "drop") %>%
+  dplyr::filter(share_prop3_gt0 >= ROUTE_INCLUSION_THRESHOLD,
+                share_prop4_gt0 >= ROUTE_INCLUSION_THRESHOLD) %>%
+  pull(uid)
+
+route_df <- route_df %>% dplyr::filter(uid %in% routes_keep)
+
 center_speed <- route_df %>% distinct(uid, speed_kmh_uid_max) %>% pull(speed_kmh_uid_max) %>% mean(na.rm = TRUE)
 route_df <- route_df %>%
   dplyr::mutate(speed_kmh_uid_max_c = speed_kmh_uid_max - center_speed,
@@ -84,13 +106,25 @@ lm_pooled_boot_df <- feols(boot_fml, vcov = ~uid, data = route_df) %>%
   dplyr::mutate(b = (x2_5_percent + x97_5_percent) / 2) %>%
   dplyr::mutate(var_clean = factor(var_clean_map[variable], levels = var_clean_levels))
 
-routes_by_class <- route_df %>% distinct(uid, fclass)
+# Stratification groups for the 50/50 splits, matching
+# 2_predicted_vs_observed_delay_factor.R. The route-inclusion threshold leaves
+# only 2 residential and 2 trunk_fast routes -- too few to stratify on their
+# own, since a 50/50 split would put a single route on each side. We therefore
+# pool residential with unclassified, and trunk_fast with trunk, giving five
+# strata of 8-9 routes each.
+routes_by_class <- route_df %>%
+  distinct(uid, fclass) %>%
+  dplyr::mutate(strata = dplyr::case_when(
+    fclass %in% c("residential", "unclassified") ~ "residential/unclassified",
+    fclass %in% c("trunk", "trunk_fast")         ~ "trunk/trunk_fast",
+    TRUE                                          ~ fclass
+  ))
 
 set.seed(42)
 boot_results <- map(1:N_DRAWS, function(draw_i){
 
   routes_i <- routes_by_class %>%
-    group_by(fclass) %>%
+    group_by(strata) %>%
     dplyr::slice_sample(prop = SUBSAMPLE_SHARE) %>%
     ungroup() %>%
     pull(uid)
